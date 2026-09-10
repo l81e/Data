@@ -2430,8 +2430,20 @@
 
   /* ---------------- init ---------------- */
   (async function init(){
-    // 1. Resolve the initial date from the URL, if present and valid.
-    const parsedFromUrl = parseDateFromPath(window.location.pathname);
+    // 1. Resolve the initial date from the URL. On a fresh static-host load
+    // (GitHub Pages) the real path is already in window.location.pathname.
+    // On a load that bounced through 404.html (a direct/shared link to a
+    // date path GitHub Pages couldn't find as a real file), the original
+    // path was stashed in sessionStorage instead — check that first, then
+    // rewrite the visible URL back to the clean path via replaceState.
+    let redirectPath = null;
+    try {
+      redirectPath = sessionStorage.getItem('mb_redirect_path');
+      if (redirectPath) sessionStorage.removeItem('mb_redirect_path');
+    } catch (e) {}
+
+    const pathToCheck = redirectPath || window.location.pathname;
+    const parsedFromUrl = parseDateFromPath(pathToCheck);
     if (parsedFromUrl){
       viewDate = parsedFromUrl;
       calMonthCursor = new Date(viewDate.getFullYear(), viewDate.getMonth(), 1);
