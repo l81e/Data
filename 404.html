@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8" />
+<title>Redirecting…</title>
+<script>
+  // GitHub Pages serves this file for any path it can't find (e.g. /11-9-2026).
+  // We capture that path and bounce to index.html, carrying the original path
+  // in a query string so index.html can restore it after it loads.
+  var path = window.location.pathname + window.location.search;
+  sessionStorage.setItem('mb_redirect_path', path);
+  window.location.replace(
+    window.location.origin + '/index.html'
+  );
+</script>
+</head>
+<body>
+  Redirecting…
+</body>
+</html>
