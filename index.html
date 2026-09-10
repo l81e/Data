@@ -40,7 +40,7 @@
     position:relative;
     min-height:100vh;
     overflow-x:hidden;
-    touch-action:pan-x pan-y;
+    touch-action:pan-y;
   }
   html[dir="rtl"] body{font-family:'Cairo',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;}
 
@@ -216,15 +216,22 @@
   .today-pill.is-jump .today-pill-icon{display:inline-flex;}
 
   /* ---------- MAIN ---------- */
-  main{position:relative; z-index:2; max-width:720px; margin:0 auto; padding:0 24px 90px; touch-action:pan-y; overflow:hidden;}
+  main{
+    position:relative; z-index:2; max-width:720px; margin:0 auto; padding:0 24px 90px;
+    touch-action:pan-y;
+    overflow:hidden;
+  }
+
+  /* day-track holds up to 3 day-cards side by side (prev/current/next) for live drag */
+  .day-track{
+    position:relative;
+    width:100%;
+    will-change:transform;
+  }
 
   .day-card{
     width:100%;
-    transition:transform .28s ease, opacity .28s ease;
   }
-  .day-card.slide-out-left{transform:translateX(-32px); opacity:0;}
-  .day-card.slide-out-right{transform:translateX(32px); opacity:0;}
-  .day-card.slide-in{transform:translateX(0); opacity:1;}
 
   .day-empty{
     text-align:center; padding:50px 20px 60px;
@@ -329,6 +336,7 @@
 
   .loading-row{text-align:center; padding:40px 0; color:var(--text-faint); font-size:0.85rem;}
   .error-row{text-align:center; padding:40px 20px; color:var(--err); font-size:0.85rem;}
+  .mini-loading-row{text-align:center; padding:30px 0; color:var(--text-faint); font-size:0.8rem;}
 
   /* ---------- MODAL ---------- */
   .modal-overlay{
@@ -366,6 +374,32 @@
   .mfield.invalid input, .mfield.invalid select, .mfield.invalid textarea{border-color:var(--text);}
 
   .otp-input{letter-spacing:0.5em; text-align:center; font-size:1.1rem !important; font-weight:700;}
+
+  /* email + fixed domain suffix */
+  .email-domain-row{
+    display:flex; align-items:stretch; width:100%;
+    border:1.5px solid var(--line-soft); border-radius:6px;
+    overflow:hidden; background:var(--panel);
+  }
+  .email-domain-row:focus-within{border-color:var(--text-dim); box-shadow:0 0 0 3px var(--accent-glow);}
+  .email-local-input{
+    flex:1; min-width:0; font-family:inherit; font-size:16px;
+    padding:10px 8px 10px 12px; background:transparent;
+    border:none; color:var(--text); outline:none;
+  }
+  html[dir="rtl"] .email-local-input{padding:10px 12px 10px 8px;}
+  .email-domain-suffix{
+    flex-shrink:0; display:flex; align-items:center;
+    padding:10px 12px 10px 4px; font-size:0.86rem;
+    color:var(--text-faint); font-weight:600;
+    white-space:nowrap; user-select:none;
+    background:var(--panel-hi);
+    border-left:1px solid var(--line-soft);
+  }
+  html[dir="rtl"] .email-domain-suffix{
+    padding:10px 4px 10px 12px;
+    border-left:none; border-right:1px solid var(--line-soft);
+  }
 
   .type-grid{display:grid; grid-template-columns:1fr 1fr; gap:8px;}
   .type-opt{
@@ -494,11 +528,14 @@
     <div class="modal-title" id="authModalTitle" data-en="Sign in" data-ar="تسجيل الدخول">Sign in</div>
 
     <div id="authStepEmail">
-      <div class="modal-subtitle" data-en="Enter your email and we'll send you a one-time code." data-ar="اكتب إيميلك وهنبعتلك كود دخول.">Enter your email and we'll send you a one-time code.</div>
+      <div class="modal-subtitle" data-en="Sign in with your MNU student email." data-ar="سجل الدخول بإيميلك الجامعي.">Sign in with your MNU student email.</div>
       <div class="mfield" id="authEmailField">
         <label data-en="Email" data-ar="الإيميل">Email</label>
-        <input type="email" id="authEmailInput" placeholder="you@example.com" autocomplete="email" />
-        <div class="mfield-err" data-en="Please enter a valid email." data-ar="من فضلك حط إيميل صحيح.">Please enter a valid email.</div>
+        <div class="email-domain-row">
+          <input type="text" id="authEmailLocalInput" class="email-local-input" placeholder="yourname" autocomplete="off" autocapitalize="off" spellcheck="false" />
+          <span class="email-domain-suffix">@std.mansnu.edu.eg</span>
+        </div>
+        <div class="mfield-err" data-en="Please enter your student ID/username (letters, numbers, dots, dashes, underscores only)." data-ar="من فضلك اكتب اسم المستخدم الجامعي بتاعك (حروف وأرقام فقط).">Please enter your student ID/username (letters, numbers, dots, dashes, underscores only).</div>
       </div>
       <div class="modal-btn-row">
         <button class="modal-btn" id="authCancelBtn1" data-en="Cancel" data-ar="إلغاء">Cancel</button>
@@ -664,6 +701,8 @@
   const MATERIALS_BUCKET = 'materials';
   const MAX_UPLOAD_BYTES = 20 * 1024 * 1024; // Supabase Storage can handle far more than the old 4.5MB dataURL cap
 
+  const STUDENT_EMAIL_DOMAIN = '@std.mansnu.edu.eg';
+
   /* ---------------- auth state ---------------- */
   let currentSession = null;
   let currentProfile = null; // { id, name_en, name_ar }
@@ -728,7 +767,7 @@
   const authStepEmail = document.getElementById('authStepEmail');
   const authStepOtp = document.getElementById('authStepOtp');
   const authStepName = document.getElementById('authStepName');
-  const authEmailInput = document.getElementById('authEmailInput');
+  const authEmailLocalInput = document.getElementById('authEmailLocalInput');
   const authEmailField = document.getElementById('authEmailField');
   const authOtpInput = document.getElementById('authOtpInput');
   const authOtpField = document.getElementById('authOtpField');
@@ -741,7 +780,7 @@
 
   function openAuthModal(){
     pendingAuthEmail = null;
-    authEmailInput.value = '';
+    authEmailLocalInput.value = '';
     authOtpInput.value = '';
     authNameInput.value = '';
     [authEmailField, authOtpField, authNameField].forEach(f => f.classList.remove('invalid'));
@@ -750,18 +789,29 @@
     authStepOtp.style.display = 'none';
     authStepName.style.display = 'none';
     authModalOverlay.classList.add('open');
-    setTimeout(() => authEmailInput.focus(), 50);
+    setTimeout(() => authEmailLocalInput.focus(), 50);
   }
   function closeAuthModal(){ authModalOverlay.classList.remove('open'); }
 
   document.getElementById('authCancelBtn1').addEventListener('click', closeAuthModal);
   authModalOverlay.addEventListener('click', (e) => { if (e.target === authModalOverlay) closeAuthModal(); });
 
-  function isValidEmail(v){ return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v); }
+  // Only the local part is user-editable; the domain is fixed to the MNU student domain.
+  // Allowed characters: letters, numbers, dot, underscore, dash (no @ or whitespace).
+  function isValidLocalPart(v){ return /^[A-Za-z0-9._-]+$/.test(v); }
+
+  // Strip anything the user pastes that isn't a valid local-part character,
+  // and if they paste a full email, auto-trim to the part before '@'.
+  authEmailLocalInput.addEventListener('input', () => {
+    let v = authEmailLocalInput.value;
+    if (v.includes('@')) v = v.split('@')[0];
+    v = v.replace(/[^A-Za-z0-9._-]/g, '');
+    authEmailLocalInput.value = v;
+  });
 
   authSendCodeBtn.addEventListener('click', async () => {
-    const email = authEmailInput.value.trim();
-    if (!isValidEmail(email)){
+    const local = authEmailLocalInput.value.trim();
+    if (!local || !isValidLocalPart(local)){
       authEmailField.classList.add('invalid');
       authEmailField.querySelector('.mfield-err').classList.add('show');
       return;
@@ -769,7 +819,9 @@
     authEmailField.classList.remove('invalid');
     authEmailField.querySelector('.mfield-err').classList.remove('show');
 
-        authSendCodeBtn.disabled = true;
+    const email = local + STUDENT_EMAIL_DOMAIN;
+
+    authSendCodeBtn.disabled = true;
     authSendCodeBtn.textContent = currentLang==='ar' ? 'بيتبعت…' : 'Sending…';
 
     let error;
@@ -825,7 +877,8 @@
 
     // If the profile row's name still looks like the auto-generated email-prefix guess
     // (i.e. no real name has been set), ask for one before closing.
-    const looksUnset = !currentProfile || !currentProfile.name_en || currentProfile.name_en === pendingAuthEmail.split('@')[0];
+    const localGuess = pendingAuthEmail.split('@')[0];
+    const looksUnset = !currentProfile || !currentProfile.name_en || currentProfile.name_en === localGuess;
     if (looksUnset){
       authStepOtp.style.display = 'none';
       authStepName.style.display = '';
@@ -921,9 +974,13 @@
   const DOW_SHORT_EN = ["S","M","T","W","T","F","S"];
   const DOW_SHORT_AR = ["ح","ن","ث","ر","خ","ج","س"];
 
-  function renderDate(){
+  function dayNameFor(d){
     const days = currentLang === 'ar' ? DAYS_AR : DAYS_EN;
-    dateBig.textContent = days[viewDate.getDay()];
+    return days[d.getDay()];
+  }
+
+  function renderDate(){
+    dateBig.textContent = dayNameFor(viewDate);
 
     const isToday = fmtKey(viewDate) === fmtKey(todayDate());
     todayPill.classList.toggle('is-jump', !isToday);
@@ -969,66 +1026,197 @@
     goToDate(t, direction);
   });
 
-  /* ---------------- swipe navigation ---------------- */
+  /* ================================================================
+     LIVE FINGER-TRACKING SWIPE
+     The day-track holds the current card. During a drag we clone in
+     a "next"/"prev" preview card (with the correct date header shown
+     instantly, content streamed in once loaded) and move both in
+     real time with the finger — no fixed-duration filler animation.
+     ================================================================ */
   const mainEl = document.getElementById('mainContent');
-  let touchStartX = 0, touchStartY = 0, touchActive = false;
+  let dragStartX = 0, dragStartY = 0, dragActive = false, dragLocked = null; // dragLocked: 'h' | 'v' | null
+  let dragWidth = 1;
+  let previewCard = null;
+  let previewDirection = null; // 'next' | 'prev'
   let isAnimating = false;
+
+  // simple in-memory cache so adjacent days feel instant once visited/prefetched
+  const dayCache = new Map(); // key: 'YYYY-MM-DD' -> subjects array
+
+  function neighborDate(dir){
+    const d = new Date(viewDate);
+    d.setDate(d.getDate() + (dir === 'next' ? 1 : -1));
+    return d;
+  }
 
   mainEl.addEventListener('touchstart', (e) => {
     if (e.touches.length !== 1 || isAnimating) return;
-    touchStartX = e.touches[0].clientX;
-    touchStartY = e.touches[0].clientY;
-    touchActive = true;
+    dragStartX = e.touches[0].clientX;
+    dragStartY = e.touches[0].clientY;
+    dragActive = true;
+    dragLocked = null;
+    dragWidth = mainEl.clientWidth || 1;
   }, { passive: true });
 
-  mainEl.addEventListener('touchend', (e) => {
-    if (!touchActive) return;
-    touchActive = false;
-    const dx = e.changedTouches[0].clientX - touchStartX;
-    const dy = e.changedTouches[0].clientY - touchStartY;
-    const SWIPE_THRESHOLD = 50;
-    if (Math.abs(dx) < SWIPE_THRESHOLD || Math.abs(dx) < Math.abs(dy) * 1.3) return;
+  mainEl.addEventListener('touchmove', (e) => {
+    if (!dragActive) return;
+    const dx = e.touches[0].clientX - dragStartX;
+    const dy = e.touches[0].clientY - dragStartY;
+
+    if (!dragLocked){
+      if (Math.abs(dx) < 6 && Math.abs(dy) < 6) return;
+      dragLocked = Math.abs(dx) > Math.abs(dy) * 1.2 ? 'h' : 'v';
+    }
+    if (dragLocked !== 'h') return; // let vertical scroll happen natively
+
+    e.preventDefault(); // we're handling this as a horizontal day-swipe
 
     const rtl = htmlEl.getAttribute('dir') === 'rtl';
-    const swipedLeft = dx < 0;
-    const goNext = rtl ? !swipedLeft : swipedLeft;
+    const draggingToShowNext = rtl ? dx > 0 : dx < 0; // finger moving toward "next day" side
 
-    const next = new Date(viewDate);
-    next.setDate(next.getDate() + (goNext ? 1 : -1));
-    goToDate(next, goNext ? 'next' : 'prev');
+    const dir = draggingToShowNext ? 'next' : 'prev';
+    ensurePreviewCard(dir);
+
+    const currentCard = mainEl.querySelector('.day-card.is-current');
+    if (currentCard) currentCard.style.transform = `translateX(${dx}px)`;
+    if (previewCard){
+      const offset = dir === 'next' ? dragWidth : -dragWidth;
+      const sign = rtl ? -1 : 1;
+      previewCard.style.transform = `translateX(${sign*offset*-1*-1 + dx - (rtl ? (dir==='next'?-1:1) : (dir==='next'?1:-1))*0}px)`;
+      // simplified: position preview just off the edge the finger is revealing, then follow dx 1:1
+      const basePos = (dir === 'next') ? dragWidth : -dragWidth;
+      previewCard.style.transform = `translateX(${basePos + dx}px)`;
+    }
+  }, { passive: false });
+
+  mainEl.addEventListener('touchend', (e) => {
+    if (!dragActive) return;
+    dragActive = false;
+    if (dragLocked !== 'h'){
+      dragLocked = null;
+      return;
+    }
+    const dx = e.changedTouches[0].clientX - dragStartX;
+    const rtl = htmlEl.getAttribute('dir') === 'rtl';
+    const SWIPE_THRESHOLD = Math.min(90, dragWidth * 0.18);
+
+    const draggingToShowNext = rtl ? dx > 0 : dx < 0;
+    const dir = draggingToShowNext ? 'next' : 'prev';
+
+    if (Math.abs(dx) >= SWIPE_THRESHOLD && previewCard){
+      commitSwipe(dir);
+    } else {
+      cancelSwipe();
+    }
+    dragLocked = null;
   }, { passive: true });
 
-  async function animateDayChange(newDate, direction){
-    if (isAnimating) return;
+  mainEl.addEventListener('touchcancel', () => {
+    dragActive = false;
+    dragLocked = null;
+    cancelSwipe();
+  }, { passive: true });
+
+  function ensurePreviewCard(dir){
+    if (previewCard && previewDirection === dir) return;
+    if (previewCard) previewCard.remove();
+
+    const nd = neighborDate(dir);
+    const key = fmtKey(nd);
+    const cached = dayCache.get(key);
+
+    previewDirection = dir;
+    previewCard = document.createElement('div');
+    previewCard.className = 'day-card is-preview';
+    previewCard.style.position = 'absolute';
+    previewCard.style.top = '0';
+    previewCard.style.left = '0';
+    previewCard.style.width = '100%';
+    previewCard.dataset.dateKey = key;
+
+    previewCard.innerHTML = buildDayHtml(nd, cached ? cached : null, cached === undefined);
+    mainEl.appendChild(previewCard);
+    bindDayCardEvents(previewCard, nd, cached);
+
+    const basePos = (dir === 'next') ? dragWidth : -dragWidth;
+    previewCard.style.transform = `translateX(${basePos}px)`;
+
+    // opportunistically fetch if not cached yet, so if they commit, it's ready
+    if (cached === undefined) prefetchDay(nd);
+  }
+
+  function cancelSwipe(){
+    const currentCard = mainEl.querySelector('.day-card.is-current');
+    if (currentCard){
+      currentCard.style.transition = 'transform .18s ease';
+      currentCard.style.transform = 'translateX(0)';
+      setTimeout(() => { if (currentCard) currentCard.style.transition = ''; }, 190);
+    }
+    if (previewCard){
+      const dir = previewDirection;
+      const basePos = (dir === 'next') ? dragWidth : -dragWidth;
+      previewCard.style.transition = 'transform .18s ease';
+      previewCard.style.transform = `translateX(${basePos}px)`;
+      const toRemove = previewCard;
+      setTimeout(() => { toRemove.remove(); }, 190);
+      previewCard = null;
+      previewDirection = null;
+    }
+  }
+
+  async function commitSwipe(dir){
     isAnimating = true;
+    const currentCard = mainEl.querySelector('.day-card.is-current');
+    const incoming = previewCard;
+    previewCard = null;
+    previewDirection = null;
 
-    const card = mainEl.querySelector('.day-card');
-    const outClass = direction === 'next' ? 'slide-out-left' : 'slide-out-right';
+    const finishOffset = 0;
+    const exitOffset = (dir === 'next') ? -dragWidth : dragWidth;
 
-    if (card){
-      card.classList.add(outClass);
-      await wait(190);
+    if (currentCard){
+      currentCard.style.transition = 'transform .16s ease';
+      currentCard.style.transform = `translateX(${exitOffset}px)`;
+    }
+    if (incoming){
+      incoming.style.transition = 'transform .16s ease';
+      incoming.style.transform = `translateX(${finishOffset}px)`;
     }
 
-    viewDate = newDate;
+    await wait(170);
+
+    // commit new viewDate + swap DOM
+    viewDate = neighborDate(dir);
     calMonthCursor = new Date(viewDate.getFullYear(), viewDate.getMonth(), 1);
     renderDate();
     renderCalBtnDate();
-    await loadDay(true);
 
-    const newCard = mainEl.querySelector('.day-card');
-    if (newCard){
-      newCard.style.transition = 'none';
-      newCard.style.transform = direction === 'next' ? 'translateX(32px)' : 'translateX(-32px)';
-      newCard.style.opacity = '0';
-      requestAnimationFrame(() => {
-        newCard.style.transition = 'transform .28s ease, opacity .28s ease';
-        newCard.style.transform = 'translateX(0)';
-        newCard.style.opacity = '1';
-      });
+    if (currentCard) currentCard.remove();
+    if (incoming){
+      incoming.classList.remove('is-preview');
+      incoming.classList.add('is-current');
+      incoming.style.position = '';
+      incoming.style.top = '';
+      incoming.style.left = '';
+      incoming.style.width = '';
+      incoming.style.transition = '';
+      incoming.style.transform = '';
     }
 
-    await wait(300);
+    const key = fmtKey(viewDate);
+    const cached = dayCache.get(key);
+    if (cached === undefined){
+      // still loading — the card already shows a lightweight loader from buildDayHtml;
+      // fetch now (or await the in-flight prefetch) and patch content in once ready.
+      const subjects = await fetchDaySubjects(viewDate);
+      dayCache.set(key, subjects);
+      currentDayData = { subjects };
+      if (fmtKey(viewDate) === key) renderDay(); // guard against rapid further swipes
+    } else {
+      currentDayData = { subjects: cached };
+      renderDay();
+    }
+
     isAnimating = false;
   }
 
@@ -1144,12 +1332,8 @@
      ================================================================ */
   let currentDayData = { subjects: [] }; // kept as "subjects" in-memory to minimize render-code diff; maps to `lectures` table
 
-  async function loadDay(skipDefaultRender){
-    const dateKey = fmtKey(viewDate);
-    if (!skipDefaultRender){
-      const main = document.getElementById('mainContent');
-      main.innerHTML = `<div class="loading-row">${currentLang==='ar'?'جاري التحميل…':'Loading…'}</div>`;
-    }
+  async function fetchDaySubjects(date){
+    const dateKey = fmtKey(date);
 
     const { data: lectures, error: lecError } = await supabase
       .from('lectures')
@@ -1157,15 +1341,8 @@
       .eq('date', dateKey)
       .order('created_at', { ascending: true });
 
-    if (lecError){
-      renderLoadError();
-      return;
-    }
-
-    if (!lectures || lectures.length === 0){
-      currentDayData = { subjects: [] };
-      renderDay();
-      return;
+    if (lecError || !lectures || lectures.length === 0){
+      return [];
     }
 
     const lectureIds = lectures.map(l => l.id);
@@ -1176,11 +1353,9 @@
       .order('created_at', { ascending: true });
 
     if (matError){
-      renderLoadError();
-      return;
+      return [];
     }
 
-    // fetch uploader profile names for display
     const uploaderIds = [...new Set((materials || []).map(m => m.uploaded_by).filter(Boolean))];
     let profileMap = {};
     if (uploaderIds.length){
@@ -1191,29 +1366,83 @@
       (profs || []).forEach(p => { profileMap[p.id] = p; });
     }
 
-    currentDayData = {
-      subjects: lectures.map(l => ({
-        id: l.id,
-        name: l.name,
-        color: l.color,
-        collapsed: collapsedState[l.id] !== undefined ? collapsedState[l.id] : true,
-        materials: (materials || [])
-          .filter(m => m.lecture_id === l.id)
-          .map(m => ({
-            id: m.id,
-            type: m.type,
-            kind: m.kind,
-            title: m.title,
-            url: m.url,
-            fileName: m.file_name,
-            caption: m.caption,
-            uploaderName: profileMap[m.uploaded_by] ? profileMap[m.uploaded_by].name_en : '',
-            uploaderNameAr: profileMap[m.uploaded_by] ? profileMap[m.uploaded_by].name_ar : ''
-          }))
-      }))
-    };
+    return lectures.map(l => ({
+      id: l.id,
+      name: l.name,
+      color: l.color,
+      collapsed: collapsedState[l.id] !== undefined ? collapsedState[l.id] : true,
+      materials: (materials || [])
+        .filter(m => m.lecture_id === l.id)
+        .map(m => ({
+          id: m.id,
+          type: m.type,
+          kind: m.kind,
+          title: m.title,
+          url: m.url,
+          fileName: m.file_name,
+          caption: m.caption,
+          uploaderName: profileMap[m.uploaded_by] ? profileMap[m.uploaded_by].name_en : '',
+          uploaderNameAr: profileMap[m.uploaded_by] ? profileMap[m.uploaded_by].name_ar : ''
+        }))
+    }));
+  }
 
+  // fire-and-forget prefetch, populates dayCache when ready
+  let prefetchInFlight = new Set();
+  async function prefetchDay(date){
+    const key = fmtKey(date);
+    if (dayCache.has(key) || prefetchInFlight.has(key)) return;
+    prefetchInFlight.add(key);
+    try {
+      const subjects = await fetchDaySubjects(date);
+      dayCache.set(key, subjects);
+      // if the preview card currently showing is this exact day and still mid-drag/pending,
+      // patch its content in place without disturbing the transform/position.
+      if (previewCard && previewCard.dataset.dateKey === key){
+        patchPreviewContent(previewCard, date, subjects);
+      }
+    } finally {
+      prefetchInFlight.delete(key);
+    }
+  }
+
+  function patchPreviewContent(cardEl, date, subjects){
+    const savedTransform = cardEl.style.transform;
+    const savedTransition = cardEl.style.transition;
+    cardEl.innerHTML = buildDayHtml(date, subjects, false);
+    cardEl.style.transform = savedTransform;
+    cardEl.style.transition = savedTransition;
+    bindDayCardEvents(cardEl, date, subjects);
+  }
+
+  async function loadDay(skipDefaultRender){
+    const dateKey = fmtKey(viewDate);
+    const cached = dayCache.get(dateKey);
+
+    if (cached !== undefined){
+      currentDayData = { subjects: cached };
+      renderDay();
+      // prefetch both neighbors in background for instant future swipes
+      prefetchDay(neighborDate('next'));
+      prefetchDay(neighborDate('prev'));
+      return;
+    }
+
+    if (!skipDefaultRender){
+      const main = document.getElementById('mainContent');
+      main.innerHTML = `<div class="loading-row">${currentLang==='ar'?'جاري التحميل…':'Loading…'}</div>`;
+    }
+
+    const subjects = await fetchDaySubjects(viewDate);
+    dayCache.set(dateKey, subjects);
+
+    if (fmtKey(viewDate) !== dateKey) return; // user navigated away meanwhile
+
+    currentDayData = { subjects };
     renderDay();
+
+    prefetchDay(neighborDate('next'));
+    prefetchDay(neighborDate('prev'));
   }
 
   function renderLoadError(){
@@ -1248,29 +1477,30 @@
     return div.innerHTML;
   }
 
-  function renderDay(){
-    const main = document.getElementById('mainContent');
-    const subjects = currentDayData.subjects || [];
-
-    if (subjects.length === 0){
-      main.innerHTML = `
-        <div class="day-card slide-in">
-          <div class="day-empty">
-            <div class="big-icon">🗓️</div>
-            <h3>${currentLang==='ar'?'لسه مفيش حد رفع داتا لليوم ده':'No one uploaded data for this day yet'}</h3>
-            <p>${currentLang==='ar'?'لو عندك حاجة تقدر ترفعهااضغط على علامة ال + الي تحت    .':'Be the first to add one by the + button below.'}</p>
-          </div>
-          <button class="add-subject-btn" id="addSubjectBtn">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
-            <span>${currentLang==='ar'?'إضافة داتا':'Add a subject'}</span>
-          </button>
-        </div>
-      `;
-      document.getElementById('addSubjectBtn').addEventListener('click', () => { if (requireAuth()) openSubjectModal(); });
-      return;
+  // Builds the inner HTML for a day-card given a date + (nullable) subjects array.
+  // subjects === null means "not loaded yet" -> show a lightweight inline loader
+  // instead of the full empty-state, so the header/date is visible immediately
+  // while content streams in.
+  function buildDayHtml(date, subjects, isLoading){
+    if (isLoading || subjects === null){
+      return `<div class="mini-loading-row">${currentLang==='ar'?'جاري التحميل…':'Loading…'}</div>`;
     }
 
-    let html = '<div class="day-card slide-in">';
+    if (subjects.length === 0){
+      return `
+        <div class="day-empty">
+          <div class="big-icon">🗓️</div>
+          <h3>${currentLang==='ar'?'لسه مفيش حد رفع داتا لليوم ده':'No one uploaded data for this day yet'}</h3>
+          <p>${currentLang==='ar'?'لو عندك حاجة تقدر ترفعهااضغط على علامة ال + الي تحت    .':'Be the first to add one by the + button below.'}</p>
+        </div>
+        <button class="add-subject-btn" data-role="add-subject">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+          <span>${currentLang==='ar'?'إضافة داتا':'Add a subject'}</span>
+        </button>
+      `;
+    }
+
+    let html = '';
     subjects.forEach(subj => {
       const count = subj.materials.length;
       const countLabel = currentLang === 'ar'
@@ -1335,28 +1565,43 @@
     });
 
     html += `
-      <button class="add-subject-btn" id="addSubjectBtn">
+      <button class="add-subject-btn" data-role="add-subject">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
         <span>${currentLang==='ar'?'إضافة داتا':'Add a subject'}</span>
       </button>
     `;
-    html += '</div>';
+    return html;
+  }
 
-    main.innerHTML = html;
-    document.getElementById('addSubjectBtn').addEventListener('click', () => { if (requireAuth()) openSubjectModal(); });
+  function bindDayCardEvents(cardEl, date, subjects){
+    const addBtn = cardEl.querySelector('[data-role="add-subject"]');
+    if (addBtn) addBtn.addEventListener('click', () => { if (requireAuth()) openSubjectModal(); });
 
-    main.querySelectorAll('[data-toggle-subject]').forEach(head => {
+    cardEl.querySelectorAll('[data-toggle-subject]').forEach(head => {
       head.addEventListener('click', () => toggleSubject(head.dataset.toggleSubject));
     });
-    main.querySelectorAll('[data-add-material]').forEach(btn => {
+    cardEl.querySelectorAll('[data-add-material]').forEach(btn => {
       btn.addEventListener('click', (e) => { e.stopPropagation(); if (requireAuth()) openMaterialModal(btn.dataset.addMaterial); });
     });
-    main.querySelectorAll('.material-del').forEach(btn => {
+    cardEl.querySelectorAll('.material-del').forEach(btn => {
       btn.addEventListener('click', (e) => { e.stopPropagation(); if (requireAuth()) deleteMaterial(btn.dataset.delSubject, btn.dataset.delMaterial); });
     });
-    main.querySelectorAll('[data-edit-material]').forEach(row => {
+    cardEl.querySelectorAll('[data-edit-material]').forEach(row => {
       row.addEventListener('click', () => { if (requireAuth()) openMaterialModal(row.dataset.editSubject, row.dataset.editMaterial); });
     });
+  }
+
+  function renderDay(){
+    const main = document.getElementById('mainContent');
+    const subjects = currentDayData.subjects || [];
+
+    main.innerHTML = '';
+    const card = document.createElement('div');
+    card.className = 'day-card is-current';
+    card.dataset.dateKey = fmtKey(viewDate);
+    card.innerHTML = buildDayHtml(viewDate, subjects, false);
+    main.appendChild(card);
+    bindDayCardEvents(card, viewDate, subjects);
   }
 
   function toggleSubject(subjectId){
@@ -1364,6 +1609,13 @@
     if (!subj) return;
     subj.collapsed = !subj.collapsed;
     collapsedState[subjectId] = subj.collapsed; // remember for this session only
+    // also keep it in sync in the cache entry for this day, if present
+    const key = fmtKey(viewDate);
+    const cached = dayCache.get(key);
+    if (cached){
+      const cSubj = cached.find(s => s.id === subjectId);
+      if (cSubj) cSubj.collapsed = subj.collapsed;
+    }
     renderDay();
   }
 
@@ -1438,6 +1690,7 @@
 
     currentDayData.subjects = currentDayData.subjects || [];
     currentDayData.subjects.push({ id: data.id, name: data.name, color: data.color, collapsed: true, materials: [] });
+    dayCache.set(fmtKey(viewDate), currentDayData.subjects);
     closeSubjectModal();
     renderDay();
     showToast(currentLang==='ar' ? 'تمت إضافة المرجع' : 'Subject added');
@@ -1681,6 +1934,7 @@
         subj.materials.push(materialData);
       }
     }
+    dayCache.set(fmtKey(viewDate), currentDayData.subjects);
     const wasEditing = !!editingMaterialId;
     closeMaterialModal();
     renderDay();
@@ -1697,6 +1951,7 @@
       return;
     }
     subj.materials = subj.materials.filter(m => m.id !== materialId);
+    dayCache.set(fmtKey(viewDate), currentDayData.subjects);
     renderDay();
   }
 
