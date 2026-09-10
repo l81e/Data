@@ -222,11 +222,11 @@
     overflow:hidden;
   }
 
-  /* day-track holds up to 3 day-cards side by side (prev/current/next) for live drag */
-  .day-track{
+  /* day-viewport clips the sliding track; day-track holds prev/current/next side by side */
+  .day-viewport{
     position:relative;
     width:100%;
-    will-change:transform;
+    overflow:hidden;
   }
 
   .day-card{
@@ -258,7 +258,7 @@
   .subject-head-left{display:flex; align-items:center; gap:11px; min-width:0;}
   .subject-chevron{
     flex-shrink:0; width:16px; height:16px; color:var(--text-faint);
-    transition:transform .15s;
+    transition:transform .22s cubic-bezier(.4,0,.2,1);
   }
   .subject-chevron.expanded{transform:rotate(90deg);}
   html[dir="rtl"] .subject-chevron{transform:rotate(180deg);}
@@ -285,40 +285,79 @@
   .subject-add-btn:hover{border-color:var(--text-dim); color:var(--text);}
   .subject-add-btn svg{width:14px; height:14px;}
 
-  .material-list{padding:6px 10px; display:none;}
-  .material-list.expanded{display:block;}
-  .material-row{
-    display:flex; align-items:flex-start; gap:11px;
-    padding:11px 8px;
-    border-bottom:1px solid var(--line-soft);
+  /* Animated expand/collapse via grid-template-rows trick (no JS height measuring needed) */
+  .material-list-outer{
+    display:grid;
+    grid-template-rows:0fr;
+    transition:grid-template-rows .28s cubic-bezier(.4,0,.2,1);
+  }
+  .material-list-outer.expanded{grid-template-rows:1fr;}
+  .material-list-inner{
+    overflow:hidden;
+    min-height:0;
+  }
+  .material-list{padding:10px; display:grid; grid-template-columns:1fr; gap:8px;}
+  @media (min-width:480px){
+    .material-list{grid-template-columns:1fr 1fr;}
+  }
+
+  .material-card{
+    background:var(--panel-hi);
+    border:1px solid var(--line-soft);
+    border-radius:9px;
+    padding:12px;
     cursor:pointer;
+    display:flex; flex-direction:column; gap:8px;
+    transition:border-color .15s, transform .15s;
   }
-  .material-row:last-child{border-bottom:none;}
-  .material-row:hover{background:var(--panel-hi);}
+  .material-card:hover{border-color:var(--text-faint); transform:translateY(-1px);}
+  .material-card.has-embed{cursor:default;}
+
+  .material-card-top{display:flex; align-items:flex-start; gap:9px;}
   .material-icon{
-    flex-shrink:0; width:30px; height:30px; border-radius:7px;
+    flex-shrink:0; width:28px; height:28px; border-radius:7px;
     display:flex; align-items:center; justify-content:center;
-    margin-top:1px;
-    background:var(--panel-hi); color:var(--text-dim);
+    background:var(--panel); color:var(--text-dim);
   }
-  .material-icon svg{width:14px; height:14px;}
+  .material-icon svg{width:13px; height:13px;}
 
   .material-body{flex:1; min-width:0;}
-  .material-title{font-size:0.87rem; font-weight:600; word-break:break-word;}
-  .material-meta{font-size:0.72rem; color:var(--text-faint); margin-top:2px;}
-  .material-caption{font-size:0.76rem; color:var(--text-dim); margin-top:4px; font-style:italic; line-height:1.5;}
-  .material-uploader{font-size:0.7rem; color:var(--text-faint); margin-top:3px; opacity:0.85;}
-  .material-link{font-size:0.78rem; color:var(--text-dim); word-break:break-all; margin-top:2px; display:inline-block;}
-  .material-link:hover{color:var(--text);}
+  .material-title{font-size:0.85rem; font-weight:700; word-break:break-word; line-height:1.35;}
+  .material-meta-row{display:flex; align-items:center; gap:6px; margin-top:3px;}
+  .material-meta{font-size:0.68rem; color:var(--text-faint); font-weight:600; text-transform:uppercase; letter-spacing:0.02em;}
+  .material-dot-sep{width:2px; height:2px; border-radius:50%; background:var(--text-faint); flex-shrink:0;}
+  .material-uploader{font-size:0.68rem; color:var(--text-faint);}
 
-  .material-del{
-    flex-shrink:0; width:24px; height:24px; border-radius:6px;
+  .material-card-del{
+    flex-shrink:0; width:22px; height:22px; border-radius:6px;
     border:none; background:none; color:var(--text-faint); cursor:pointer;
     display:flex; align-items:center; justify-content:center;
-    opacity:0.5; transition:opacity .15s, color .15s;
+    opacity:0.45; transition:opacity .15s, color .15s;
   }
-  .material-del:hover{opacity:1; color:var(--text);}
-  .material-del svg{width:13px; height:13px;}
+  .material-card-del:hover{opacity:1; color:var(--text);}
+  .material-card-del svg{width:12px; height:12px;}
+
+  .material-caption{font-size:0.74rem; color:var(--text-dim); font-style:italic; line-height:1.5;}
+
+  .material-embed-wrap{
+    border-radius:7px; overflow:hidden; background:#000;
+    border:1px solid var(--line-soft);
+  }
+  .material-embed-wrap iframe{display:block; width:100%; border:0;}
+  .material-embed-wrap.embed-video iframe{aspect-ratio:16/9; height:auto;}
+  .material-embed-wrap.embed-audio iframe{height:152px;}
+
+  .material-link-btn{
+    font-size:0.76rem; font-weight:700; color:var(--text);
+    display:inline-flex; align-items:center; gap:5px;
+    padding:7px 10px; border-radius:6px; background:var(--panel);
+    border:1px solid var(--line-soft); align-self:flex-start;
+    transition:border-color .15s;
+  }
+  .material-link-btn:hover{border-color:var(--text-dim);}
+  .material-link-btn svg{width:11px; height:11px; flex-shrink:0;}
+
+  .material-empty-note{padding:16px 10px; font-size:0.8rem; color:var(--text-faint); grid-column:1/-1;}
 
   .add-subject-btn{
     width:100%;
@@ -336,7 +375,7 @@
 
   .loading-row{text-align:center; padding:40px 0; color:var(--text-faint); font-size:0.85rem;}
   .error-row{text-align:center; padding:40px 20px; color:var(--err); font-size:0.85rem;}
-  .mini-loading-row{text-align:center; padding:30px 0; color:var(--text-faint); font-size:0.8rem;}
+  .mini-loading-row{text-align:center; padding:40px 0; color:var(--text-faint); font-size:0.8rem;}
 
   /* ---------- MODAL ---------- */
   .modal-overlay{
@@ -374,32 +413,6 @@
   .mfield.invalid input, .mfield.invalid select, .mfield.invalid textarea{border-color:var(--text);}
 
   .otp-input{letter-spacing:0.5em; text-align:center; font-size:1.1rem !important; font-weight:700;}
-
-  /* email + fixed domain suffix */
-  .email-domain-row{
-    display:flex; align-items:stretch; width:100%;
-    border:1.5px solid var(--line-soft); border-radius:6px;
-    overflow:hidden; background:var(--panel);
-  }
-  .email-domain-row:focus-within{border-color:var(--text-dim); box-shadow:0 0 0 3px var(--accent-glow);}
-  .email-local-input{
-    flex:1; min-width:0; font-family:inherit; font-size:16px;
-    padding:10px 8px 10px 12px; background:transparent;
-    border:none; color:var(--text); outline:none;
-  }
-  html[dir="rtl"] .email-local-input{padding:10px 12px 10px 8px;}
-  .email-domain-suffix{
-    flex-shrink:0; display:flex; align-items:center;
-    padding:10px 12px 10px 4px; font-size:0.86rem;
-    color:var(--text-faint); font-weight:600;
-    white-space:nowrap; user-select:none;
-    background:var(--panel-hi);
-    border-left:1px solid var(--line-soft);
-  }
-  html[dir="rtl"] .email-domain-suffix{
-    padding:10px 4px 10px 12px;
-    border-left:none; border-right:1px solid var(--line-soft);
-  }
 
   .type-grid{display:grid; grid-template-columns:1fr 1fr; gap:8px;}
   .type-opt{
@@ -518,8 +531,10 @@
   </div>
 </section>
 
-<main id="mainContent">
-  <div class="loading-row" id="loadingRow" data-en="Loading…" data-ar="جاري التحميل…">Loading…</div>
+<main>
+  <div class="day-viewport" id="dayViewport">
+    <div class="loading-row" id="loadingRow" data-en="Loading…" data-ar="جاري التحميل…">Loading…</div>
+  </div>
 </main>
 
 <!-- SIGN IN MODAL -->
@@ -528,14 +543,11 @@
     <div class="modal-title" id="authModalTitle" data-en="Sign in" data-ar="تسجيل الدخول">Sign in</div>
 
     <div id="authStepEmail">
-      <div class="modal-subtitle" data-en="Sign in with your MNU student email." data-ar="سجل الدخول بإيميلك الجامعي.">Sign in with your MNU student email.</div>
+      <div class="modal-subtitle" data-en="Sign in with your email." data-ar="سجل الدخول بإيميلك.">Sign in with your email.</div>
       <div class="mfield" id="authEmailField">
         <label data-en="Email" data-ar="الإيميل">Email</label>
-        <div class="email-domain-row">
-          <input type="text" id="authEmailLocalInput" class="email-local-input" placeholder="yourname" autocomplete="off" autocapitalize="off" spellcheck="false" />
-          <span class="email-domain-suffix">@std.mansnu.edu.eg</span>
-        </div>
-        <div class="mfield-err" data-en="Please enter your student ID/username (letters, numbers, dots, dashes, underscores only)." data-ar="من فضلك اكتب اسم المستخدم الجامعي بتاعك (حروف وأرقام فقط).">Please enter your student ID/username (letters, numbers, dots, dashes, underscores only).</div>
+        <input type="email" id="authEmailInput" placeholder="yourname@example.com" autocomplete="email" autocapitalize="off" spellcheck="false" />
+        <div class="mfield-err" data-en="Please enter a valid email address." data-ar="من فضلك اكتب إيميل صحيح.">Please enter a valid email address.</div>
       </div>
       <div class="modal-btn-row">
         <button class="modal-btn" id="authCancelBtn1" data-en="Cancel" data-ar="إلغاء">Cancel</button>
@@ -701,7 +713,35 @@
   const MATERIALS_BUCKET = 'materials';
   const MAX_UPLOAD_BYTES = 20 * 1024 * 1024; // Supabase Storage can handle far more than the old 4.5MB dataURL cap
 
-  const STUDENT_EMAIL_DOMAIN = '@std.mansnu.edu.eg';
+  /* ---------------- local cache (localStorage) ---------------- */
+  // We cache each day's fetched subjects/materials in localStorage so repeat
+  // visits to a day don't re-hit Supabase. Cache entries expire after a
+  // short TTL so new uploads from other users still show up reasonably soon.
+  const LS_PREFIX = 'mb_daycache_';
+  const LS_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
+  function lsGetDay(key){
+    try {
+      const raw = localStorage.getItem(LS_PREFIX + key);
+      if (!raw) return undefined;
+      const parsed = JSON.parse(raw);
+      if (!parsed || typeof parsed.t !== 'number' || !Array.isArray(parsed.subjects)) return undefined;
+      if (Date.now() - parsed.t > LS_TTL_MS) return undefined;
+      return parsed.subjects;
+    } catch (e) {
+      return undefined;
+    }
+  }
+  function lsSetDay(key, subjects){
+    try {
+      localStorage.setItem(LS_PREFIX + key, JSON.stringify({ t: Date.now(), subjects }));
+    } catch (e) {
+      // storage full or unavailable — fail silently, Supabase remains source of truth
+    }
+  }
+  function lsInvalidateDay(key){
+    try { localStorage.removeItem(LS_PREFIX + key); } catch (e) {}
+  }
 
   /* ---------------- auth state ---------------- */
   let currentSession = null;
@@ -767,7 +807,7 @@
   const authStepEmail = document.getElementById('authStepEmail');
   const authStepOtp = document.getElementById('authStepOtp');
   const authStepName = document.getElementById('authStepName');
-  const authEmailLocalInput = document.getElementById('authEmailLocalInput');
+  const authEmailInput = document.getElementById('authEmailInput');
   const authEmailField = document.getElementById('authEmailField');
   const authOtpInput = document.getElementById('authOtpInput');
   const authOtpField = document.getElementById('authOtpField');
@@ -780,7 +820,7 @@
 
   function openAuthModal(){
     pendingAuthEmail = null;
-    authEmailLocalInput.value = '';
+    authEmailInput.value = '';
     authOtpInput.value = '';
     authNameInput.value = '';
     [authEmailField, authOtpField, authNameField].forEach(f => f.classList.remove('invalid'));
@@ -789,37 +829,25 @@
     authStepOtp.style.display = 'none';
     authStepName.style.display = 'none';
     authModalOverlay.classList.add('open');
-    setTimeout(() => authEmailLocalInput.focus(), 50);
+    setTimeout(() => authEmailInput.focus(), 50);
   }
   function closeAuthModal(){ authModalOverlay.classList.remove('open'); }
 
   document.getElementById('authCancelBtn1').addEventListener('click', closeAuthModal);
   authModalOverlay.addEventListener('click', (e) => { if (e.target === authModalOverlay) closeAuthModal(); });
 
-  // Only the local part is user-editable; the domain is fixed to the MNU student domain.
-  // Allowed characters: letters, numbers, dot, underscore, dash (no @ or whitespace).
-  function isValidLocalPart(v){ return /^[A-Za-z0-9._-]+$/.test(v); }
-
-  // Strip anything the user pastes that isn't a valid local-part character,
-  // and if they paste a full email, auto-trim to the part before '@'.
-  authEmailLocalInput.addEventListener('input', () => {
-    let v = authEmailLocalInput.value;
-    if (v.includes('@')) v = v.split('@')[0];
-    v = v.replace(/[^A-Za-z0-9._-]/g, '');
-    authEmailLocalInput.value = v;
-  });
+  // Any valid email address is now accepted (no domain restriction).
+  function isValidEmail(v){ return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v); }
 
   authSendCodeBtn.addEventListener('click', async () => {
-    const local = authEmailLocalInput.value.trim();
-    if (!local || !isValidLocalPart(local)){
+    const email = authEmailInput.value.trim();
+    if (!email || !isValidEmail(email)){
       authEmailField.classList.add('invalid');
       authEmailField.querySelector('.mfield-err').classList.add('show');
       return;
     }
     authEmailField.classList.remove('invalid');
     authEmailField.querySelector('.mfield-err').classList.remove('show');
-
-    const email = local + STUDENT_EMAIL_DOMAIN;
 
     authSendCodeBtn.disabled = true;
     authSendCodeBtn.textContent = currentLang==='ar' ? 'بيتبعت…' : 'Sending…';
@@ -984,7 +1012,6 @@
 
     const isToday = fmtKey(viewDate) === fmtKey(todayDate());
     todayPill.classList.toggle('is-jump', !isToday);
-    todayPill.disabled = isToday;
     todayPill.setAttribute('aria-live', 'polite');
 
     if (isToday){
@@ -1006,10 +1033,24 @@
     label.textContent = fmtDMY(viewDate);
   }
 
+  /* ================================================================
+     DAY NAVIGATION — rebuilt to be simple and reliable.
+     goToDate() is the single entry point for jumping to a date, whether
+     from the Today pill, the calendar popup, or a swipe gesture. It
+     always updates viewDate + re-renders; a `direction` just adds a
+     slide transition on top of that same reliable path, so a broken
+     animation can never leave navigation itself broken.
+     ================================================================ */
   function goToDate(d, direction){
     const newDate = new Date(d.getFullYear(), d.getMonth(), d.getDate());
-    if (direction){
-      animateDayChange(newDate, direction);
+    const sameDay = fmtKey(newDate) === fmtKey(viewDate);
+
+    if (sameDay){
+      return;
+    }
+
+    if (direction && !isAnimating){
+      animateToDate(newDate, direction);
     } else {
       viewDate = newDate;
       calMonthCursor = new Date(viewDate.getFullYear(), viewDate.getMonth(), 1);
@@ -1022,18 +1063,18 @@
   todayPill.addEventListener('click', () => {
     if (!todayPill.classList.contains('is-jump')) return;
     const t = todayDate();
-    const direction = t.getTime() === viewDate.getTime() ? undefined : (t > viewDate ? 'next' : 'prev');
+    const direction = t > viewDate ? 'next' : 'prev';
     goToDate(t, direction);
   });
 
   /* ================================================================
-     LIVE FINGER-TRACKING SWIPE
-     The day-track holds the current card. During a drag we clone in
-     a "next"/"prev" preview card (with the correct date header shown
-     instantly, content streamed in once loaded) and move both in
-     real time with the finger — no fixed-duration filler animation.
+     SWIPE / SLIDE ANIMATION
+     day-viewport clips a full-width track; the track holds the current
+     card plus (during a drag or animated jump) a full-width neighbor
+     card positioned edge-to-edge, so what's revealed is always a
+     complete rendered card rather than a half-built one.
      ================================================================ */
-  const mainEl = document.getElementById('mainContent');
+  const dayViewport = document.getElementById('dayViewport');
   let dragStartX = 0, dragStartY = 0, dragActive = false, dragLocked = null; // dragLocked: 'h' | 'v' | null
   let dragWidth = 1;
   let previewCard = null;
@@ -1043,22 +1084,23 @@
   // simple in-memory cache so adjacent days feel instant once visited/prefetched
   const dayCache = new Map(); // key: 'YYYY-MM-DD' -> subjects array
 
-  function neighborDate(dir){
-    const d = new Date(viewDate);
+  function neighborDate(dir, from){
+    const base = from || viewDate;
+    const d = new Date(base);
     d.setDate(d.getDate() + (dir === 'next' ? 1 : -1));
     return d;
   }
 
-  mainEl.addEventListener('touchstart', (e) => {
+  dayViewport.addEventListener('touchstart', (e) => {
     if (e.touches.length !== 1 || isAnimating) return;
     dragStartX = e.touches[0].clientX;
     dragStartY = e.touches[0].clientY;
     dragActive = true;
     dragLocked = null;
-    dragWidth = mainEl.clientWidth || 1;
+    dragWidth = dayViewport.clientWidth || 1;
   }, { passive: true });
 
-  mainEl.addEventListener('touchmove', (e) => {
+  dayViewport.addEventListener('touchmove', (e) => {
     if (!dragActive) return;
     const dx = e.touches[0].clientX - dragStartX;
     const dy = e.touches[0].clientY - dragStartY;
@@ -1077,19 +1119,18 @@
     const dir = draggingToShowNext ? 'next' : 'prev';
     ensurePreviewCard(dir);
 
-    const currentCard = mainEl.querySelector('.day-card.is-current');
+    const currentCard = dayViewport.querySelector('.day-card.is-current');
     if (currentCard) currentCard.style.transform = `translateX(${dx}px)`;
     if (previewCard){
-      const offset = dir === 'next' ? dragWidth : -dragWidth;
-      const sign = rtl ? -1 : 1;
-      previewCard.style.transform = `translateX(${sign*offset*-1*-1 + dx - (rtl ? (dir==='next'?-1:1) : (dir==='next'?1:-1))*0}px)`;
-      // simplified: position preview just off the edge the finger is revealing, then follow dx 1:1
+      // Preview card always sits a full viewport-width away from the current
+      // card, fully rendered, then tracks the finger 1:1 — so what slides
+      // into view is always the complete card, never a partial one.
       const basePos = (dir === 'next') ? dragWidth : -dragWidth;
       previewCard.style.transform = `translateX(${basePos + dx}px)`;
     }
   }, { passive: false });
 
-  mainEl.addEventListener('touchend', (e) => {
+  dayViewport.addEventListener('touchend', (e) => {
     if (!dragActive) return;
     dragActive = false;
     if (dragLocked !== 'h'){
@@ -1111,7 +1152,7 @@
     dragLocked = null;
   }, { passive: true });
 
-  mainEl.addEventListener('touchcancel', () => {
+  dayViewport.addEventListener('touchcancel', () => {
     dragActive = false;
     dragLocked = null;
     cancelSwipe();
@@ -1123,7 +1164,7 @@
 
     const nd = neighborDate(dir);
     const key = fmtKey(nd);
-    const cached = dayCache.get(key);
+    const cached = dayCache.get(key) !== undefined ? dayCache.get(key) : lsGetDay(key);
 
     previewDirection = dir;
     previewCard = document.createElement('div');
@@ -1134,8 +1175,8 @@
     previewCard.style.width = '100%';
     previewCard.dataset.dateKey = key;
 
-    previewCard.innerHTML = buildDayHtml(nd, cached ? cached : null, cached === undefined);
-    mainEl.appendChild(previewCard);
+    previewCard.innerHTML = buildDayHtml(nd, cached !== undefined ? cached : null, cached === undefined);
+    dayViewport.appendChild(previewCard);
     bindDayCardEvents(previewCard, nd, cached);
 
     const basePos = (dir === 'next') ? dragWidth : -dragWidth;
@@ -1146,7 +1187,7 @@
   }
 
   function cancelSwipe(){
-    const currentCard = mainEl.querySelector('.day-card.is-current');
+    const currentCard = dayViewport.querySelector('.day-card.is-current');
     if (currentCard){
       currentCard.style.transition = 'transform .18s ease';
       currentCard.style.transform = 'translateX(0)';
@@ -1166,7 +1207,7 @@
 
   async function commitSwipe(dir){
     isAnimating = true;
-    const currentCard = mainEl.querySelector('.day-card.is-current');
+    const currentCard = dayViewport.querySelector('.day-card.is-current');
     const incoming = previewCard;
     previewCard = null;
     previewDirection = null;
@@ -1186,7 +1227,7 @@
     await wait(170);
 
     // commit new viewDate + swap DOM
-    viewDate = neighborDate(dir);
+    viewDate = neighborDate(dir, viewDate);
     calMonthCursor = new Date(viewDate.getFullYear(), viewDate.getMonth(), 1);
     renderDate();
     renderCalBtnDate();
@@ -1204,20 +1245,104 @@
     }
 
     const key = fmtKey(viewDate);
-    const cached = dayCache.get(key);
+    const cached = dayCache.get(key) !== undefined ? dayCache.get(key) : lsGetDay(key);
     if (cached === undefined){
       // still loading — the card already shows a lightweight loader from buildDayHtml;
       // fetch now (or await the in-flight prefetch) and patch content in once ready.
       const subjects = await fetchDaySubjects(viewDate);
       dayCache.set(key, subjects);
+      lsSetDay(key, subjects);
       currentDayData = { subjects };
       if (fmtKey(viewDate) === key) renderDay(); // guard against rapid further swipes
     } else {
+      dayCache.set(key, cached);
       currentDayData = { subjects: cached };
       renderDay();
     }
 
     isAnimating = false;
+  }
+
+  // Animated jump used by the "Today" pill and the calendar popup — builds a
+  // full off-screen preview card for the target date (like a swipe would),
+  // then slides it fully into view, so the same "always a complete card"
+  // guarantee applies here too, not just to touch gestures.
+  async function animateToDate(targetDate, direction){
+    if (isAnimating) return;
+    isAnimating = true;
+
+    dragWidth = dayViewport.clientWidth || 1;
+
+    const currentCard = dayViewport.querySelector('.day-card.is-current');
+    const key = fmtKey(targetDate);
+    const cached = dayCache.get(key) !== undefined ? dayCache.get(key) : lsGetDay(key);
+
+    const incoming = document.createElement('div');
+    incoming.className = 'day-card is-preview';
+    incoming.style.position = 'absolute';
+    incoming.style.top = '0';
+    incoming.style.left = '0';
+    incoming.style.width = '100%';
+    incoming.dataset.dateKey = key;
+    incoming.innerHTML = buildDayHtml(targetDate, cached !== undefined ? cached : null, cached === undefined);
+    dayViewport.appendChild(incoming);
+    bindDayCardEvents(incoming, targetDate, cached);
+
+    const startPos = (direction === 'next') ? dragWidth : -dragWidth;
+    incoming.style.transform = `translateX(${startPos}px)`;
+
+    // force layout before transitioning
+    incoming.getBoundingClientRect();
+
+    const exitOffset = (direction === 'next') ? -dragWidth : dragWidth;
+    requestAnimationFrame(() => {
+      if (currentCard){
+        currentCard.style.transition = 'transform .22s ease';
+        currentCard.style.transform = `translateX(${exitOffset}px)`;
+      }
+      incoming.style.transition = 'transform .22s ease';
+      incoming.style.transform = 'translateX(0)';
+    });
+
+    // Kick off the fetch (if needed) in parallel with the slide animation.
+    let subjectsPromise = null;
+    if (cached === undefined){
+      subjectsPromise = fetchDaySubjects(targetDate);
+    }
+
+    await wait(230);
+
+    viewDate = targetDate;
+    calMonthCursor = new Date(viewDate.getFullYear(), viewDate.getMonth(), 1);
+    renderDate();
+    renderCalBtnDate();
+
+    if (currentCard) currentCard.remove();
+    incoming.classList.remove('is-preview');
+    incoming.classList.add('is-current');
+    incoming.style.position = '';
+    incoming.style.top = '';
+    incoming.style.left = '';
+    incoming.style.width = '';
+    incoming.style.transition = '';
+    incoming.style.transform = '';
+
+    if (subjectsPromise){
+      const subjects = await subjectsPromise;
+      dayCache.set(key, subjects);
+      lsSetDay(key, subjects);
+      if (fmtKey(viewDate) === key){
+        currentDayData = { subjects };
+        renderDay();
+      }
+    } else {
+      dayCache.set(key, cached);
+      currentDayData = { subjects: cached };
+    }
+
+    isAnimating = false;
+    prefetchDay(neighborDate('next'));
+    prefetchDay(neighborDate('prev'));
   }
 
   function wait(ms){ return new Promise(res => setTimeout(res, ms)); }
@@ -1283,9 +1408,10 @@
       btn.addEventListener('click', () => {
         const [y,m,d] = btn.dataset.date.split('-').map(Number);
         const picked = new Date(y, m-1, d);
-        const direction = picked.getTime() === viewDate.getTime() ? undefined : (picked > viewDate ? 'next' : 'prev');
-        goToDate(picked, direction);
         calendarPopup.classList.remove('open');
+        if (fmtKey(picked) === fmtKey(viewDate)) return;
+        const direction = picked > viewDate ? 'next' : 'prev';
+        goToDate(picked, direction);
       });
     });
   }
@@ -1328,7 +1454,8 @@
   }
 
   /* ================================================================
-     DATA LAYER — Supabase (lectures + materials)
+     DATA LAYER — Supabase (lectures + materials), backed by a
+     localStorage cache so repeat loads of the same day avoid the network.
      ================================================================ */
   let currentDayData = { subjects: [] }; // kept as "subjects" in-memory to minimize render-code diff; maps to `lectures` table
 
@@ -1387,15 +1514,21 @@
     }));
   }
 
-  // fire-and-forget prefetch, populates dayCache when ready
+  // fire-and-forget prefetch, populates dayCache + localStorage when ready
   let prefetchInFlight = new Set();
   async function prefetchDay(date){
     const key = fmtKey(date);
     if (dayCache.has(key) || prefetchInFlight.has(key)) return;
+    const lsHit = lsGetDay(key);
+    if (lsHit !== undefined){
+      dayCache.set(key, lsHit);
+      return;
+    }
     prefetchInFlight.add(key);
     try {
       const subjects = await fetchDaySubjects(date);
       dayCache.set(key, subjects);
+      lsSetDay(key, subjects);
       // if the preview card currently showing is this exact day and still mid-drag/pending,
       // patch its content in place without disturbing the transform/position.
       if (previewCard && previewCard.dataset.dateKey === key){
@@ -1417,9 +1550,11 @@
 
   async function loadDay(skipDefaultRender){
     const dateKey = fmtKey(viewDate);
-    const cached = dayCache.get(dateKey);
+    let cached = dayCache.get(dateKey);
+    if (cached === undefined) cached = lsGetDay(dateKey);
 
     if (cached !== undefined){
+      dayCache.set(dateKey, cached);
       currentDayData = { subjects: cached };
       renderDay();
       // prefetch both neighbors in background for instant future swipes
@@ -1429,12 +1564,12 @@
     }
 
     if (!skipDefaultRender){
-      const main = document.getElementById('mainContent');
-      main.innerHTML = `<div class="loading-row">${currentLang==='ar'?'جاري التحميل…':'Loading…'}</div>`;
+      dayViewport.innerHTML = `<div class="loading-row">${currentLang==='ar'?'جاري التحميل…':'Loading…'}</div>`;
     }
 
     const subjects = await fetchDaySubjects(viewDate);
     dayCache.set(dateKey, subjects);
+    lsSetDay(dateKey, subjects);
 
     if (fmtKey(viewDate) !== dateKey) return; // user navigated away meanwhile
 
@@ -1443,11 +1578,6 @@
 
     prefetchDay(neighborDate('next'));
     prefetchDay(neighborDate('prev'));
-  }
-
-  function renderLoadError(){
-    const main = document.getElementById('mainContent');
-    main.innerHTML = `<div class="error-row">${currentLang==='ar' ? 'حصل خطأ في تحميل البيانات. حاول تاني.' : 'Something went wrong loading data. Please try again.'}</div>`;
   }
 
   // collapsed/expanded is per-viewer UI state only — not synced to the backend
@@ -1475,6 +1605,59 @@
     const div = document.createElement('div');
     div.textContent = str == null ? '' : str;
     return div.innerHTML;
+  }
+
+  /* -------- embed helpers: turn a YouTube/Spotify URL into an embeddable iframe -------- */
+  function getYouTubeEmbedUrl(url){
+    try {
+      const u = new URL(url);
+      let id = null;
+      if (u.hostname.includes('youtu.be')){
+        id = u.pathname.slice(1);
+      } else if (u.hostname.includes('youtube.com')){
+        if (u.pathname === '/watch'){
+          id = u.searchParams.get('v');
+        } else if (u.pathname.startsWith('/embed/')){
+          id = u.pathname.split('/embed/')[1];
+        } else if (u.pathname.startsWith('/shorts/')){
+          id = u.pathname.split('/shorts/')[1];
+        }
+      }
+      if (!id) return null;
+      id = id.split('&')[0].split('?')[0];
+      return `https://www.youtube.com/embed/${id}`;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function getSpotifyEmbedUrl(url){
+    try {
+      const u = new URL(url);
+      if (!u.hostname.includes('spotify.com')) return null;
+      const parts = u.pathname.split('/').filter(Boolean); // e.g. ['episode','abc123']
+      if (parts.length < 2) return null;
+      const type = parts[0]; // episode | track | show | playlist | album
+      const id = parts[1];
+      return `https://open.spotify.com/embed/${type}/${id}`;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function buildEmbedHtml(m){
+    if (m.type === 'youtube'){
+      const embedUrl = getYouTubeEmbedUrl(m.url);
+      if (embedUrl){
+        return `<div class="material-embed-wrap embed-video"><iframe src="${escapeHtml(embedUrl)}" title="${escapeHtml(m.title)}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen loading="lazy"></iframe></div>`;
+      }
+    } else if (m.type === 'spotify'){
+      const embedUrl = getSpotifyEmbedUrl(m.url);
+      if (embedUrl){
+        return `<div class="material-embed-wrap embed-audio"><iframe src="${escapeHtml(embedUrl)}" title="${escapeHtml(m.title)}" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe></div>`;
+      }
+    }
+    return null;
   }
 
   // Builds the inner HTML for a day-card given a date + (nullable) subjects array.
@@ -1508,6 +1691,58 @@
         : `${count} item${count===1?'':'s'}`;
       const expanded = !subj.collapsed;
       const color = subj.color || SUBJECT_COLORS[0];
+
+      let materialsInner = '';
+      if (subj.materials.length === 0){
+        materialsInner = `<div class="material-empty-note">${currentLang==='ar'?'اضغط على ال + فوق عالشمال عشان ترفع داتا للمحاضرة دي.':'No materials yet.'}</div>`;
+      } else {
+        materialsInner = subj.materials.map(m => {
+          const meta = TYPE_META[m.type] || TYPE_META.pdf;
+          const label = currentLang === 'ar' ? meta.labelAr : meta.labelEn;
+          const captionLine = m.caption ? `<div class="material-caption">${escapeHtml(m.caption)}</div>` : '';
+          const uploaderName = currentLang === 'ar' ? (m.uploaderNameAr || m.uploaderName || '') : (m.uploaderName || m.uploaderNameAr || '');
+          const uploaderChip = uploaderName ? `<span class="material-dot-sep"></span><span class="material-uploader">${escapeHtml(uploaderName)}</span>` : '';
+
+          const embedHtml = buildEmbedHtml(m);
+
+          let linkHtml = '';
+          if (!embedHtml){
+            if (m.kind === 'link'){
+              linkHtml = `<a class="material-link-btn" href="${escapeHtml(m.url)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><path d="M15 3h6v6"/><path d="M10 14L21 3"/></svg>
+                <span>${currentLang==='ar'?'فتح الرابط':'Open link'}</span>
+              </a>`;
+            } else if (m.kind === 'upload'){
+              linkHtml = `<a class="material-link-btn" href="${escapeHtml(m.url)}" target="_blank" rel="noopener" download="${escapeHtml(m.fileName||'file.pdf')}" onclick="event.stopPropagation()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M12 4l-4 4M12 4l4 4"/><path d="M4 16v3a2 2 0 002 2h12a2 2 0 002-2v-3"/></svg>
+                <span>${currentLang==='ar'?'تحميل الملف':'Download'}</span>
+              </a>`;
+            }
+          }
+
+          return `
+            <div class="material-card ${embedHtml?'has-embed':''}" data-material-id="${m.id}" data-edit-subject="${subj.id}" data-edit-material="${m.id}">
+              <div class="material-card-top">
+                <div class="material-icon">${iconSvg(m.type)}</div>
+                <div class="material-body">
+                  <div class="material-title">${escapeHtml(m.title)}</div>
+                  <div class="material-meta-row">
+                    <span class="material-meta">${label}</span>
+                    ${uploaderChip}
+                  </div>
+                </div>
+                <button class="material-card-del" data-del-subject="${subj.id}" data-del-material="${m.id}" aria-label="Delete">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                </button>
+              </div>
+              ${captionLine}
+              ${embedHtml || ''}
+              ${linkHtml}
+            </div>
+          `;
+        }).join('');
+      }
+
       html += `
         <div class="subject-card" data-subject-id="${subj.id}" style="--subj-color:${escapeHtml(color)}">
           <div class="subject-head ${count>0?'has-content':''}" data-toggle-subject="${subj.id}">
@@ -1527,38 +1762,12 @@
               </button>
             </div>
           </div>
-          <div class="material-list ${expanded?'expanded':''}" data-materials-for="${subj.id}">
-            ${subj.materials.length === 0 ? `<div style="padding:14px 8px;font-size:0.8rem;color:var(--text-faint);">${currentLang==='ar'?'اضغط على ال + فوق عالشمال عشان ترفع داتا للمحاضرة دي.':'No materials yet.'}</div>` :
-              subj.materials.map(m => {
-                const meta = TYPE_META[m.type] || TYPE_META.pdf;
-                const label = currentLang === 'ar' ? meta.labelAr : meta.labelEn;
-                let bodyExtra = '';
-                if (m.kind === 'link'){
-                  bodyExtra = `<a class="material-link" href="${escapeHtml(m.url)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${escapeHtml(m.url)}</a>`;
-                } else if (m.kind === 'upload'){
-                  bodyExtra = `<a class="material-link" href="${escapeHtml(m.url)}" target="_blank" rel="noopener" download="${escapeHtml(m.fileName||'file.pdf')}" onclick="event.stopPropagation()">${currentLang==='ar'?'تحميل الملف':'Download file'}</a>`;
-                }
-                const captionLine = m.caption ? `<div class="material-caption">${escapeHtml(m.caption)}</div>` : '';
-                const uploaderName = currentLang === 'ar' ? (m.uploaderNameAr || m.uploaderName || '') : (m.uploaderName || m.uploaderNameAr || '');
-                const uploadedByLabel = currentLang === 'ar' ? 'بواسطة' : 'Uploaded by';
-                const uploaderLine = uploaderName ? `<div class="material-uploader">${uploadedByLabel} ${escapeHtml(uploaderName)}</div>` : '';
-                return `
-                  <div class="material-row" data-material-id="${m.id}" data-edit-subject="${subj.id}" data-edit-material="${m.id}">
-                    <div class="material-icon">${iconSvg(m.type)}</div>
-                    <div class="material-body">
-                      <div class="material-title">${escapeHtml(m.title)}</div>
-                      <div class="material-meta">${label}</div>
-                      ${bodyExtra}
-                      ${captionLine}
-                      ${uploaderLine}
-                    </div>
-                    <button class="material-del" data-del-subject="${subj.id}" data-del-material="${m.id}" aria-label="Delete">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
-                    </button>
-                  </div>
-                `;
-              }).join('')
-            }
+          <div class="material-list-outer ${expanded?'expanded':''}" data-materials-outer-for="${subj.id}">
+            <div class="material-list-inner">
+              <div class="material-list" data-materials-for="${subj.id}">
+                ${materialsInner}
+              </div>
+            </div>
           </div>
         </div>
       `;
@@ -1583,24 +1792,27 @@
     cardEl.querySelectorAll('[data-add-material]').forEach(btn => {
       btn.addEventListener('click', (e) => { e.stopPropagation(); if (requireAuth()) openMaterialModal(btn.dataset.addMaterial); });
     });
-    cardEl.querySelectorAll('.material-del').forEach(btn => {
+    cardEl.querySelectorAll('.material-card-del').forEach(btn => {
       btn.addEventListener('click', (e) => { e.stopPropagation(); if (requireAuth()) deleteMaterial(btn.dataset.delSubject, btn.dataset.delMaterial); });
     });
     cardEl.querySelectorAll('[data-edit-material]').forEach(row => {
-      row.addEventListener('click', () => { if (requireAuth()) openMaterialModal(row.dataset.editSubject, row.dataset.editMaterial); });
+      row.addEventListener('click', (e) => {
+        // don't trigger edit when tapping inside an embedded player or a link/download button
+        if (e.target.closest('.material-embed-wrap') || e.target.closest('.material-link-btn')) return;
+        if (requireAuth()) openMaterialModal(row.dataset.editSubject, row.dataset.editMaterial);
+      });
     });
   }
 
   function renderDay(){
-    const main = document.getElementById('mainContent');
     const subjects = currentDayData.subjects || [];
 
-    main.innerHTML = '';
+    dayViewport.innerHTML = '';
     const card = document.createElement('div');
     card.className = 'day-card is-current';
     card.dataset.dateKey = fmtKey(viewDate);
     card.innerHTML = buildDayHtml(viewDate, subjects, false);
-    main.appendChild(card);
+    dayViewport.appendChild(card);
     bindDayCardEvents(card, viewDate, subjects);
   }
 
@@ -1609,14 +1821,22 @@
     if (!subj) return;
     subj.collapsed = !subj.collapsed;
     collapsedState[subjectId] = subj.collapsed; // remember for this session only
-    // also keep it in sync in the cache entry for this day, if present
+
+    // also keep it in sync in the caches for this day, if present
     const key = fmtKey(viewDate);
     const cached = dayCache.get(key);
     if (cached){
       const cSubj = cached.find(s => s.id === subjectId);
       if (cSubj) cSubj.collapsed = subj.collapsed;
+      lsSetDay(key, cached);
     }
-    renderDay();
+
+    // Animate in place instead of a full re-render, so the expand/collapse
+    // feels smooth (grid-template-rows transition defined in CSS).
+    const outer = document.querySelector(`[data-materials-outer-for="${subjectId}"]`);
+    const chevron = document.querySelector(`[data-toggle-subject="${subjectId}"] .subject-chevron`);
+    if (outer) outer.classList.toggle('expanded', !subj.collapsed);
+    if (chevron) chevron.classList.toggle('expanded', !subj.collapsed);
   }
 
   /* ---------------- toast ---------------- */
@@ -1691,6 +1911,7 @@
     currentDayData.subjects = currentDayData.subjects || [];
     currentDayData.subjects.push({ id: data.id, name: data.name, color: data.color, collapsed: true, materials: [] });
     dayCache.set(fmtKey(viewDate), currentDayData.subjects);
+    lsSetDay(fmtKey(viewDate), currentDayData.subjects);
     closeSubjectModal();
     renderDay();
     showToast(currentLang==='ar' ? 'تمت إضافة المرجع' : 'Subject added');
@@ -1935,6 +2156,7 @@
       }
     }
     dayCache.set(fmtKey(viewDate), currentDayData.subjects);
+    lsSetDay(fmtKey(viewDate), currentDayData.subjects);
     const wasEditing = !!editingMaterialId;
     closeMaterialModal();
     renderDay();
@@ -1952,6 +2174,7 @@
     }
     subj.materials = subj.materials.filter(m => m.id !== materialId);
     dayCache.set(fmtKey(viewDate), currentDayData.subjects);
+    lsSetDay(fmtKey(viewDate), currentDayData.subjects);
     renderDay();
   }
 
