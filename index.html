@@ -165,6 +165,22 @@
   .cal-menu-item-left{display:flex; align-items:center; gap:8px;}
   .cal-lang-value{font-size:0.72rem; color:var(--text-faint); font-weight:700;}
 
+  /* Year filter row in calendar menu */
+  .cal-year-row{
+    display:flex; align-items:center; justify-content:space-between;
+    width:100%; padding:9px 8px; margin-bottom:2px;
+  }
+  .cal-year-row-left{display:flex; align-items:center; gap:8px;}
+  .cal-year-row-left svg{width:14px; height:14px; color:var(--text-faint); flex-shrink:0;}
+  .cal-year-row-left span{font-size:0.8rem; font-weight:600; color:var(--text-dim);}
+  .cal-year-select{
+    font-family:inherit; font-size:0.74rem; font-weight:700;
+    background:var(--panel); color:var(--text);
+    border:1.5px solid var(--line-soft); border-radius:6px;
+    padding:5px 8px; cursor:pointer;
+  }
+  .cal-year-select:focus{outline:none; border-color:var(--text-dim);}
+
   /* ---------- DATE HERO ---------- */
   .date-hero{
     position:relative; z-index:2;
@@ -214,6 +230,18 @@
     background:var(--today-green-hi);
   }
   .today-pill.is-jump .today-pill-icon{display:inline-flex;}
+
+  /* Active year-filter badge under the date */
+  .year-badge{
+    display:inline-flex; align-items:center; gap:6px;
+    margin-top:10px; margin-left:8px;
+    font-size:0.72rem; font-weight:700;
+    border-radius:20px; padding:6px 12px;
+    border:1px solid var(--line-soft);
+    background:var(--panel);
+    color:var(--text-dim);
+  }
+  html[dir="rtl"] .year-badge{margin-left:0; margin-right:8px;}
 
   /* ---------- MAIN ---------- */
   main{
@@ -463,6 +491,44 @@
   }
   .toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
 
+  /* ---------- YEAR GATE (unclosable, first-run) ---------- */
+  .year-gate-overlay{
+    position:fixed; inset:0; z-index:200;
+    background:rgba(0,0,0,0.86);
+    display:none; align-items:center; justify-content:center;
+    padding:20px;
+  }
+  .year-gate-overlay.open{display:flex;}
+  .year-gate-sheet{
+    background:var(--panel-hi);
+    border:1px solid var(--line-soft);
+    border-radius:16px;
+    width:100%; max-width:420px;
+    padding:28px 24px 24px;
+    text-align:center;
+  }
+  .year-gate-icon{
+    width:44px; height:44px; border-radius:50%;
+    background:var(--panel); border:1px solid var(--line-soft);
+    display:flex; align-items:center; justify-content:center;
+    margin:0 auto 16px;
+    color:var(--text-dim);
+  }
+  .year-gate-icon svg{width:20px; height:20px;}
+  .year-gate-title{font-size:1.08rem; font-weight:800; margin-bottom:8px;}
+  .year-gate-sub{font-size:0.82rem; color:var(--text-faint); line-height:1.6; margin-bottom:22px;}
+  .year-gate-options{display:grid; grid-template-columns:1fr 1fr; gap:9px; margin-bottom:6px;}
+  .year-gate-opt{
+    border:1.5px solid var(--line-soft); border-radius:10px;
+    padding:14px 8px; cursor:pointer;
+    font-size:0.85rem; font-weight:700; color:var(--text-dim);
+    background:var(--panel);
+    transition:border-color .15s, color .15s, background .15s;
+  }
+  .year-gate-opt:hover{border-color:var(--text-dim); color:var(--text);}
+  .year-gate-opt.year-gate-opt-wide{grid-column:1/-1;}
+  .year-gate-note{font-size:0.7rem; color:var(--text-faint); margin-top:16px; line-height:1.6;}
+
   @media (max-width:560px){
     .site-header{padding:16px 18px 4px;}
     .date-hero{padding:0 18px 26px;}
@@ -500,6 +566,20 @@
         <div class="cal-grid" id="calDowRow"></div>
         <div class="cal-grid" id="calDaysGrid"></div>
         <div class="cal-menu-divider"></div>
+        <div class="cal-year-row">
+          <div class="cal-year-row-left">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22 10L12 5 2 10l10 5 10-5z"/><path d="M6 12v5c0 1.5 3 3 6 3s6-1.5 6-3v-5"/></svg>
+            <span data-en="Year filter" data-ar="فلتر السنة">Year filter</span>
+          </div>
+          <select class="cal-year-select" id="calYearSelect">
+            <option value="first year">1</option>
+            <option value="second year">2</option>
+            <option value="third year">3</option>
+            <option value="fourth year">4</option>
+            <option value="fifth year">5</option>
+          </select>
+        </div>
+        <div class="cal-menu-divider"></div>
         <button class="cal-menu-item" id="adminDashboardBtn">
           <span class="cal-menu-item-left">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
@@ -528,6 +608,7 @@
       </span>
       <span id="todayPillLabel" data-en="Today" data-ar="النهاردة">Today</span>
     </button>
+    <span class="year-badge" id="yearBadge"></span>
   </div>
 </section>
 
@@ -536,6 +617,25 @@
     <div class="loading-row" id="loadingRow" data-en="Loading…" data-ar="جاري التحميل…">Loading…</div>
   </div>
 </main>
+
+<!-- YEAR GATE (blocking, first-run only) -->
+<div class="year-gate-overlay" id="yearGateOverlay">
+  <div class="year-gate-sheet">
+    <div class="year-gate-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22 10L12 5 2 10l10 5 10-5z"/><path d="M6 12v5c0 1.5 3 3 6 3s6-1.5 6-3v-5"/></svg>
+    </div>
+    <div class="year-gate-title" id="yearGateTitle">Which year are you in?</div>
+    <div class="year-gate-sub" id="yearGateSub">This decides which lectures and materials you'll see and upload to. You can change it later from the calendar menu.</div>
+    <div class="year-gate-options">
+      <button type="button" class="year-gate-opt" data-year="first year">1</button>
+      <button type="button" class="year-gate-opt" data-year="second year">2</button>
+      <button type="button" class="year-gate-opt" data-year="third year">3</button>
+      <button type="button" class="year-gate-opt" data-year="fourth year">4</button>
+      <button type="button" class="year-gate-opt year-gate-opt-wide" data-year="fifth year">5</button>
+    </div>
+    <div class="year-gate-note" id="yearGateNote">You must choose a year to continue.</div>
+  </div>
+</div>
 
 <!-- SIGN IN MODAL -->
 <div class="modal-overlay" id="authModalOverlay">
@@ -615,6 +715,7 @@
       <div id="subjectColorSwatches" style="display:flex; gap:8px; flex-wrap:wrap;"></div>
       <input type="hidden" id="subjectColorInput" value="#7aaee8" />
     </div>
+    <div class="mfield-hint" id="subjectYearHint" data-en="Will be added under Year 1." data-ar="هتتضاف تحت السنة الأولى.">Will be added under Year 1.</div>
     <div class="modal-btn-row">
       <button class="modal-btn" id="subjectCancelBtn" data-en="Cancel" data-ar="إلغاء">Cancel</button>
       <button class="modal-btn primary" id="subjectSaveBtn" data-en="Add subject" data-ar="إضافة">Add subject</button>
@@ -713,16 +814,114 @@
   const MATERIALS_BUCKET = 'materials';
   const MAX_UPLOAD_BYTES = 20 * 1024 * 1024; // Supabase Storage can handle far more than the old 4.5MB dataURL cap
 
+  /* ================================================================
+     YEAR GATE — strict, unclosable on first run.
+     The chosen value is one of the five year_of_view enum strings and
+     is persisted to localStorage. It governs both what is read (every
+     fetch is filtered by it) and what is written (every new lecture is
+     tagged with it).
+     ================================================================ */
+  const YEAR_LS_KEY = 'mb_year_of_view';
+  const VALID_YEARS = ['first year','second year','third year','fourth year','fifth year'];
+  let currentYear = null; // set during init, before any data loads
+
+  function getStoredYear(){
+    try {
+      const v = localStorage.getItem(YEAR_LS_KEY);
+      return VALID_YEARS.includes(v) ? v : null;
+    } catch (e) {
+      return null;
+    }
+  }
+  function setStoredYear(v){
+    currentYear = v;
+    try { localStorage.setItem(YEAR_LS_KEY, v); } catch (e) {}
+    renderYearBadge();
+    const sel = document.getElementById('calYearSelect');
+    if (sel) sel.value = v;
+  }
+
+  const YEAR_LABELS_EN = { 'first year':'Year 1', 'second year':'Year 2', 'third year':'Year 3', 'fourth year':'Year 4', 'fifth year':'Year 5' };
+  const YEAR_LABELS_AR = { 'first year':'السنة الأولى', 'second year':'السنة التانية', 'third year':'السنة التالتة', 'fourth year':'السنة الرابعة', 'fifth year':'السنة الخامسة' };
+
+  function renderYearBadge(){
+    const badge = document.getElementById('yearBadge');
+    if (!badge || !currentYear) return;
+    badge.textContent = currentLang === 'ar' ? YEAR_LABELS_AR[currentYear] : YEAR_LABELS_EN[currentYear];
+  }
+
+  function renderSubjectYearHint(){
+    const hint = document.getElementById('subjectYearHint');
+    if (!hint || !currentYear) return;
+    const label = currentLang === 'ar' ? YEAR_LABELS_AR[currentYear] : YEAR_LABELS_EN[currentYear];
+    hint.textContent = currentLang === 'ar' ? `هتتضاف تحت ${label}.` : `Will be added under ${label}.`;
+  }
+
+  const yearGateOverlay = document.getElementById('yearGateOverlay');
+
+  function openYearGate(){
+    yearGateOverlay.classList.add('open');
+  }
+  function closeYearGate(){
+    yearGateOverlay.classList.remove('open');
+  }
+
+  // Blocking gate: no overlay click-to-close, no escape key, no cancel button.
+  document.querySelectorAll('.year-gate-opt').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const year = btn.dataset.year;
+      if (!VALID_YEARS.includes(year)) return;
+      const isFirstRun = getStoredYear() === null;
+      setStoredYear(year);
+      closeYearGate();
+      if (!isFirstRun){
+        // changed later from the calendar menu — refresh what's on screen
+        clearDayCaches();
+        loadDay();
+      }
+    });
+  });
+
+  const calYearSelect = document.getElementById('calYearSelect');
+  calYearSelect.addEventListener('change', () => {
+    const year = calYearSelect.value;
+    if (!VALID_YEARS.includes(year)) return;
+    setStoredYear(year);
+    clearDayCaches();
+    loadDay();
+    showToast(currentLang==='ar' ? 'اتغيرت السنة' : 'Year filter updated');
+  });
+
+  function clearDayCaches(){
+    // in-memory + localStorage day caches are keyed by date only, and now hold
+    // data scoped to whichever year was active when they were populated —
+    // wipe both whenever the active year changes so stale-year data can't leak.
+    dayCache.clear();
+    try {
+      const toRemove = [];
+      for (let i = 0; i < localStorage.length; i++){
+        const k = localStorage.key(i);
+        if (k && k.indexOf(LS_PREFIX) === 0) toRemove.push(k);
+      }
+      toRemove.forEach(k => localStorage.removeItem(k));
+    } catch (e) {}
+  }
+
   /* ---------------- local cache (localStorage) ---------------- */
   // We cache each day's fetched subjects/materials in localStorage so repeat
   // visits to a day don't re-hit Supabase. Cache entries expire after a
   // short TTL so new uploads from other users still show up reasonably soon.
+  // Keys are namespaced by the active year filter so switching years never
+  // reads another year's cached entries.
   const LS_PREFIX = 'mb_daycache_';
   const LS_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
-  function lsGetDay(key){
+  function lsKeyFor(dateKey){
+    return LS_PREFIX + (currentYear || 'first year') + '_' + dateKey;
+  }
+  function lsGetDay(dateKey){
     try {
-      const raw = localStorage.getItem(LS_PREFIX + key);
+      const raw = localStorage.getItem(lsKeyFor(dateKey));
       if (!raw) return undefined;
       const parsed = JSON.parse(raw);
       if (!parsed || typeof parsed.t !== 'number' || !Array.isArray(parsed.subjects)) return undefined;
@@ -732,20 +931,20 @@
       return undefined;
     }
   }
-  function lsSetDay(key, subjects){
+  function lsSetDay(dateKey, subjects){
     try {
-      localStorage.setItem(LS_PREFIX + key, JSON.stringify({ t: Date.now(), subjects }));
+      localStorage.setItem(lsKeyFor(dateKey), JSON.stringify({ t: Date.now(), subjects }));
     } catch (e) {
       // storage full or unavailable — fail silently, Supabase remains source of truth
     }
   }
-  function lsInvalidateDay(key){
-    try { localStorage.removeItem(LS_PREFIX + key); } catch (e) {}
+  function lsInvalidateDay(dateKey){
+    try { localStorage.removeItem(lsKeyFor(dateKey)); } catch (e) {}
   }
 
   /* ---------------- auth state ---------------- */
   let currentSession = null;
-  let currentProfile = null; // { id, name_en, name_ar }
+  let currentProfile = null; // { id, name_en }
   let pendingAuthEmail = null;
 
   function isSignedIn(){ return !!currentSession; }
@@ -772,7 +971,7 @@
     if (!currentSession) return;
     const { data, error } = await supabase
       .from('profiles')
-      .select('id, name_en, name_ar')
+      .select('id, name_en, email')
       .eq('id', currentSession.user.id)
       .maybeSingle();
     if (!error && data) currentProfile = data;
@@ -988,6 +1187,33 @@
     return d.getDate() + '/' + (d.getMonth()+1) + '/' + d.getFullYear();
   }
 
+  /* ---------------- URL <-> date routing (/DD-M-YYYY) ---------------- */
+  // Path format is strictly day-month-year with single hyphens, e.g.
+  // /11-9-2026 for September 11, 2026. No leading zeros are required to
+  // parse, but we always WRITE the path with no leading zeros to match
+  // the user's example (11-9-2026, not 11-09-2026).
+  function parseDateFromPath(pathname){
+    const m = pathname.match(/^\/(\d{1,2})-(\d{1,2})-(\d{4})$/);
+    if (!m) return null;
+    const day = parseInt(m[1], 10);
+    const month = parseInt(m[2], 10);
+    const year = parseInt(m[3], 10);
+    if (month < 1 || month > 12 || day < 1 || day > 31) return null;
+    const d = new Date(year, month - 1, day);
+    // guard against JS date rollover (e.g. 31-2-2026 rolling into March)
+    if (d.getFullYear() !== year || d.getMonth() !== month - 1 || d.getDate() !== day) return null;
+    return d;
+  }
+  function pathForDate(d){
+    return `/${d.getDate()}-${d.getMonth()+1}-${d.getFullYear()}`;
+  }
+  function syncUrlToDate(d, replace){
+    const path = pathForDate(d);
+    if (window.location.pathname === path) return;
+    const method = replace ? 'replaceState' : 'pushState';
+    try { window.history[method]({ dateKey: fmtKey(d) }, '', path); } catch (e) {}
+  }
+
   let viewDate = todayDate();
   let calMonthCursor = new Date(viewDate.getFullYear(), viewDate.getMonth(), 1);
 
@@ -1021,6 +1247,8 @@
       todayPillLabel.textContent = currentLang === 'ar' ? ' ارجع لتاريخ اليوم' : 'Back to today';
       todayPill.setAttribute('aria-label', currentLang === 'ar' ? 'ارجع لتاريخ اليوم ' : 'Back to today');
     }
+
+    renderYearBadge();
   }
 
   function renderCalBtnDate(){
@@ -1036,26 +1264,30 @@
   /* ================================================================
      DAY NAVIGATION — rebuilt to be simple and reliable.
      goToDate() is the single entry point for jumping to a date, whether
-     from the Today pill, the calendar popup, or a swipe gesture. It
-     always updates viewDate + re-renders; a `direction` just adds a
-     slide transition on top of that same reliable path, so a broken
-     animation can never leave navigation itself broken.
+     from the Today pill, the calendar popup, a swipe gesture, or the
+     URL. It always updates viewDate + re-renders + syncs the URL; a
+     `direction` just adds a slide transition on top of that same
+     reliable path, so a broken animation can never leave navigation
+     itself broken.
      ================================================================ */
-  function goToDate(d, direction){
+  function goToDate(d, direction, opts){
+    opts = opts || {};
     const newDate = new Date(d.getFullYear(), d.getMonth(), d.getDate());
     const sameDay = fmtKey(newDate) === fmtKey(viewDate);
 
     if (sameDay){
+      if (!opts.skipUrlSync) syncUrlToDate(newDate, true);
       return;
     }
 
     if (direction && !isAnimating){
-      animateToDate(newDate, direction);
+      animateToDate(newDate, direction, opts);
     } else {
       viewDate = newDate;
       calMonthCursor = new Date(viewDate.getFullYear(), viewDate.getMonth(), 1);
       renderDate();
       renderCalBtnDate();
+      if (!opts.skipUrlSync) syncUrlToDate(viewDate, opts.replaceUrl);
       loadDay();
     }
   }
@@ -1065,6 +1297,15 @@
     const t = todayDate();
     const direction = t > viewDate ? 'next' : 'prev';
     goToDate(t, direction);
+  });
+
+  // Back/forward browser navigation between date URLs
+  window.addEventListener('popstate', () => {
+    const parsed = parseDateFromPath(window.location.pathname);
+    const target = parsed || todayDate();
+    if (fmtKey(target) === fmtKey(viewDate)) return;
+    const direction = target > viewDate ? 'next' : 'prev';
+    goToDate(target, direction, { skipUrlSync: true });
   });
 
   /* ================================================================
@@ -1082,6 +1323,7 @@
   let isAnimating = false;
 
   // simple in-memory cache so adjacent days feel instant once visited/prefetched
+  // (namespaced implicitly since it's cleared on year change — see clearDayCaches)
   const dayCache = new Map(); // key: 'YYYY-MM-DD' -> subjects array
 
   function neighborDate(dir, from){
@@ -1231,6 +1473,7 @@
     calMonthCursor = new Date(viewDate.getFullYear(), viewDate.getMonth(), 1);
     renderDate();
     renderCalBtnDate();
+    syncUrlToDate(viewDate, false);
 
     if (currentCard) currentCard.remove();
     if (incoming){
@@ -1263,11 +1506,13 @@
     isAnimating = false;
   }
 
-  // Animated jump used by the "Today" pill and the calendar popup — builds a
-  // full off-screen preview card for the target date (like a swipe would),
-  // then slides it fully into view, so the same "always a complete card"
-  // guarantee applies here too, not just to touch gestures.
-  async function animateToDate(targetDate, direction){
+  // Animated jump used by the "Today" pill, the calendar popup, and URL-driven
+  // navigation — builds a full off-screen preview card for the target date
+  // (like a swipe would), then slides it fully into view, so the same
+  // "always a complete card" guarantee applies here too, not just to touch
+  // gestures.
+  async function animateToDate(targetDate, direction, opts){
+    opts = opts || {};
     if (isAnimating) return;
     isAnimating = true;
 
@@ -1316,6 +1561,7 @@
     calMonthCursor = new Date(viewDate.getFullYear(), viewDate.getMonth(), 1);
     renderDate();
     renderCalBtnDate();
+    if (!opts.skipUrlSync) syncUrlToDate(viewDate, opts.replaceUrl);
 
     if (currentCard) currentCard.remove();
     incoming.classList.remove('is-preview');
@@ -1450,12 +1696,15 @@
     renderCalBtnDate();
     renderCalendarPopup();
     renderAuthChip();
+    renderSubjectYearHint();
     renderDay();
   }
 
   /* ================================================================
      DATA LAYER — Supabase (lectures + materials), backed by a
      localStorage cache so repeat loads of the same day avoid the network.
+     Every read is filtered to the active year_of_view; every lecture
+     insert is tagged with it.
      ================================================================ */
   let currentDayData = { subjects: [] }; // kept as "subjects" in-memory to minimize render-code diff; maps to `lectures` table
 
@@ -1464,8 +1713,9 @@
 
     const { data: lectures, error: lecError } = await supabase
       .from('lectures')
-      .select('id, name, color, created_at')
+      .select('id, name, color, year_of_view, created_at')
       .eq('date', dateKey)
+      .eq('year_of_view', currentYear)
       .order('created_at', { ascending: true });
 
     if (lecError || !lectures || lectures.length === 0){
@@ -1488,7 +1738,7 @@
     if (uploaderIds.length){
       const { data: profs } = await supabase
         .from('profiles')
-        .select('id, name_en, name_ar')
+        .select('id, name_en')
         .in('id', uploaderIds);
       (profs || []).forEach(p => { profileMap[p.id] = p; });
     }
@@ -1497,6 +1747,7 @@
       id: l.id,
       name: l.name,
       color: l.color,
+      yearOfView: l.year_of_view,
       collapsed: collapsedState[l.id] !== undefined ? collapsedState[l.id] : true,
       materials: (materials || [])
         .filter(m => m.lecture_id === l.id)
@@ -1508,8 +1759,7 @@
           url: m.url,
           fileName: m.file_name,
           caption: m.caption,
-          uploaderName: profileMap[m.uploaded_by] ? profileMap[m.uploaded_by].name_en : '',
-          uploaderNameAr: profileMap[m.uploaded_by] ? profileMap[m.uploaded_by].name_ar : ''
+          uploaderName: profileMap[m.uploaded_by] ? profileMap[m.uploaded_by].name_en : ''
         }))
     }));
   }
@@ -1700,7 +1950,7 @@
           const meta = TYPE_META[m.type] || TYPE_META.pdf;
           const label = currentLang === 'ar' ? meta.labelAr : meta.labelEn;
           const captionLine = m.caption ? `<div class="material-caption">${escapeHtml(m.caption)}</div>` : '';
-          const uploaderName = currentLang === 'ar' ? (m.uploaderNameAr || m.uploaderName || '') : (m.uploaderName || m.uploaderNameAr || '');
+          const uploaderName = m.uploaderName || '';
           const uploaderChip = uploaderName ? `<span class="material-dot-sep"></span><span class="material-uploader">${escapeHtml(uploaderName)}</span>` : '';
 
           const embedHtml = buildEmbedHtml(m);
@@ -1874,6 +2124,7 @@
     subjectColorInput.value = randomColor;
     renderSubjectColorSwatches(randomColor);
     subjectNameField.classList.remove('invalid');
+    renderSubjectYearHint();
     subjectModalOverlay.classList.add('open');
     setTimeout(() => subjectNameInput.focus(), 50);
   }
@@ -1896,9 +2147,10 @@
         date: fmtKey(viewDate),
         name,
         color: subjectColorInput.value,
+        year_of_view: currentYear,
         created_by: currentSession.user.id
       })
-      .select('id, name, color, created_at')
+      .select('id, name, color, year_of_view, created_at')
       .single();
 
     saveBtn.disabled = false;
@@ -1909,7 +2161,7 @@
     }
 
     currentDayData.subjects = currentDayData.subjects || [];
-    currentDayData.subjects.push({ id: data.id, name: data.name, color: data.color, collapsed: true, materials: [] });
+    currentDayData.subjects.push({ id: data.id, name: data.name, color: data.color, yearOfView: data.year_of_view, collapsed: true, materials: [] });
     dayCache.set(fmtKey(viewDate), currentDayData.subjects);
     lsSetDay(fmtKey(viewDate), currentDayData.subjects);
     closeSubjectModal();
@@ -2136,7 +2388,6 @@
     const subj = (currentDayData.subjects || []).find(s => s.id === activeSubjectId);
     if (subj){
       const uploaderName = currentProfile ? currentProfile.name_en : '';
-      const uploaderNameAr = currentProfile ? currentProfile.name_ar : '';
       const materialData = {
         id: savedRow.id,
         type: savedRow.type,
@@ -2145,8 +2396,7 @@
         url: savedRow.url,
         fileName: savedRow.file_name,
         caption: savedRow.caption,
-        uploaderName,
-        uploaderNameAr
+        uploaderName
       };
       if (editingMaterialId){
         const idx = subj.materials.findIndex(m => m.id === editingMaterialId);
@@ -2180,9 +2430,39 @@
 
   /* ---------------- init ---------------- */
   (async function init(){
+    // 1. Resolve the initial date from the URL, if present and valid.
+    const parsedFromUrl = parseDateFromPath(window.location.pathname);
+    if (parsedFromUrl){
+      viewDate = parsedFromUrl;
+      calMonthCursor = new Date(viewDate.getFullYear(), viewDate.getMonth(), 1);
+    }
+    // Normalize the URL to the canonical /D-M-YYYY form for the resolved date
+    // (covers both "no path yet" and "path had leading zeros" cases) without
+    // adding a history entry.
+    syncUrlToDate(viewDate, true);
+
+    // 2. Resolve the year filter. If none stored yet, block on the gate
+    // before any data loads or renders — this satisfies the "cannot skip"
+    // requirement for first-time visitors.
+    const stored = getStoredYear();
+    if (stored){
+      currentYear = stored;
+      if (calYearSelect) calYearSelect.value = stored;
+    } else {
+      openYearGate();
+      await new Promise(resolve => {
+        const check = () => {
+          if (getStoredYear()){ resolve(); return; }
+          setTimeout(check, 150);
+        };
+        check();
+      });
+    }
+
     await initAuth();
     renderDate();
     renderCalBtnDate();
+    renderYearBadge();
     await loadDay();
   })();
 })();
