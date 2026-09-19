@@ -482,6 +482,30 @@
   .modal-btn.primary:disabled{background:var(--panel); color:var(--text-faint); cursor:not-allowed; border-color:var(--line-soft);}
   .modal-btn.danger{color:var(--err);}
 
+  .advanced-toggle-btn{
+    width:100%;
+    background:transparent;
+    border:1.5px dashed var(--line-soft);
+    border-radius:8px;
+    color:var(--text-dim);
+    font-size:0.8rem; font-weight:700;
+    padding:11px; cursor:pointer;
+    display:flex; align-items:center; justify-content:center; gap:7px;
+    transition:border-color .15s, color .15s;
+    margin-bottom:16px;
+  }
+  .advanced-toggle-btn:hover{border-color:var(--text-dim); color:var(--text);}
+  .advanced-toggle-btn svg{width:13px; height:13px; flex-shrink:0; transition:transform .2s ease;}
+  .advanced-toggle-btn.is-open svg{transform:rotate(180deg);}
+
+  .advanced-fields{
+    display:grid;
+    grid-template-rows:0fr;
+    transition:grid-template-rows .24s cubic-bezier(.4,0,.2,1);
+  }
+  .advanced-fields.expanded{grid-template-rows:1fr;}
+  .advanced-fields-inner{overflow:hidden; min-height:0;}
+
   .toast{
     position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(20px);
     background:var(--panel-hi); border:1px solid var(--line-soft); color:var(--text);
@@ -612,7 +636,7 @@
   </div>
 </section>
 
-<main>
+<main id="mainEl">
   <div class="day-viewport" id="dayViewport">
     <div class="loading-row" id="loadingRow" data-en="Loading…" data-ar="جاري التحميل…">Loading…</div>
   </div>
@@ -751,18 +775,24 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="3"/><path d="M10 9l5 3-5 3z" fill="currentColor" stroke="none"/></svg>
           <span data-en="YouTube video" data-ar="فيديو YouTube">YouTube video</span>
         </label>
+        <label class="type-opt" data-type="flashcards" style="grid-column:1/-1;">
+          <input type="radio" name="mtype" value="flashcards" />
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="15" height="12" rx="2"/><path d="M7 2h15v12"/></svg>
+          <span data-en="Flashcards (.apkg)" data-ar="بطاقات تعليمية (.apkg)">Flashcards (.apkg)</span>
+        </label>
       </div>
     </div>
 
-    <div class="mfield" id="materialTitleField">
+    <!-- Simple mode: title is auto-set, hidden until advanced is opened -->
+    <div class="mfield" id="materialTitleField" style="display:none;">
       <label data-en="Title" data-ar="العنوان">Title</label>
       <input type="text" id="materialTitleInput" data-ph-en="e.g. Lecture 4 — Slides" data-ph-ar="مثال: محاضرة ٤ — سلايدات" placeholder="e.g. Lecture 4 — Slides" />
       <div class="mfield-err" data-en="Please enter a title." data-ar="من فضلك اكتب عنوان.">Please enter a title.</div>
     </div>
 
     <div class="mfield" id="pdfSourceField">
-      <label data-en="How are you adding this file?" data-ar="هتضيف الملف إزاي؟">How are you adding this file?</label>
-      <div class="source-toggle">
+      <label id="pdfSourceLabel" data-en="How are you adding this file?" data-ar="هتضيف الملف إزاي؟">How are you adding this file?</label>
+      <div class="source-toggle" id="pdfSourceToggle">
         <div class="source-opt active" id="srcLinkOpt" data-en="Paste a link" data-ar="حط لينك">Paste a link</div>
         <div class="source-opt" id="srcUploadOpt" data-en="Upload file" data-ar="ارفع ملف">Upload file</div>
       </div>
@@ -785,9 +815,33 @@
       <div class="mfield-err" data-en="Please enter a valid link." data-ar="من فضلك حط لينك صحيح.">Please enter a valid link.</div>
     </div>
 
-    <div class="mfield">
-      <label data-en="Caption (optional)" data-ar="وصف (اختياري)">Caption (optional)</label>
-      <textarea id="materialCaptionInput" data-ph-en="Add a short note about this material…" data-ph-ar="اكتب ملاحظة قصيرة عن المحتوى ده…" placeholder="Add a short note about this material…"></textarea>
+    <!-- Flashcards: upload-only (.apkg), no advanced fields apply -->
+    <div class="mfield" id="flashSourceField" style="display:none;">
+      <label data-en="Flashcard deck (.apkg)" data-ar="ملف البطاقات (.apkg)">Flashcard deck (.apkg)</label>
+      <div class="upload-drop" id="flashUploadDrop">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="display:block;margin:0 auto 8px;"><path d="M12 16V4M12 4l-4 4M12 4l4 4"/><path d="M4 16v3a2 2 0 002 2h12a2 2 0 002-2v-3"/></svg>
+        <span id="flashUploadDropText" data-en="Tap to choose an .apkg file" data-ar="اضغط لاختيار ملف .apkg">Tap to choose an .apkg file</span>
+      </div>
+      <input type="file" id="flashFileInput" accept=".apkg" style="display:none;" />
+      <div class="mfield-err" data-en="Please upload an .apkg file." data-ar="من فضلك ارفع ملف .apkg.">Please upload an .apkg file.</div>
+    </div>
+
+    <button type="button" class="advanced-toggle-btn" id="advancedToggleBtn">
+      <span data-en="Advanced options" data-ar="خيارات متقدمة">Advanced options</span>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+    </button>
+
+    <div class="advanced-fields" id="advancedFields">
+      <div class="advanced-fields-inner">
+        <div class="mfield" id="advancedTitleField">
+          <label data-en="Custom title" data-ar="عنوان مخصص">Custom title</label>
+          <input type="text" id="advancedTitleInput" data-ph-en="e.g. Lecture 4 — Slides" data-ph-ar="مثال: محاضرة ٤ — سلايدات" placeholder="e.g. Lecture 4 — Slides" />
+        </div>
+        <div class="mfield">
+          <label data-en="Caption (optional)" data-ar="وصف (اختياري)">Caption (optional)</label>
+          <textarea id="materialCaptionInput" data-ph-en="Add a short note about this material…" data-ph-ar="اكتب ملاحظة قصيرة عن المحتوى ده…" placeholder="Add a short note about this material…"></textarea>
+        </div>
+      </div>
     </div>
 
     <div class="modal-btn-row">
@@ -813,6 +867,7 @@
 
   const MATERIALS_BUCKET = 'materials';
   const MAX_UPLOAD_BYTES = 20 * 1024 * 1024; // Supabase Storage can handle far more than the old 4.5MB dataURL cap
+  const MAX_FLASH_UPLOAD_BYTES = 100 * 1024 * 1024; // .apkg decks can run larger than a PDF
 
   /* ================================================================
      YEAR GATE — strict, unclosable on first run.
@@ -940,6 +995,20 @@
   }
   function lsInvalidateDay(dateKey){
     try { localStorage.removeItem(lsKeyFor(dateKey)); } catch (e) {}
+  }
+
+  /* ---------------- language persistence ---------------- */
+  const LANG_LS_KEY = 'mb_lang';
+  function getStoredLang(){
+    try {
+      const v = localStorage.getItem(LANG_LS_KEY);
+      return (v === 'en' || v === 'ar') ? v : null;
+    } catch (e) {
+      return null;
+    }
+  }
+  function setStoredLang(v){
+    try { localStorage.setItem(LANG_LS_KEY, v); } catch (e) {}
   }
 
   /* ---------------- auth state ---------------- */
@@ -1314,8 +1383,16 @@
      card plus (during a drag or animated jump) a full-width neighbor
      card positioned edge-to-edge, so what's revealed is always a
      complete rendered card rather than a half-built one.
+
+     Touch listeners are bound to <main> (mainEl) rather than just the
+     day-viewport element, so swiping anywhere in the content column —
+     including the empty space below the "+ Add a subject" button —
+     still triggers day navigation. The drag/preview math below still
+     measures and positions using dayViewport's own box, since that's
+     the element that actually needs to slide.
      ================================================================ */
   const dayViewport = document.getElementById('dayViewport');
+  const mainEl = document.getElementById('mainEl');
   let dragStartX = 0, dragStartY = 0, dragActive = false, dragLocked = null; // dragLocked: 'h' | 'v' | null
   let dragWidth = 1;
   let previewCard = null;
@@ -1333,7 +1410,7 @@
     return d;
   }
 
-  dayViewport.addEventListener('touchstart', (e) => {
+  mainEl.addEventListener('touchstart', (e) => {
     if (e.touches.length !== 1 || isAnimating) return;
     dragStartX = e.touches[0].clientX;
     dragStartY = e.touches[0].clientY;
@@ -1342,7 +1419,7 @@
     dragWidth = dayViewport.clientWidth || 1;
   }, { passive: true });
 
-  dayViewport.addEventListener('touchmove', (e) => {
+  mainEl.addEventListener('touchmove', (e) => {
     if (!dragActive) return;
     const dx = e.touches[0].clientX - dragStartX;
     const dy = e.touches[0].clientY - dragStartY;
@@ -1372,7 +1449,7 @@
     }
   }, { passive: false });
 
-  dayViewport.addEventListener('touchend', (e) => {
+  mainEl.addEventListener('touchend', (e) => {
     if (!dragActive) return;
     dragActive = false;
     if (dragLocked !== 'h'){
@@ -1394,7 +1471,7 @@
     dragLocked = null;
   }, { passive: true });
 
-  dayViewport.addEventListener('touchcancel', () => {
+  mainEl.addEventListener('touchcancel', () => {
     dragActive = false;
     dragLocked = null;
     cancelSwipe();
@@ -1687,8 +1764,9 @@
     langValueLabel.textContent = lang === 'ar' ? 'AR' : 'EN';
   }
 
-  function setLang(lang){
+  function setLang(lang, skipPersist){
     currentLang = lang;
+    if (!skipPersist) setStoredLang(lang);
     htmlEl.setAttribute('lang', lang);
     htmlEl.setAttribute('dir', lang === 'ar' ? 'rtl' : 'ltr');
     applyStaticText(lang);
@@ -1837,17 +1915,26 @@
 
   /* ---------------- render ---------------- */
   const TYPE_META = {
-    pdf:     { labelEn:'PDF',      labelAr:'ملف PDF' },
-    q:       { labelEn:'Questions',labelAr:'أسئلة' },
-    spotify: { labelEn:'Podcast',  labelAr:'بودكاست' },
-    youtube: { labelEn:'Video',    labelAr:'فيديو' },
+    pdf:        { labelEn:'PDF',        labelAr:'ملف PDF',     autoEn:'PDF',        autoAr:'PDF' },
+    q:          { labelEn:'Questions',  labelAr:'أسئلة',       autoEn:'Questions',  autoAr:'أسئلة' },
+    spotify:    { labelEn:'Podcast',    labelAr:'بودكاست',      autoEn:'Record',     autoAr:'تسجيل' },
+    youtube:    { labelEn:'Video',      labelAr:'فيديو',        autoEn:'Video',      autoAr:'فيديو' },
+    flashcards: { labelEn:'Flashcards', labelAr:'بطاقات تعليمية', autoEn:'Flashcards', autoAr:'بطاقات تعليمية' },
   };
+
+  // The default/simple-mode title for a given type, used when Advanced
+  // options is left closed (or its custom title field is left blank).
+  function autoTitleFor(type){
+    const meta = TYPE_META[type] || TYPE_META.pdf;
+    return currentLang === 'ar' ? meta.autoAr : meta.autoEn;
+  }
 
   function iconSvg(type){
     if(type==='pdf') return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>';
     if(type==='q') return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 2-3 4"/><path d="M12 17h.01"/></svg>';
     if(type==='spotify') return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M7.5 10.5c3-1 6.5-.7 9 .8M8 14c2.3-.7 4.8-.5 7 .7M8.5 7.3c2.6-.6 5.7-.3 8.3 1.2"/></svg>';
     if(type==='youtube') return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="3"/><path d="M10 9l5 3-5 3z" fill="currentColor" stroke="none"/></svg>';
+    if(type==='flashcards') return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="15" height="12" rx="2"/><path d="M7 2h15v12"/></svg>';
     return '';
   }
 
@@ -1910,6 +1997,13 @@
     return null;
   }
 
+  // Flashcards don't behave like the other material types when tapped: instead
+  // of opening a link/download or an edit modal, tapping the card should send
+  // the user straight to the flashcards viewer page with this material's id.
+  function flashcardsViewerUrl(materialId){
+    return `https://data.medicinebank.org/flash?id=${encodeURIComponent(materialId)}`;
+  }
+
   // Builds the inner HTML for a day-card given a date + (nullable) subjects array.
   // subjects === null means "not loaded yet" -> show a lightweight inline loader
   // instead of the full empty-state, so the header/date is visible immediately
@@ -1953,10 +2047,11 @@
           const uploaderName = m.uploaderName || '';
           const uploaderChip = uploaderName ? `<span class="material-dot-sep"></span><span class="material-uploader">${escapeHtml(uploaderName)}</span>` : '';
 
-          const embedHtml = buildEmbedHtml(m);
+          const isFlashcards = m.type === 'flashcards';
+          const embedHtml = isFlashcards ? null : buildEmbedHtml(m);
 
           let linkHtml = '';
-          if (!embedHtml){
+          if (!embedHtml && !isFlashcards){
             if (m.kind === 'link'){
               linkHtml = `<a class="material-link-btn" href="${escapeHtml(m.url)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><path d="M15 3h6v6"/><path d="M10 14L21 3"/></svg>
@@ -1968,10 +2063,20 @@
                 <span>${currentLang==='ar'?'تحميل الملف':'Download'}</span>
               </a>`;
             }
+          } else if (isFlashcards){
+            // Small affordance hinting the card itself is tappable to open the viewer.
+            linkHtml = `<div class="material-link-btn" style="pointer-events:none;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+              <span>${currentLang==='ar'?'فتح البطاقات':'Open flashcards'}</span>
+            </div>`;
           }
 
+          const rowDataAttrs = isFlashcards
+            ? `data-material-id="${m.id}" data-flashcards-open="${m.id}"`
+            : `data-material-id="${m.id}" data-edit-subject="${subj.id}" data-edit-material="${m.id}"`;
+
           return `
-            <div class="material-card ${embedHtml?'has-embed':''}" data-material-id="${m.id}" data-edit-subject="${subj.id}" data-edit-material="${m.id}">
+            <div class="material-card ${embedHtml?'has-embed':''}" ${rowDataAttrs}>
               <div class="material-card-top">
                 <div class="material-icon">${iconSvg(m.type)}</div>
                 <div class="material-body">
@@ -2050,6 +2155,14 @@
         // don't trigger edit when tapping inside an embedded player or a link/download button
         if (e.target.closest('.material-embed-wrap') || e.target.closest('.material-link-btn')) return;
         if (requireAuth()) openMaterialModal(row.dataset.editSubject, row.dataset.editMaterial);
+      });
+    });
+    // Flashcards: tapping the card redirects to the flashcards viewer page
+    // instead of opening the edit modal (delete "x" still works as normal).
+    cardEl.querySelectorAll('[data-flashcards-open]').forEach(row => {
+      row.addEventListener('click', (e) => {
+        if (e.target.closest('.material-card-del')) return;
+        window.location.href = flashcardsViewerUrl(row.dataset.flashcardsOpen);
       });
     });
   }
@@ -2172,10 +2285,12 @@
   /* ---------------- material modal (add + edit) ---------------- */
   const materialModalOverlay = document.getElementById('materialModalOverlay');
   const materialModalTitle = document.getElementById('materialModalTitle');
-  const materialTitleInput = document.getElementById('materialTitleInput');
   const materialTitleField = document.getElementById('materialTitleField');
+  const materialTitleInput = document.getElementById('materialTitleInput');
   const materialCaptionInput = document.getElementById('materialCaptionInput');
   const pdfSourceField = document.getElementById('pdfSourceField');
+  const pdfSourceLabel = document.getElementById('pdfSourceLabel');
+  const pdfSourceToggle = document.getElementById('pdfSourceToggle');
   const urlOnlyField = document.getElementById('urlOnlyField');
   const urlOnlyInput = document.getElementById('urlOnlyInput');
   const urlOnlyLabel = document.getElementById('urlOnlyLabel');
@@ -2187,28 +2302,56 @@
   const fileInput = document.getElementById('fileInput');
   const srcLinkOpt = document.getElementById('srcLinkOpt');
   const srcUploadOpt = document.getElementById('srcUploadOpt');
+  const flashSourceField = document.getElementById('flashSourceField');
+  const flashUploadDrop = document.getElementById('flashUploadDrop');
+  const flashUploadDropText = document.getElementById('flashUploadDropText');
+  const flashFileInput = document.getElementById('flashFileInput');
   const materialSaveBtn = document.getElementById('materialSaveBtn');
+
+  const advancedToggleBtn = document.getElementById('advancedToggleBtn');
+  const advancedFields = document.getElementById('advancedFields');
+  const advancedTitleField = document.getElementById('advancedTitleField');
+  const advancedTitleInput = document.getElementById('advancedTitleInput');
 
   let activeSubjectId = null;
   let editingMaterialId = null;
   let currentType = 'pdf';
   let currentSource = 'link';
   let uploadedFile = null; // { fileName, storagePath, publicUrl } after successful upload
+  let uploadedFlashFile = null; // { fileName, storagePath, publicUrl } after successful .apkg upload
+  let advancedOpen = false;
+
+  function setAdvancedOpen(open){
+    advancedOpen = open;
+    advancedToggleBtn.classList.toggle('is-open', open);
+    advancedFields.classList.toggle('expanded', open);
+    // The old, always-visible title field is only shown once advanced mode
+    // is open — in simple mode the title is fully auto-set and hidden.
+    materialTitleField.style.display = 'none'; // legacy field kept in DOM but unused; advancedTitleInput is the live one now
+  }
+
+  advancedToggleBtn.addEventListener('click', () => setAdvancedOpen(!advancedOpen));
 
   function openMaterialModal(subjectId, materialId){
     activeSubjectId = subjectId;
     editingMaterialId = materialId || null;
 
     materialTitleInput.value = '';
+    advancedTitleInput.value = '';
     materialLinkInput.value = '';
     urlOnlyInput.value = '';
     materialCaptionInput.value = '';
     uploadedFile = null;
+    uploadedFlashFile = null;
     fileInput.value = '';
+    flashFileInput.value = '';
     uploadDrop.classList.remove('has-file');
+    flashUploadDrop.classList.remove('has-file');
     uploadDropText.textContent = currentLang === 'ar' ? 'اضغط لاختيار ملف PDF' : 'Tap to choose a PDF';
-    [materialTitleField, pdfSourceField, urlOnlyField].forEach(f => f.classList.remove('invalid'));
+    flashUploadDropText.textContent = currentLang === 'ar' ? 'اضغط لاختيار ملف .apkg' : 'Tap to choose an .apkg file';
+    [materialTitleField, pdfSourceField, urlOnlyField, flashSourceField].forEach(f => f.classList.remove('invalid'));
     document.querySelectorAll('#materialModalOverlay .mfield-err').forEach(e => e.classList.remove('show'));
+    setAdvancedOpen(false);
 
     let existing = null;
     if (editingMaterialId){
@@ -2220,8 +2363,11 @@
       materialModalTitle.textContent = currentLang==='ar' ? 'تعديل المحتوى' : 'Edit material';
       document.querySelector(`input[name="mtype"][value="${existing.type}"]`).checked = true;
       updateTypeVisual(existing.type);
-      materialTitleInput.value = existing.title || '';
+      advancedTitleInput.value = existing.title || '';
       materialCaptionInput.value = existing.caption || '';
+      // Editing an existing item always opens with advanced visible, since
+      // there's already a real (possibly custom) title/caption to show.
+      setAdvancedOpen(true);
       if (existing.type === 'pdf' || existing.type === 'q'){
         if (existing.kind === 'upload'){
           setSource('upload');
@@ -2232,6 +2378,10 @@
           setSource('link');
           materialLinkInput.value = existing.url || '';
         }
+      } else if (existing.type === 'flashcards'){
+        uploadedFlashFile = { fileName: existing.fileName, publicUrl: existing.url };
+        flashUploadDrop.classList.add('has-file');
+        flashUploadDropText.textContent = existing.fileName || (currentLang==='ar'?'ملف مرفوع':'Uploaded file');
       } else {
         urlOnlyInput.value = existing.url || '';
       }
@@ -2245,7 +2395,6 @@
     }
 
     materialModalOverlay.classList.add('open');
-    setTimeout(() => materialTitleInput.focus(), 50);
   }
   function closeMaterialModal(){ materialModalOverlay.classList.remove('open'); editingMaterialId = null; }
 
@@ -2262,13 +2411,25 @@
       opt.classList.toggle('checked', opt.dataset.type === type);
     });
 
+    // Reset advanced title placeholder to reflect this type's auto title,
+    // so leaving it blank is visibly "will use <auto title>".
+    advancedTitleInput.placeholder = autoTitleFor(type);
+
     if (type === 'pdf' || type === 'q'){
       pdfSourceField.style.display = '';
       urlOnlyField.style.display = 'none';
+      flashSourceField.style.display = 'none';
+      pdfSourceLabel.textContent = currentLang==='ar' ? 'هتضيف الملف إزاي؟' : 'How are you adding this file?';
+      pdfSourceToggle.style.display = '';
       setSource(currentSource);
+    } else if (type === 'flashcards'){
+      pdfSourceField.style.display = 'none';
+      urlOnlyField.style.display = 'none';
+      flashSourceField.style.display = '';
     } else {
       pdfSourceField.style.display = 'none';
       urlOnlyField.style.display = '';
+      flashSourceField.style.display = 'none';
       if (type === 'spotify'){
         urlOnlyLabel.textContent = currentLang==='ar' ? 'لينك Spotify' : 'Spotify link';
         urlOnlyInput.placeholder = 'https://open.spotify.com/episode/…';
@@ -2327,15 +2488,58 @@
     uploadDropText.textContent = file.name;
   });
 
+  /* -------- flashcards (.apkg) upload -------- */
+  flashUploadDrop.addEventListener('click', () => { if (!flashUploadDrop.classList.contains('uploading')) flashFileInput.click(); });
+
+  flashFileInput.addEventListener('change', async () => {
+    const file = flashFileInput.files[0];
+    if (!file) return;
+
+    const looksLikeApkg = /\.apkg$/i.test(file.name);
+    if (!looksLikeApkg){
+      showToast(currentLang==='ar' ? 'من فضلك اختر ملف .apkg' : 'Please choose a .apkg file');
+      flashFileInput.value = '';
+      return;
+    }
+    if (file.size > MAX_FLASH_UPLOAD_BYTES){
+      showToast(currentLang==='ar' ? 'الملف كبير أوي (الحد الأقصى ١٠٠ ميجا)' : 'File is too large (100MB max)');
+      flashFileInput.value = '';
+      return;
+    }
+    if (!requireAuth()){ flashFileInput.value = ''; return; }
+
+    flashUploadDrop.classList.add('uploading');
+    flashUploadDropText.textContent = currentLang==='ar' ? 'بيترفع…' : 'Uploading…';
+
+    const path = `${activeSubjectId}/${uid()}-${Date.now()}.apkg`;
+
+    const { error: upErr } = await supabase.storage.from(MATERIALS_BUCKET).upload(path, file, {
+      cacheControl: '3600',
+      upsert: false
+    });
+
+    flashUploadDrop.classList.remove('uploading');
+
+    if (upErr){
+      showToast(currentLang==='ar' ? 'حصل خطأ في رفع الملف' : 'File upload failed');
+      flashUploadDropText.textContent = currentLang==='ar' ? 'اضغط لاختيار ملف .apkg' : 'Tap to choose an .apkg file';
+      flashFileInput.value = '';
+      return;
+    }
+
+    const { data: pub } = supabase.storage.from(MATERIALS_BUCKET).getPublicUrl(path);
+    uploadedFlashFile = { fileName: file.name, storagePath: path, publicUrl: pub.publicUrl };
+    flashUploadDrop.classList.add('has-file');
+    flashUploadDropText.textContent = file.name;
+  });
+
   materialSaveBtn.addEventListener('click', async () => {
     if (!requireAuth()) return;
 
-    const title = materialTitleInput.value.trim();
+    const customTitle = advancedTitleInput.value.trim();
     const caption = materialCaptionInput.value.trim();
+    const title = customTitle || autoTitleFor(currentType);
     let ok = true;
-
-    if (!title){ materialTitleField.classList.add('invalid'); ok = false; }
-    else materialTitleField.classList.remove('invalid');
 
     let payload = {
       type: currentType,
@@ -2352,6 +2556,9 @@
         if (!uploadedFile){ pdfSourceField.classList.add('invalid'); ok = false; }
         else { pdfSourceField.classList.remove('invalid'); payload.kind = 'upload'; payload.url = uploadedFile.publicUrl; payload.file_name = uploadedFile.fileName; }
       }
+    } else if (currentType === 'flashcards'){
+      if (!uploadedFlashFile){ flashSourceField.classList.add('invalid'); ok = false; }
+      else { flashSourceField.classList.remove('invalid'); payload.kind = 'upload'; payload.url = uploadedFlashFile.publicUrl; payload.file_name = uploadedFlashFile.fileName; }
     } else {
       const url = urlOnlyInput.value.trim();
       if (!url){ urlOnlyField.classList.add('invalid'); ok = false; }
@@ -2452,6 +2659,14 @@
     // (covers both "no path yet" and "path had leading zeros" cases) without
     // adding a history entry.
     syncUrlToDate(viewDate, true);
+
+    // 1b. Resolve saved language before anything renders, so the very first
+    // paint already reflects the user's stored choice instead of flashing
+    // English and then switching.
+    const storedLang = getStoredLang();
+    if (storedLang && storedLang !== currentLang){
+      setLang(storedLang, true); // skipPersist: it's already the stored value
+    }
 
     // 2. Resolve the year filter. If none stored yet, block on the gate
     // before any data loads or renders — this satisfies the "cannot skip"
