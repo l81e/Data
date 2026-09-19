@@ -250,7 +250,6 @@
     overflow:hidden;
   }
 
-  /* day-viewport clips the sliding track; day-track holds prev/current/next side by side */
   .day-viewport{
     position:relative;
     width:100%;
@@ -313,7 +312,6 @@
   .subject-add-btn:hover{border-color:var(--text-dim); color:var(--text);}
   .subject-add-btn svg{width:14px; height:14px;}
 
-  /* Animated expand/collapse via grid-template-rows trick (no JS height measuring needed) */
   .material-list-outer{
     display:grid;
     grid-template-rows:0fr;
@@ -439,8 +437,6 @@
   .mfield-err{font-size:0.71rem; color:var(--err); margin-top:5px; display:none;}
   .mfield-err.show{display:block;}
   .mfield.invalid input, .mfield.invalid select, .mfield.invalid textarea{border-color:var(--text);}
-
-  .otp-input{letter-spacing:0.5em; text-align:center; font-size:1.1rem !important; font-weight:700;}
 
   .type-grid{display:grid; grid-template-columns:1fr 1fr; gap:8px;}
   .type-opt{
@@ -661,48 +657,14 @@
   </div>
 </div>
 
-<!-- SIGN IN MODAL -->
+<!-- SIGN IN MODAL (Google only) -->
 <div class="modal-overlay" id="authModalOverlay">
   <div class="modal-sheet">
-    <div class="modal-title" id="authModalTitle" data-en="Sign in" data-ar="تسجيل الدخول">Sign in</div>
-
-    <div id="authStepEmail">
-      <div class="modal-subtitle" id="authEmailSubtitle" data-en="Sign in with your email. We'll send you a link." data-ar="سجل الدخول بإيميلك. هنبعتلك لينك.">Sign in with your email. We'll send you a link.</div>
-      <div class="mfield" id="authEmailField">
-        <label data-en="Email" data-ar="الإيميل">Email</label>
-        <input type="email" id="authEmailInput" placeholder="yourname@example.com" autocomplete="email" autocapitalize="off" spellcheck="false" />
-        <div class="mfield-err" data-en="Please enter a valid email address." data-ar="من فضلك اكتب إيميل صحيح.">Please enter a valid email address.</div>
-      </div>
-      <div class="modal-btn-row">
-        <button class="modal-btn" id="authCancelBtn1" data-en="Cancel" data-ar="إلغاء">Cancel</button>
-        <button class="modal-btn primary" id="authSendCodeBtn" data-en="Send link" data-ar="ابعت اللينك">Send link</button>
-      </div>
-    </div>
-
-    <div id="authStepOtp" style="display:none;">
-      <div class="modal-subtitle" id="authOtpSubtitle" data-en="Check your email for the sign-in link." data-ar="افتح إيميلك عشان تلاقي لينك تسجيل الدخول.">Check your email for the sign-in link.</div>
-      <div class="mfield" id="authOtpField" style="display:none;">
-        <label data-en="Code" data-ar="الكود">Code</label>
-        <input type="text" id="authOtpInput" class="otp-input" inputmode="numeric" maxlength="6" placeholder="••••••" />
-        <div class="mfield-err" data-en="Please enter the 6-digit code." data-ar="من فضلك اكتب الكود المكون من ٦ أرقام.">Please enter the 6-digit code.</div>
-      </div>
-      <div class="mfield-hint" id="authLinkResendHint" data-en="Didn't get it? Check spam, or go back and try again." data-ar="مجاش؟ شوف السبام، أو ارجع وجرب تاني.">Didn't get it? Check spam, or go back and try again.</div>
-      <div class="modal-btn-row">
-        <button class="modal-btn" id="authBackBtn" data-en="Back" data-ar="رجوع">Back</button>
-        <button class="modal-btn primary" id="authVerifyBtn" style="display:none;" data-en="Verify" data-ar="تأكيد">Verify</button>
-      </div>
-    </div>
-
-    <div id="authStepName" style="display:none;">
-      <div class="modal-subtitle" data-en="What should we show as your name on things you add?" data-ar="هيظهر اسمك ازاي على الداتا اللي هتضيفها؟">What should we show as your name on things you add?</div>
-      <div class="mfield" id="authNameField">
-        <label data-en="Your name" data-ar="اسمك">Your name</label>
-        <input type="text" id="authNameInput" placeholder="e.g. Eyad" />
-        <div class="mfield-err" data-en="Please enter a name." data-ar="من فضلك اكتب اسم.">Please enter a name.</div>
-      </div>
-      <div class="modal-btn-row">
-        <button class="modal-btn primary" id="authSaveNameBtn" data-en="Continue" data-ar="استمرار">Continue</button>
-      </div>
+    <div class="modal-title" data-en="Sign in" data-ar="تسجيل الدخول">Sign in</div>
+    <div class="modal-subtitle" data-en="Sign in with Google to add and edit materials." data-ar="سجل الدخول بحساب جوجل عشان تضيف وتعدل الداتا.">Sign in with Google to add and edit materials.</div>
+    <div class="modal-btn-row" style="flex-direction:column;">
+      <button class="modal-btn primary" id="googleSignInBtn" data-en="Continue with Google" data-ar="المتابعة بحساب جوجل">Continue with Google</button>
+      <button class="modal-btn" id="authCancelBtn1" data-en="Cancel" data-ar="إلغاء">Cancel</button>
     </div>
   </div>
 </div>
@@ -784,7 +746,6 @@
       </div>
     </div>
 
-    <!-- Simple mode: title is auto-set, hidden until advanced is opened -->
     <div class="mfield" id="materialTitleField" style="display:none;">
       <label data-en="Title" data-ar="العنوان">Title</label>
       <input type="text" id="materialTitleInput" data-ph-en="e.g. Lecture 4 — Slides" data-ph-ar="مثال: محاضرة ٤ — سلايدات" placeholder="e.g. Lecture 4 — Slides" />
@@ -816,7 +777,6 @@
       <div class="mfield-err" data-en="Please enter a valid link." data-ar="من فضلك حط لينك صحيح.">Please enter a valid link.</div>
     </div>
 
-    <!-- Flashcards: upload-only (.apkg), no advanced fields apply -->
     <div class="mfield" id="flashSourceField" style="display:none;">
       <label data-en="Flashcard deck (.apkg)" data-ar="ملف البطاقات (.apkg)">Flashcard deck (.apkg)</label>
       <div class="upload-drop" id="flashUploadDrop">
@@ -854,112 +814,57 @@
 
 <div class="toast" id="toast"></div>
 
+<!-- ================= FIREBASE (Google sign-in, Patholytica project) ================= -->
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import {
   getAuth,
-  sendSignInLinkToEmail,
-  isSignInWithEmailLink,
-  signInWithEmailLink,
+  signInWithPopup,
+  GoogleAuthProvider,
   onAuthStateChanged,
   signOut as firebaseSignOut
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-/* ================================================================
-   FIREBASE SETUP
-   Replace these placeholder values with your actual Firebase project
-   config (Firebase console -> Project settings -> General -> Your apps
-   -> SDK setup and configuration).
-   ================================================================ */
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT_ID.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyBs6V0yY14cuLBXB1nciZ-X0eyAiodC-Ak",
+  authDomain: "patholytica.firebaseapp.com",
+  databaseURL: "https://patholytica-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "patholytica",
+  storageBucket: "patholytica.firebasestorage.app",
+  messagingSenderId: "738430635282",
+  appId: "1:738430635282:web:8451ef380447c7611137cb"
 };
 
-const firebaseApp = initializeApp(firebaseConfig);
-const firebaseAuth = getAuth(firebaseApp);
+const fbApp = initializeApp(firebaseConfig);
+const fbAuth = getAuth(fbApp);
+const googleProvider = new GoogleAuthProvider();
 
-// localStorage key used to remember the email a sign-in link was sent to,
-// so we can complete the sign-in when the user opens the link (possibly in
-// a different tab/session on the same device).
-const PENDING_EMAIL_LS_KEY = 'mb_pending_signin_email';
-
-// Expose a small bridge object so the rest of the app (a classic, non-module
-// script below) can call into the Firebase v9 modular SDK without every
-// call site needing its own import.
 window.__mbFirebase = {
-  auth: firebaseAuth,
-  async sendSignInLink(email){
-    const actionCodeSettings = {
-      // Redirect back to the exact page the user started on (including any
-      // date path), so completing sign-in lands them where they were.
-      url: window.location.href,
-      handleCodeInApp: true
-    };
-    await sendSignInLinkToEmail(firebaseAuth, email, actionCodeSettings);
-    try { window.localStorage.setItem(PENDING_EMAIL_LS_KEY, email); } catch(e) {}
-  },
-  isSignInLink(url){
-    return isSignInWithEmailLink(firebaseAuth, url);
-  },
-  async completeSignInFromLink(url, emailOverride){
-    let email = emailOverride;
-    if (!email){
-      try { email = window.localStorage.getItem(PENDING_EMAIL_LS_KEY); } catch(e) {}
-    }
-    if (!email) return { needsEmail: true };
-    const result = await signInWithEmailLink(firebaseAuth, email, url);
-    try { window.localStorage.removeItem(PENDING_EMAIL_LS_KEY); } catch(e) {}
-    return { user: result.user };
-  },
-  onAuthStateChanged(cb){
-    return onAuthStateChanged(firebaseAuth, cb);
-  },
-  async signOut(){
-    await firebaseSignOut(firebaseAuth);
-  },
-  getPendingEmail(){
-    try { return window.localStorage.getItem(PENDING_EMAIL_LS_KEY); } catch(e) { return null; }
-  },
-  clearPendingEmail(){
-    try { window.localStorage.removeItem(PENDING_EMAIL_LS_KEY); } catch(e) {}
-  }
+  signInWithGoogle: async () => (await signInWithPopup(fbAuth, googleProvider)).user,
+  onAuthStateChanged: (cb) => onAuthStateChanged(fbAuth, cb),
+  signOut: () => firebaseSignOut(fbAuth)
 };
 </script>
 
+<!-- ================= MAIN APP ================= -->
 <script>
 (function(){
   const htmlEl = document.documentElement;
   let currentLang = 'en';
 
-  /* ================================================================
-     SUPABASE SETUP — kept as the data/storage backend. Auth is now
-     handled entirely by Firebase (see the module script above); the
-     anon key here is used only for database (lectures/materials/
-     profiles) reads/writes and Storage uploads, never for auth.
-     ================================================================ */
+  /* ---------------- Supabase (data + storage only) ---------------- */
   const SUPABASE_URL = 'https://igfooetzorzhhvpakgqa.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlnZm9vZXR6b3J6aGh2cGFrZ3FhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg5ODg2NTksImV4cCI6MjEwNDU2NDY1OX0.1XLeeRi4KFJptk73JKx_vs0FlO5EXM17KIyFSaKWLCA';
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   const MATERIALS_BUCKET = 'materials';
-  const MAX_UPLOAD_BYTES = 20 * 1024 * 1024; // Supabase Storage can handle far more than the old 4.5MB dataURL cap
-  const MAX_FLASH_UPLOAD_BYTES = 100 * 1024 * 1024; // .apkg decks can run larger than a PDF
+  const MAX_UPLOAD_BYTES = 20 * 1024 * 1024;
+  const MAX_FLASH_UPLOAD_BYTES = 100 * 1024 * 1024;
 
-  /* ================================================================
-     YEAR GATE — strict, unclosable on first run.
-     The chosen value is one of the five year_of_view enum strings and
-     is persisted to localStorage. It governs both what is read (every
-     fetch is filtered by it) and what is written (every new lecture is
-     tagged with it).
-     ================================================================ */
+  /* ---------------- year gate ---------------- */
   const YEAR_LS_KEY = 'mb_year_of_view';
   const VALID_YEARS = ['first year','second year','third year','fourth year','fifth year'];
-  let currentYear = null; // set during init, before any data loads
+  let currentYear = null;
 
   function getStoredYear(){
     try {
@@ -995,14 +900,9 @@ window.__mbFirebase = {
 
   const yearGateOverlay = document.getElementById('yearGateOverlay');
 
-  function openYearGate(){
-    yearGateOverlay.classList.add('open');
-  }
-  function closeYearGate(){
-    yearGateOverlay.classList.remove('open');
-  }
+  function openYearGate(){ yearGateOverlay.classList.add('open'); }
+  function closeYearGate(){ yearGateOverlay.classList.remove('open'); }
 
-  // Blocking gate: no overlay click-to-close, no escape key, no cancel button.
   document.querySelectorAll('.year-gate-opt').forEach(btn => {
     btn.addEventListener('click', () => {
       const year = btn.dataset.year;
@@ -1011,7 +911,6 @@ window.__mbFirebase = {
       setStoredYear(year);
       closeYearGate();
       if (!isFirstRun){
-        // changed later from the calendar menu — refresh what's on screen
         clearDayCaches();
         loadDay();
       }
@@ -1029,9 +928,6 @@ window.__mbFirebase = {
   });
 
   function clearDayCaches(){
-    // in-memory + localStorage day caches are keyed by date only, and now hold
-    // data scoped to whichever year was active when they were populated —
-    // wipe both whenever the active year changes so stale-year data can't leak.
     dayCache.clear();
     try {
       const toRemove = [];
@@ -1043,14 +939,9 @@ window.__mbFirebase = {
     } catch (e) {}
   }
 
-  /* ---------------- local cache (localStorage) ---------------- */
-  // We cache each day's fetched subjects/materials in localStorage so repeat
-  // visits to a day don't re-hit Supabase. Cache entries expire after a
-  // short TTL so new uploads from other users still show up reasonably soon.
-  // Keys are namespaced by the active year filter so switching years never
-  // reads another year's cached entries.
+  /* ---------------- local cache ---------------- */
   const LS_PREFIX = 'mb_daycache_';
-  const LS_TTL_MS = 5 * 60 * 1000; // 5 minutes
+  const LS_TTL_MS = 5 * 60 * 1000;
 
   function lsKeyFor(dateKey){
     return LS_PREFIX + (currentYear || 'first year') + '_' + dateKey;
@@ -1070,12 +961,7 @@ window.__mbFirebase = {
   function lsSetDay(dateKey, subjects){
     try {
       localStorage.setItem(lsKeyFor(dateKey), JSON.stringify({ t: Date.now(), subjects }));
-    } catch (e) {
-      // storage full or unavailable — fail silently, Supabase remains source of truth
-    }
-  }
-  function lsInvalidateDay(dateKey){
-    try { localStorage.removeItem(lsKeyFor(dateKey)); } catch (e) {}
+    } catch (e) {}
   }
 
   /* ---------------- language persistence ---------------- */
@@ -1093,24 +979,12 @@ window.__mbFirebase = {
   }
 
   /* ================================================================
-     AUTH STATE — now backed by Firebase Auth (email link sign-in)
-     instead of Supabase Auth. `currentSession` is kept as the name
-     for minimal diff elsewhere in the file; it now holds a Firebase
-     User object (or null), and `currentSession.user` is a thin shim
-     so the rest of the code (`currentSession.user.id`,
-     `currentSession.user.email`) keeps working unchanged.
-
-     The Supabase `profiles` table is still used for display names,
-     now keyed by the Firebase UID instead of a Supabase auth UID.
-     Since Supabase Auth is no longer involved, there is no
-     `auth.uid()` in Supabase anymore — any Row Level Security
-     policies that were written against Supabase's `auth.uid()` will
-     no longer match and must be relaxed/removed for this to keep
-     working with the anon key.
+     AUTH — Google sign-in via Firebase (Patholytica project).
+     currentSession mirrors the Firebase user as { user: { id, email } }.
+     The profiles table (keyed by Firebase UID) stores display names.
      ================================================================ */
-  let currentSession = null; // { user: { id, email } } | null, mirrors a Firebase user
-  let currentProfile = null; // { id, name_en }
-  let pendingAuthEmail = null;
+  let currentSession = null;
+  let currentProfile = null;
 
   function isSignedIn(){ return !!currentSession; }
 
@@ -1120,50 +994,34 @@ window.__mbFirebase = {
   }
 
   async function initAuth(){
-    // If this page load is the user arriving via the emailed sign-in link,
-    // complete the sign-in first.
-    if (window.__mbFirebase.isSignInLink(window.location.href)){
-      let email = window.__mbFirebase.getPendingEmail();
-      if (!email){
-        // Same-device-different-session fallback: ask for the email again.
-        email = window.prompt(currentLang==='ar' ? 'أكد إيميلك عشان نكمل تسجيل الدخول' : 'Confirm your email to finish signing in');
-      }
-      if (email){
-        try {
-          const { user } = await window.__mbFirebase.completeSignInFromLink(window.location.href, email);
-          if (user){
-            // Clean the sign-in link params out of the visible URL so a
-            // refresh/back doesn't try to replay it.
-            try { window.history.replaceState({}, '', window.location.pathname); } catch(e) {}
-          }
-        } catch (err) {
-          showToast(currentLang==='ar' ? 'حصل خطأ في تسجيل الدخول بالرابط' : 'The sign-in link failed or expired');
-        }
-      }
-    }
-
-    // onAuthStateChanged fires once immediately with the current user (or
-    // null) and again on every future sign-in/sign-out.
     window.__mbFirebase.onAuthStateChanged(async (fbUser) => {
       currentSession = sessionFromFirebaseUser(fbUser);
-      if (currentSession) {
-        await loadOwnProfile();
+      if (fbUser){
+        // Prefer a name the user already saved; otherwise fall back to Google's name.
+        let saved = null;
+        try {
+          const { data } = await supabase
+            .from('profiles')
+            .select('id, name_en, email')
+            .eq('id', fbUser.uid)
+            .maybeSingle();
+          saved = data;
+        } catch (e) {}
+
+        if (saved && saved.name_en){
+          currentProfile = saved;
+        } else {
+          const name = fbUser.displayName || (fbUser.email || '').split('@')[0] || 'User';
+          currentProfile = { id: fbUser.uid, name_en: name, email: fbUser.email || '' };
+          // best-effort save so uploader names show up for other users
+          supabase.from('profiles').upsert(currentProfile).then(() => {}, () => {});
+        }
       } else {
         currentProfile = null;
       }
       renderAuthChip();
       renderDay();
     });
-  }
-
-  async function loadOwnProfile(){
-    if (!currentSession) return;
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('id, name_en, email')
-      .eq('id', currentSession.user.id)
-      .maybeSingle();
-    if (!error && data) currentProfile = data;
   }
 
   function renderAuthChip(){
@@ -1183,117 +1041,30 @@ window.__mbFirebase = {
     if (isSignedIn()) openAccountModal(); else openAuthModal();
   });
 
-  /* Gate: call before any write action. Returns true if allowed to proceed. */
   function requireAuth(){
     if (isSignedIn()) return true;
     openAuthModal();
     return false;
   }
 
-  /* ---------------- auth modal (email-link flow) ---------------- */
+  /* ---------------- sign-in modal ---------------- */
   const authModalOverlay = document.getElementById('authModalOverlay');
-  const authStepEmail = document.getElementById('authStepEmail');
-  const authStepOtp = document.getElementById('authStepOtp');
-  const authStepName = document.getElementById('authStepName');
-  const authEmailInput = document.getElementById('authEmailInput');
-  const authEmailField = document.getElementById('authEmailField');
-  const authOtpInput = document.getElementById('authOtpInput');
-  const authOtpField = document.getElementById('authOtpField');
-  const authNameInput = document.getElementById('authNameInput');
-  const authNameField = document.getElementById('authNameField');
-  const authOtpSubtitle = document.getElementById('authOtpSubtitle');
-  const authSendCodeBtn = document.getElementById('authSendCodeBtn');
-  const authVerifyBtn = document.getElementById('authVerifyBtn');
-  const authSaveNameBtn = document.getElementById('authSaveNameBtn');
-
-  function openAuthModal(){
-    pendingAuthEmail = null;
-    authEmailInput.value = '';
-    authOtpInput.value = '';
-    authNameInput.value = '';
-    [authEmailField, authOtpField, authNameField].forEach(f => f.classList.remove('invalid'));
-    document.querySelectorAll('#authModalOverlay .mfield-err').forEach(e => e.classList.remove('show'));
-    authStepEmail.style.display = '';
-    authStepOtp.style.display = 'none';
-    authStepName.style.display = 'none';
-    authModalOverlay.classList.add('open');
-    setTimeout(() => authEmailInput.focus(), 50);
-  }
+  function openAuthModal(){ authModalOverlay.classList.add('open'); }
   function closeAuthModal(){ authModalOverlay.classList.remove('open'); }
-
   document.getElementById('authCancelBtn1').addEventListener('click', closeAuthModal);
   authModalOverlay.addEventListener('click', (e) => { if (e.target === authModalOverlay) closeAuthModal(); });
 
-  // Any valid email address is accepted (no domain restriction).
-  function isValidEmail(v){ return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v); }
-
-  authSendCodeBtn.addEventListener('click', async () => {
-    const email = authEmailInput.value.trim();
-    if (!email || !isValidEmail(email)){
-      authEmailField.classList.add('invalid');
-      authEmailField.querySelector('.mfield-err').classList.add('show');
-      return;
-    }
-    authEmailField.classList.remove('invalid');
-    authEmailField.querySelector('.mfield-err').classList.remove('show');
-
-    authSendCodeBtn.disabled = true;
-    authSendCodeBtn.textContent = currentLang==='ar' ? 'بيتبعت…' : 'Sending…';
-
-    let error;
+  document.getElementById('googleSignInBtn').addEventListener('click', async () => {
     try {
-      await window.__mbFirebase.sendSignInLink(email);
+      await window.__mbFirebase.signInWithGoogle();
+      closeAuthModal();
+      showToast(currentLang==='ar' ? 'تم تسجيل الدخول' : 'Signed in');
     } catch (err) {
-      error = err;
+      if (err && err.code !== 'auth/popup-closed-by-user' && err.code !== 'auth/cancelled-popup-request'){
+        showToast(currentLang==='ar' ? 'فشل تسجيل الدخول' : 'Sign-in failed');
+        console.error(err);
+      }
     }
-
-    authSendCodeBtn.disabled = false;
-    authSendCodeBtn.textContent = currentLang==='ar' ? 'ابعت اللينك' : 'Send link';
-
-    if (error){
-      showToast('DEBUG: ' + (error.message || String(error)));
-      return;
-    }
-    pendingAuthEmail = email;
-    authOtpSubtitle.textContent = (currentLang==='ar' ? `بعتنالك لينك على ${email}` : `We sent a sign-in link to ${email}`);
-    authStepEmail.style.display = 'none';
-    authStepOtp.style.display = '';
-  });
-
-  document.getElementById('authBackBtn').addEventListener('click', () => {
-    authStepOtp.style.display = 'none';
-    authStepEmail.style.display = '';
-  });
-
-  // With the email-link flow there is no code to verify client-side — the
-  // "Verify" step happens automatically in initAuth() when the user opens
-  // the emailed link and lands back on this page. The old OTP verify button
-  // and its handler are kept (hidden) only as an escape hatch/reference and
-  // do nothing unless authVerifyBtn is made visible again.
-  authVerifyBtn.addEventListener('click', async () => {
-    // No-op in the email-link flow: sign-in completes automatically on
-    // return from the emailed link (see initAuth). This handler is kept so
-    // re-enabling the button in future doesn't require re-wiring anything.
-    closeAuthModal();
-  });
-
-  authSaveNameBtn.addEventListener('click', async () => {
-    const name = authNameInput.value.trim();
-    if (!name){
-      authNameField.classList.add('invalid');
-      authNameField.querySelector('.mfield-err').classList.add('show');
-      return;
-    }
-    const { error } = await supabase.from('profiles').update({ name_en: name }).eq('id', currentSession.user.id);
-    if (error){
-      showToast(currentLang==='ar' ? 'حصل خطأ في الحفظ' : 'Something went wrong saving');
-      return;
-    }
-    currentProfile = { ...(currentProfile || {}), id: currentSession.user.id, name_en: name };
-    closeAuthModal();
-    renderAuthChip();
-    renderDay();
-    showToast(currentLang==='ar' ? 'تم تسجيل الدخول' : 'Signed in');
   });
 
   /* ---------------- account modal ---------------- */
@@ -1312,12 +1083,14 @@ window.__mbFirebase = {
   document.getElementById('accountSaveBtn').addEventListener('click', async () => {
     const name = accountNameInput.value.trim();
     if (!name) return;
-    const { error } = await supabase.from('profiles').update({ name_en: name }).eq('id', currentSession.user.id);
+    const { error } = await supabase
+      .from('profiles')
+      .upsert({ id: currentSession.user.id, name_en: name, email: currentSession.user.email });
     if (error){
       showToast(currentLang==='ar' ? 'حصل خطأ في الحفظ' : 'Something went wrong saving');
       return;
     }
-    currentProfile = { ...(currentProfile || {}), name_en: name };
+    currentProfile = { ...(currentProfile || {}), id: currentSession.user.id, name_en: name, email: currentSession.user.email };
     closeAccountModal();
     renderAuthChip();
     renderDay();
@@ -1334,7 +1107,7 @@ window.__mbFirebase = {
     showToast(currentLang==='ar' ? 'تم تسجيل الخروج' : 'Signed out');
   });
 
-  /* ---------------- fixed subject color palette ---------------- */
+  /* ---------------- subject color palette ---------------- */
   const SUBJECT_COLORS = ['#e05a4f','#e0a23a','#3ba55c','#3a8ee0','#7a5ce0','#c94fa0'];
 
   /* ---------------- date state ---------------- */
@@ -1346,11 +1119,7 @@ window.__mbFirebase = {
     return d.getDate() + '/' + (d.getMonth()+1) + '/' + d.getFullYear();
   }
 
-  /* ---------------- URL <-> date routing (/DD-M-YYYY) ---------------- */
-  // Path format is strictly day-month-year with single hyphens, e.g.
-  // /11-9-2026 for September 11, 2026. No leading zeros are required to
-  // parse, but we always WRITE the path with no leading zeros to match
-  // the user's example (11-9-2026, not 11-09-2026).
+  /* ---------------- URL <-> date routing (/D-M-YYYY) ---------------- */
   function parseDateFromPath(pathname){
     const m = pathname.match(/^\/(\d{1,2})-(\d{1,2})-(\d{4})$/);
     if (!m) return null;
@@ -1359,7 +1128,6 @@ window.__mbFirebase = {
     const year = parseInt(m[3], 10);
     if (month < 1 || month > 12 || day < 1 || day > 31) return null;
     const d = new Date(year, month - 1, day);
-    // guard against JS date rollover (e.g. 31-2-2026 rolling into March)
     if (d.getFullYear() !== year || d.getMonth() !== month - 1 || d.getDate() !== day) return null;
     return d;
   }
@@ -1420,15 +1188,7 @@ window.__mbFirebase = {
     label.textContent = fmtDMY(viewDate);
   }
 
-  /* ================================================================
-     DAY NAVIGATION — rebuilt to be simple and reliable.
-     goToDate() is the single entry point for jumping to a date, whether
-     from the Today pill, the calendar popup, a swipe gesture, or the
-     URL. It always updates viewDate + re-renders + syncs the URL; a
-     `direction` just adds a slide transition on top of that same
-     reliable path, so a broken animation can never leave navigation
-     itself broken.
-     ================================================================ */
+  /* ---------------- day navigation ---------------- */
   function goToDate(d, direction, opts){
     opts = opts || {};
     const newDate = new Date(d.getFullYear(), d.getMonth(), d.getDate());
@@ -1458,7 +1218,6 @@ window.__mbFirebase = {
     goToDate(t, direction);
   });
 
-  // Back/forward browser navigation between date URLs
   window.addEventListener('popstate', () => {
     const parsed = parseDateFromPath(window.location.pathname);
     const target = parsed || todayDate();
@@ -1467,31 +1226,16 @@ window.__mbFirebase = {
     goToDate(target, direction, { skipUrlSync: true });
   });
 
-  /* ================================================================
-     SWIPE / SLIDE ANIMATION
-     day-viewport clips a full-width track; the track holds the current
-     card plus (during a drag or animated jump) a full-width neighbor
-     card positioned edge-to-edge, so what's revealed is always a
-     complete rendered card rather than a half-built one.
-
-     Touch listeners are bound to <main> (mainEl) rather than just the
-     day-viewport element, so swiping anywhere in the content column —
-     including the empty space below the "+ Add a subject" button —
-     still triggers day navigation. The drag/preview math below still
-     measures and positions using dayViewport's own box, since that's
-     the element that actually needs to slide.
-     ================================================================ */
+  /* ---------------- swipe / slide animation ---------------- */
   const dayViewport = document.getElementById('dayViewport');
   const mainEl = document.getElementById('mainEl');
-  let dragStartX = 0, dragStartY = 0, dragActive = false, dragLocked = null; // dragLocked: 'h' | 'v' | null
+  let dragStartX = 0, dragStartY = 0, dragActive = false, dragLocked = null;
   let dragWidth = 1;
   let previewCard = null;
-  let previewDirection = null; // 'next' | 'prev'
+  let previewDirection = null;
   let isAnimating = false;
 
-  // simple in-memory cache so adjacent days feel instant once visited/prefetched
-  // (namespaced implicitly since it's cleared on year change — see clearDayCaches)
-  const dayCache = new Map(); // key: 'YYYY-MM-DD' -> subjects array
+  const dayCache = new Map();
 
   function neighborDate(dir, from){
     const base = from || viewDate;
@@ -1518,12 +1262,12 @@ window.__mbFirebase = {
       if (Math.abs(dx) < 6 && Math.abs(dy) < 6) return;
       dragLocked = Math.abs(dx) > Math.abs(dy) * 1.2 ? 'h' : 'v';
     }
-    if (dragLocked !== 'h') return; // let vertical scroll happen natively
+    if (dragLocked !== 'h') return;
 
-    e.preventDefault(); // we're handling this as a horizontal day-swipe
+    e.preventDefault();
 
     const rtl = htmlEl.getAttribute('dir') === 'rtl';
-    const draggingToShowNext = rtl ? dx > 0 : dx < 0; // finger moving toward "next day" side
+    const draggingToShowNext = rtl ? dx > 0 : dx < 0;
 
     const dir = draggingToShowNext ? 'next' : 'prev';
     ensurePreviewCard(dir);
@@ -1531,9 +1275,6 @@ window.__mbFirebase = {
     const currentCard = dayViewport.querySelector('.day-card.is-current');
     if (currentCard) currentCard.style.transform = `translateX(${dx}px)`;
     if (previewCard){
-      // Preview card always sits a full viewport-width away from the current
-      // card, fully rendered, then tracks the finger 1:1 — so what slides
-      // into view is always the complete card, never a partial one.
       const basePos = (dir === 'next') ? dragWidth : -dragWidth;
       previewCard.style.transform = `translateX(${basePos + dx}px)`;
     }
@@ -1591,7 +1332,6 @@ window.__mbFirebase = {
     const basePos = (dir === 'next') ? dragWidth : -dragWidth;
     previewCard.style.transform = `translateX(${basePos}px)`;
 
-    // opportunistically fetch if not cached yet, so if they commit, it's ready
     if (cached === undefined) prefetchDay(nd);
   }
 
@@ -1635,7 +1375,6 @@ window.__mbFirebase = {
 
     await wait(170);
 
-    // commit new viewDate + swap DOM
     viewDate = neighborDate(dir, viewDate);
     calMonthCursor = new Date(viewDate.getFullYear(), viewDate.getMonth(), 1);
     renderDate();
@@ -1657,13 +1396,11 @@ window.__mbFirebase = {
     const key = fmtKey(viewDate);
     const cached = dayCache.get(key) !== undefined ? dayCache.get(key) : lsGetDay(key);
     if (cached === undefined){
-      // still loading — the card already shows a lightweight loader from buildDayHtml;
-      // fetch now (or await the in-flight prefetch) and patch content in once ready.
       const subjects = await fetchDaySubjects(viewDate);
       dayCache.set(key, subjects);
       lsSetDay(key, subjects);
       currentDayData = { subjects };
-      if (fmtKey(viewDate) === key) renderDay(); // guard against rapid further swipes
+      if (fmtKey(viewDate) === key) renderDay();
     } else {
       dayCache.set(key, cached);
       currentDayData = { subjects: cached };
@@ -1673,11 +1410,6 @@ window.__mbFirebase = {
     isAnimating = false;
   }
 
-  // Animated jump used by the "Today" pill, the calendar popup, and URL-driven
-  // navigation — builds a full off-screen preview card for the target date
-  // (like a swipe would), then slides it fully into view, so the same
-  // "always a complete card" guarantee applies here too, not just to touch
-  // gestures.
   async function animateToDate(targetDate, direction, opts){
     opts = opts || {};
     if (isAnimating) return;
@@ -1703,7 +1435,6 @@ window.__mbFirebase = {
     const startPos = (direction === 'next') ? dragWidth : -dragWidth;
     incoming.style.transform = `translateX(${startPos}px)`;
 
-    // force layout before transitioning
     incoming.getBoundingClientRect();
 
     const exitOffset = (direction === 'next') ? -dragWidth : dragWidth;
@@ -1716,7 +1447,6 @@ window.__mbFirebase = {
       incoming.style.transform = 'translateX(0)';
     });
 
-    // Kick off the fetch (if needed) in parallel with the slide animation.
     let subjectsPromise = null;
     if (cached === undefined){
       subjectsPromise = fetchDaySubjects(targetDate);
@@ -1868,13 +1598,8 @@ window.__mbFirebase = {
     renderDay();
   }
 
-  /* ================================================================
-     DATA LAYER — Supabase (lectures + materials), backed by a
-     localStorage cache so repeat loads of the same day avoid the network.
-     Every read is filtered to the active year_of_view; every lecture
-     insert is tagged with it.
-     ================================================================ */
-  let currentDayData = { subjects: [] }; // kept as "subjects" in-memory to minimize render-code diff; maps to `lectures` table
+  /* ---------------- data layer ---------------- */
+  let currentDayData = { subjects: [] };
 
   async function fetchDaySubjects(date){
     const dateKey = fmtKey(date);
@@ -1932,7 +1657,6 @@ window.__mbFirebase = {
     }));
   }
 
-  // fire-and-forget prefetch, populates dayCache + localStorage when ready
   let prefetchInFlight = new Set();
   async function prefetchDay(date){
     const key = fmtKey(date);
@@ -1947,8 +1671,6 @@ window.__mbFirebase = {
       const subjects = await fetchDaySubjects(date);
       dayCache.set(key, subjects);
       lsSetDay(key, subjects);
-      // if the preview card currently showing is this exact day and still mid-drag/pending,
-      // patch its content in place without disturbing the transform/position.
       if (previewCard && previewCard.dataset.dateKey === key){
         patchPreviewContent(previewCard, date, subjects);
       }
@@ -1975,7 +1697,6 @@ window.__mbFirebase = {
       dayCache.set(dateKey, cached);
       currentDayData = { subjects: cached };
       renderDay();
-      // prefetch both neighbors in background for instant future swipes
       prefetchDay(neighborDate('next'));
       prefetchDay(neighborDate('prev'));
       return;
@@ -1989,7 +1710,7 @@ window.__mbFirebase = {
     dayCache.set(dateKey, subjects);
     lsSetDay(dateKey, subjects);
 
-    if (fmtKey(viewDate) !== dateKey) return; // user navigated away meanwhile
+    if (fmtKey(viewDate) !== dateKey) return;
 
     currentDayData = { subjects };
     renderDay();
@@ -1998,7 +1719,6 @@ window.__mbFirebase = {
     prefetchDay(neighborDate('prev'));
   }
 
-  // collapsed/expanded is per-viewer UI state only — not synced to the backend
   const collapsedState = {};
 
   function uid(){ return Math.random().toString(36).slice(2,10); }
@@ -2012,8 +1732,6 @@ window.__mbFirebase = {
     flashcards: { labelEn:'Flashcards', labelAr:'بطاقات تعليمية', autoEn:'Flashcards', autoAr:'بطاقات تعليمية' },
   };
 
-  // The default/simple-mode title for a given type, used when Advanced
-  // options is left closed (or its custom title field is left blank).
   function autoTitleFor(type){
     const meta = TYPE_META[type] || TYPE_META.pdf;
     return currentLang === 'ar' ? meta.autoAr : meta.autoEn;
@@ -2034,7 +1752,6 @@ window.__mbFirebase = {
     return div.innerHTML;
   }
 
-  /* -------- embed helpers: turn a YouTube/Spotify URL into an embeddable iframe -------- */
   function getYouTubeEmbedUrl(url){
     try {
       const u = new URL(url);
@@ -2062,9 +1779,9 @@ window.__mbFirebase = {
     try {
       const u = new URL(url);
       if (!u.hostname.includes('spotify.com')) return null;
-      const parts = u.pathname.split('/').filter(Boolean); // e.g. ['episode','abc123']
+      const parts = u.pathname.split('/').filter(Boolean);
       if (parts.length < 2) return null;
-      const type = parts[0]; // episode | track | show | playlist | album
+      const type = parts[0];
       const id = parts[1];
       return `https://open.spotify.com/embed/${type}/${id}`;
     } catch (e) {
@@ -2087,17 +1804,10 @@ window.__mbFirebase = {
     return null;
   }
 
-  // Flashcards don't behave like the other material types when tapped: instead
-  // of opening a link/download or an edit modal, tapping the card should send
-  // the user straight to the flashcards viewer page with this material's id.
   function flashcardsViewerUrl(materialId){
     return `https://data.medicinebank.org/flash?id=${encodeURIComponent(materialId)}`;
   }
 
-  // Builds the inner HTML for a day-card given a date + (nullable) subjects array.
-  // subjects === null means "not loaded yet" -> show a lightweight inline loader
-  // instead of the full empty-state, so the header/date is visible immediately
-  // while content streams in.
   function buildDayHtml(date, subjects, isLoading){
     if (isLoading || subjects === null){
       return `<div class="mini-loading-row">${currentLang==='ar'?'جاري التحميل…':'Loading…'}</div>`;
@@ -2154,7 +1864,6 @@ window.__mbFirebase = {
               </a>`;
             }
           } else if (isFlashcards){
-            // Small affordance hinting the card itself is tappable to open the viewer.
             linkHtml = `<div class="material-link-btn" style="pointer-events:none;">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
               <span>${currentLang==='ar'?'فتح البطاقات':'Open flashcards'}</span>
@@ -2242,13 +1951,10 @@ window.__mbFirebase = {
     });
     cardEl.querySelectorAll('[data-edit-material]').forEach(row => {
       row.addEventListener('click', (e) => {
-        // don't trigger edit when tapping inside an embedded player or a link/download button
         if (e.target.closest('.material-embed-wrap') || e.target.closest('.material-link-btn')) return;
         if (requireAuth()) openMaterialModal(row.dataset.editSubject, row.dataset.editMaterial);
       });
     });
-    // Flashcards: tapping the card redirects to the flashcards viewer page
-    // instead of opening the edit modal (delete "x" still works as normal).
     cardEl.querySelectorAll('[data-flashcards-open]').forEach(row => {
       row.addEventListener('click', (e) => {
         if (e.target.closest('.material-card-del')) return;
@@ -2273,9 +1979,8 @@ window.__mbFirebase = {
     const subj = (currentDayData.subjects || []).find(s => s.id === subjectId);
     if (!subj) return;
     subj.collapsed = !subj.collapsed;
-    collapsedState[subjectId] = subj.collapsed; // remember for this session only
+    collapsedState[subjectId] = subj.collapsed;
 
-    // also keep it in sync in the caches for this day, if present
     const key = fmtKey(viewDate);
     const cached = dayCache.get(key);
     if (cached){
@@ -2284,8 +1989,6 @@ window.__mbFirebase = {
       lsSetDay(key, cached);
     }
 
-    // Animate in place instead of a full re-render, so the expand/collapse
-    // feels smooth (grid-template-rows transition defined in CSS).
     const outer = document.querySelector(`[data-materials-outer-for="${subjectId}"]`);
     const chevron = document.querySelector(`[data-toggle-subject="${subjectId}"] .subject-chevron`);
     if (outer) outer.classList.toggle('expanded', !subj.collapsed);
@@ -2400,24 +2103,21 @@ window.__mbFirebase = {
 
   const advancedToggleBtn = document.getElementById('advancedToggleBtn');
   const advancedFields = document.getElementById('advancedFields');
-  const advancedTitleField = document.getElementById('advancedTitleField');
   const advancedTitleInput = document.getElementById('advancedTitleInput');
 
   let activeSubjectId = null;
   let editingMaterialId = null;
   let currentType = 'pdf';
   let currentSource = 'link';
-  let uploadedFile = null; // { fileName, storagePath, publicUrl } after successful upload
-  let uploadedFlashFile = null; // { fileName, storagePath, publicUrl } after successful .apkg upload
+  let uploadedFile = null;
+  let uploadedFlashFile = null;
   let advancedOpen = false;
 
   function setAdvancedOpen(open){
     advancedOpen = open;
     advancedToggleBtn.classList.toggle('is-open', open);
     advancedFields.classList.toggle('expanded', open);
-    // The old, always-visible title field is only shown once advanced mode
-    // is open — in simple mode the title is fully auto-set and hidden.
-    materialTitleField.style.display = 'none'; // legacy field kept in DOM but unused; advancedTitleInput is the live one now
+    materialTitleField.style.display = 'none';
   }
 
   advancedToggleBtn.addEventListener('click', () => setAdvancedOpen(!advancedOpen));
@@ -2455,8 +2155,6 @@ window.__mbFirebase = {
       updateTypeVisual(existing.type);
       advancedTitleInput.value = existing.title || '';
       materialCaptionInput.value = existing.caption || '';
-      // Editing an existing item always opens with advanced visible, since
-      // there's already a real (possibly custom) title/caption to show.
       setAdvancedOpen(true);
       if (existing.type === 'pdf' || existing.type === 'q'){
         if (existing.kind === 'upload'){
@@ -2501,8 +2199,6 @@ window.__mbFirebase = {
       opt.classList.toggle('checked', opt.dataset.type === type);
     });
 
-    // Reset advanced title placeholder to reflect this type's auto title,
-    // so leaving it blank is visibly "will use <auto title>".
     advancedTitleInput.placeholder = autoTitleFor(type);
 
     if (type === 'pdf' || type === 'q'){
@@ -2727,12 +2423,6 @@ window.__mbFirebase = {
 
   /* ---------------- init ---------------- */
   (async function init(){
-    // 1. Resolve the initial date from the URL. On a fresh static-host load
-    // (GitHub Pages) the real path is already in window.location.pathname.
-    // On a load that bounced through 404.html (a direct/shared link to a
-    // date path GitHub Pages couldn't find as a real file), the original
-    // path was stashed in sessionStorage instead — check that first, then
-    // rewrite the visible URL back to the clean path via replaceState.
     let redirectPath = null;
     try {
       redirectPath = sessionStorage.getItem('mb_redirect_path');
@@ -2745,22 +2435,13 @@ window.__mbFirebase = {
       viewDate = parsedFromUrl;
       calMonthCursor = new Date(viewDate.getFullYear(), viewDate.getMonth(), 1);
     }
-    // Normalize the URL to the canonical /D-M-YYYY form for the resolved date
-    // (covers both "no path yet" and "path had leading zeros" cases) without
-    // adding a history entry.
     syncUrlToDate(viewDate, true);
 
-    // 1b. Resolve saved language before anything renders, so the very first
-    // paint already reflects the user's stored choice instead of flashing
-    // English and then switching.
     const storedLang = getStoredLang();
     if (storedLang && storedLang !== currentLang){
-      setLang(storedLang, true); // skipPersist: it's already the stored value
+      setLang(storedLang, true);
     }
 
-    // 2. Resolve the year filter. If none stored yet, block on the gate
-    // before any data loads or renders — this satisfies the "cannot skip"
-    // requirement for first-time visitors.
     const stored = getStoredYear();
     if (stored){
       currentYear = stored;
