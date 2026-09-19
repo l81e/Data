@@ -1,1 +1,870 @@
-FU
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>Flashcards — MedicineBank</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.2/jszip.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sql.js@1.10.3/dist/sql-wasm.js"></script>
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+
+  :root{
+    --bg:            #0b0b0b;
+    --panel:         #161616;
+    --panel-hi:      #1e1e1e;
+    --line:          #2b2b2b;
+    --line-soft:     #232323;
+
+    --text:          #f2f2f2;
+    --text-dim:      #a8a8a8;
+    --text-faint:    #6b6b6b;
+
+    --accent:        #e8e8e8;
+    --accent-dark:   #ffffff;
+    --accent-glow:   rgba(255,255,255,0.08);
+    --err:           #c7c7c7;
+
+    --today-green:   #3ba55c;
+    --today-green-hi:#46bd68;
+  }
+
+  html,body{height:100%;}
+  body{
+    font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    background:var(--bg);
+    color:var(--text);
+    line-height:1.6;
+    position:relative;
+    min-height:100vh;
+    overflow-x:hidden;
+  }
+  html[dir="rtl"] body{font-family:'Cairo',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;}
+
+  a{color:inherit; text-decoration:none;}
+  ul{list-style:none;}
+  button{font-family:inherit;}
+
+  /* ---------- HEADER (matches parent) ---------- */
+  .site-header{
+    position:relative; z-index:30;
+    padding:20px 40px 4px;
+    display:flex; align-items:flex-start; justify-content:space-between;
+  }
+  .header-left{display:flex; flex-direction:column; align-items:flex-start; gap:2px;}
+  .logo-wrap{display:flex; align-items:center; gap:10px; margin-bottom:14px;}
+  .logo-img{height:28px; width:auto; display:block;}
+  .logo-fallback{
+    display:flex; align-items:center; justify-content:center;
+    width:28px; height:28px; border-radius:6px;
+    border:1px solid var(--line-soft);
+    font-weight:800; font-size:0.72rem; letter-spacing:0.2px; color:var(--text);
+  }
+
+  .back-link{
+    display:flex; align-items:center; gap:7px;
+    border:1px solid var(--line-soft); border-radius:20px;
+    padding:8px 16px 8px 14px; cursor:pointer;
+    background:transparent; color:var(--text-dim);
+    font-size:0.78rem; font-weight:700;
+    transition:border-color .15s, color .15s;
+  }
+  html[dir="rtl"] .back-link{padding:8px 14px 8px 16px; flex-direction:row-reverse;}
+  .back-link:hover{border-color:var(--text-dim); color:var(--text);}
+  .back-link svg{width:14px; height:14px; flex-shrink:0;}
+  html[dir="rtl"] .back-link svg{transform:scaleX(-1);}
+
+  .lang-switch-btn{
+    width:34px; height:34px; border-radius:50%;
+    background:transparent; border:1px solid var(--line-soft);
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer; color:var(--text-faint);
+    transition:border-color .15s, color .15s;
+    flex-shrink:0;
+  }
+  .lang-switch-btn:hover{border-color:var(--text-faint); color:var(--text-dim);}
+  .lang-switch-btn svg{width:16px; height:16px;}
+
+  .header-right{display:flex; align-items:center; gap:8px;}
+  html[dir="rtl"] .header-right{flex-direction:row-reverse;}
+
+  /* ---------- DECK TITLE HERO ---------- */
+  .deck-hero{
+    position:relative; z-index:2;
+    padding:6px 40px 22px;
+    text-align:left;
+  }
+  html[dir="rtl"] .deck-hero{text-align:right;}
+  .deck-title{
+    font-weight:700;
+    font-size:clamp(1.4rem, 5vw, 2rem);
+    letter-spacing:-0.02em;
+    line-height:1.2;
+    word-break:break-word;
+  }
+  html[dir="rtl"] .deck-title{font-family:'Cairo',sans-serif;}
+  .deck-sub{font-size:0.8rem; color:var(--text-faint); margin-top:6px;}
+
+  .progress-row{
+    display:flex; align-items:center; gap:10px;
+    margin-top:16px;
+  }
+  .progress-track{
+    flex:1; height:5px; border-radius:4px;
+    background:var(--line-soft); overflow:hidden;
+  }
+  .progress-fill{
+    height:100%; border-radius:4px;
+    background:var(--text);
+    width:0%;
+    transition:width .25s ease;
+  }
+  .progress-count{
+    font-size:0.72rem; color:var(--text-faint); font-weight:700;
+    white-space:nowrap;
+  }
+
+  /* ---------- MAIN ---------- */
+  main{
+    position:relative; z-index:2; max-width:720px; margin:0 auto; padding:0 24px 40px;
+  }
+
+  .loading-row{text-align:center; padding:70px 20px; color:var(--text-faint); font-size:0.85rem;}
+  .loading-row .spin-icon{
+    width:26px; height:26px; margin:0 auto 16px;
+    border:2px solid var(--line-soft); border-top-color:var(--text-dim);
+    border-radius:50%;
+    animation:spin 0.8s linear infinite;
+  }
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  .error-row{
+    text-align:center; padding:50px 24px 60px; color:var(--text-dim);
+  }
+  .error-row .big-icon{font-size:2rem; margin-bottom:14px; opacity:0.6;}
+  .error-row h3{font-size:1rem; font-weight:700; margin-bottom:8px; color:var(--text);}
+  .error-row p{font-size:0.85rem; max-width:420px; margin:0 auto; line-height:1.7; color:var(--text-faint);}
+  .error-row .err-hint{
+    margin-top:18px; display:inline-block;
+    font-size:0.76rem; color:var(--text-faint);
+    border:1px solid var(--line-soft); border-radius:8px;
+    padding:10px 14px; text-align:left; line-height:1.6;
+  }
+  html[dir="rtl"] .error-row .err-hint{text-align:right;}
+
+  /* ---------- FLASHCARD ---------- */
+  .card-stage{
+    position:relative;
+    perspective:1600px;
+    margin-bottom:22px;
+    touch-action:pan-y;
+  }
+  .flip-card{
+    position:relative;
+    width:100%;
+    min-height:280px;
+    cursor:pointer;
+  }
+  .flip-card-inner{
+    position:relative;
+    width:100%;
+    height:100%;
+    min-height:280px;
+    transition:transform .38s cubic-bezier(.4,0,.2,1);
+    transform-style:preserve-3d;
+  }
+  .flip-card.is-flipped .flip-card-inner{transform:rotateY(180deg);}
+  html[dir="rtl"] .flip-card.is-flipped .flip-card-inner{transform:rotateY(-180deg);}
+
+  .flip-face{
+    position:absolute; inset:0;
+    backface-visibility:hidden;
+    -webkit-backface-visibility:hidden;
+    background:var(--panel);
+    border:1px solid var(--line-soft);
+    border-radius:14px;
+    padding:26px 22px;
+    display:flex; flex-direction:column;
+    overflow-y:auto;
+    max-height:62vh;
+  }
+  .flip-face.face-back{transform:rotateY(180deg);}
+  html[dir="rtl"] .flip-face.face-back{transform:rotateY(-180deg);}
+
+  .flip-face-label{
+    font-size:0.66rem; font-weight:800; text-transform:uppercase; letter-spacing:0.06em;
+    color:var(--text-faint); margin-bottom:14px; flex-shrink:0;
+  }
+  .flip-face-content{
+    flex:1;
+    font-size:1.02rem; line-height:1.65; color:var(--text);
+    word-break:break-word;
+  }
+  .flip-face-content img{
+    max-width:100%; height:auto; border-radius:8px;
+    margin:10px 0; display:block;
+    border:1px solid var(--line-soft);
+  }
+  .flip-face-content audio{
+    width:100%; margin:10px 0;
+    height:36px;
+  }
+  .flip-face-content b, .flip-face-content strong{color:var(--text); font-weight:700;}
+  .flip-face-content .cloze-blank{
+    color:var(--text);
+    background:var(--accent-glow);
+    border-radius:4px;
+    padding:1px 6px;
+    font-weight:700;
+  }
+  .flip-face-content table{
+    width:100%; border-collapse:collapse; margin:10px 0; font-size:0.92rem;
+  }
+  .flip-face-content td, .flip-face-content th{
+    border:1px solid var(--line-soft); padding:6px 9px; text-align:left;
+  }
+  html[dir="rtl"] .flip-face-content td, html[dir="rtl"] .flip-face-content th{text-align:right;}
+  .flip-face-content hr{border:none; border-top:1px solid var(--line-soft); margin:14px 0;}
+  .flip-face-content ul, .flip-face-content ol{padding-left:22px; margin:8px 0;}
+  html[dir="rtl"] .flip-face-content ul, html[dir="rtl"] .flip-face-content ol{padding-left:0; padding-right:22px;}
+
+  .tap-hint{
+    text-align:center; font-size:0.72rem; color:var(--text-faint);
+    margin-bottom:20px;
+  }
+
+  /* ---------- NAV CONTROLS ---------- */
+  .nav-row{
+    display:flex; align-items:center; justify-content:center; gap:10px;
+    margin-bottom:22px;
+  }
+  .nav-btn{
+    width:46px; height:46px; border-radius:50%;
+    background:var(--panel); border:1px solid var(--line-soft);
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer; color:var(--text-dim);
+    transition:border-color .15s, color .15s, opacity .15s;
+    flex-shrink:0;
+  }
+  .nav-btn:hover:not(:disabled){border-color:var(--text-dim); color:var(--text);}
+  .nav-btn:disabled{opacity:0.3; cursor:not-allowed;}
+  .nav-btn svg{width:18px; height:18px;}
+  html[dir="rtl"] .nav-btn.nav-prev svg{transform:scaleX(-1);}
+  html[dir="rtl"] .nav-btn.nav-next svg{transform:scaleX(-1);}
+
+  .flip-btn{
+    flex:1; max-width:220px;
+    height:46px; border-radius:23px;
+    background:var(--text); color:var(--bg);
+    border:none; cursor:pointer;
+    font-size:0.85rem; font-weight:700;
+    display:flex; align-items:center; justify-content:center; gap:8px;
+    transition:background .15s;
+  }
+  .flip-btn:hover{background:var(--text-dim);}
+  .flip-btn svg{width:15px; height:15px;}
+
+  /* ---------- DECK LIST (browse all / jump to card) ---------- */
+  .deck-toolbar{
+    display:flex; align-items:center; justify-content:space-between;
+    margin-bottom:16px; gap:10px;
+  }
+  .mode-toggle{
+    display:flex; gap:6px; background:var(--panel); border:1px solid var(--line-soft);
+    border-radius:20px; padding:3px;
+  }
+  .mode-toggle-opt{
+    padding:7px 14px; border-radius:17px; font-size:0.74rem; font-weight:700;
+    color:var(--text-faint); cursor:pointer; white-space:nowrap;
+  }
+  .mode-toggle-opt.active{background:var(--panel-hi); color:var(--text); border:1px solid var(--line-soft);}
+
+  .card-list{display:flex; flex-direction:column; gap:8px;}
+  .card-list-item{
+    background:var(--panel);
+    border:1px solid var(--line-soft);
+    border-radius:10px;
+    padding:13px 16px;
+    cursor:pointer;
+    display:flex; align-items:center; gap:12px;
+    transition:border-color .15s;
+  }
+  .card-list-item:hover{border-color:var(--text-faint);}
+  .card-list-num{
+    flex-shrink:0; width:26px; height:26px; border-radius:50%;
+    background:var(--panel-hi); border:1px solid var(--line-soft);
+    display:flex; align-items:center; justify-content:center;
+    font-size:0.7rem; font-weight:800; color:var(--text-faint);
+  }
+  .card-list-text{
+    flex:1; min-width:0; font-size:0.86rem; color:var(--text-dim);
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .card-list-text img{display:none;}
+  .card-list-chevron{flex-shrink:0; width:14px; height:14px; color:var(--text-faint);}
+  html[dir="rtl"] .card-list-chevron{transform:scaleX(-1);}
+
+  @media (max-width:560px){
+    .site-header{padding:16px 18px 4px;}
+    .deck-hero{padding:6px 18px 20px;}
+    main{padding:0 14px 40px;}
+    .flip-face{padding:20px 16px; max-height:56vh;}
+  }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="header-left">
+    <div class="logo-wrap">
+      <img src="IMG_3083.png" alt="MedicineBank" class="logo-img" onerror="this.style.display='none'; document.getElementById('logoFallback').style.display='flex';" />
+      <div class="logo-fallback" id="logoFallback" style="display:none;">MB</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <button type="button" class="lang-switch-btn" id="langSwitchBtn" aria-label="Toggle language">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 010 20 15 15 0 010-20z"/></svg>
+    </button>
+    <button type="button" class="back-link" id="backLinkBtn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+      <span data-en="Back" data-ar="رجوع">Back</span>
+    </button>
+  </div>
+</header>
+
+<section class="deck-hero">
+  <div class="deck-title" id="deckTitle">—</div>
+  <div class="deck-sub" id="deckSub"></div>
+  <div class="progress-row" id="progressRow" style="display:none;">
+    <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+    <div class="progress-count" id="progressCount">0 / 0</div>
+  </div>
+</section>
+
+<main id="mainEl">
+  <div class="loading-row" id="loadingRow">
+    <div class="spin-icon"></div>
+    <div data-en="Opening flashcards…" data-ar="بيفتح البطاقات…">Opening flashcards…</div>
+  </div>
+</main>
+
+<script>
+(function(){
+  const htmlEl = document.documentElement;
+  let currentLang = 'en';
+
+  const LANG_LS_KEY = 'mb_lang';
+  function getStoredLang(){
+    try {
+      const v = localStorage.getItem(LANG_LS_KEY);
+      return (v === 'en' || v === 'ar') ? v : null;
+    } catch (e) { return null; }
+  }
+  function setStoredLang(v){ try { localStorage.setItem(LANG_LS_KEY, v); } catch (e) {} }
+
+  function applyStaticText(lang){
+    document.querySelectorAll('[data-en]').forEach(el => {
+      const t = lang === 'ar' ? el.dataset.ar : el.dataset.en;
+      if (t != null) el.textContent = t;
+    });
+  }
+
+  function setLang(lang, skipPersist){
+    currentLang = lang;
+    if (!skipPersist) setStoredLang(lang);
+    htmlEl.setAttribute('lang', lang);
+    htmlEl.setAttribute('dir', lang === 'ar' ? 'rtl' : 'ltr');
+    applyStaticText(lang);
+    renderProgress();
+  }
+
+  document.getElementById('langSwitchBtn').addEventListener('click', () => {
+    setLang(currentLang === 'en' ? 'ar' : 'en');
+  });
+
+  /* ---------------- back navigation ---------------- */
+  document.getElementById('backLinkBtn').addEventListener('click', () => {
+    if (document.referrer && document.referrer.indexOf(window.location.hostname) !== -1) {
+      window.history.back();
+    } else {
+      window.location.href = '/';
+    }
+  });
+
+  /* ---------------- Supabase ---------------- */
+  const SUPABASE_URL = 'https://igfooetzorzhhvpakgqa.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlnZm9vZXR6b3J6aGh2cGFrZ3FhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg5ODg2NTksImV4cCI6MjEwNDU2NDY1OX0.1XLeeRi4KFJptk73JKx_vs0FlO5EXM17KIyFSaKWLCA';
+  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  function getQueryParam(name){
+    const params = new URLSearchParams(window.location.search);
+    return params.get(name);
+  }
+
+  const mainEl = document.getElementById('mainEl');
+  const deckTitle = document.getElementById('deckTitle');
+  const deckSub = document.getElementById('deckSub');
+  const progressRow = document.getElementById('progressRow');
+  const progressFill = document.getElementById('progressFill');
+  const progressCount = document.getElementById('progressCount');
+
+  function escapeHtml(str){
+    const div = document.createElement('div');
+    div.textContent = str == null ? '' : str;
+    return div.innerHTML;
+  }
+
+  function renderErrorState(titleEn, titleAr, bodyEn, bodyAr, hintEn, hintAr){
+    deckTitle.textContent = currentLang==='ar' ? 'مشكلة في الملف' : 'Trouble opening deck';
+    deckSub.textContent = '';
+    progressRow.style.display = 'none';
+    let hintHtml = '';
+    if (hintEn){
+      hintHtml = `<div class="err-hint">${currentLang==='ar'?escapeHtml(hintAr):escapeHtml(hintEn)}</div>`;
+    }
+    mainEl.innerHTML = `
+      <div class="error-row">
+        <div class="big-icon">⚠️</div>
+        <h3>${currentLang==='ar'?escapeHtml(titleAr):escapeHtml(titleEn)}</h3>
+        <p>${currentLang==='ar'?escapeHtml(bodyAr):escapeHtml(bodyEn)}</p>
+        ${hintHtml}
+      </div>
+    `;
+  }
+
+  /* ---------------- state ---------------- */
+  let deckCards = [];       // [{ front, back, id }]
+  let currentIndex = 0;
+  let viewMode = 'study';   // 'study' | 'browse'
+
+  /* ---------------- HTML template rendering (Anki field substitution) ---------------- */
+  function fillTemplate(tpl, fieldMap){
+    // Basic mustache-style field replacement: {{FieldName}}, {{text:FieldName}}, conditional {{#Field}}...{{/Field}}
+    let out = tpl;
+
+    // Strip {{FrontSide}} placeholder gracefully if unresolved later
+    // Conditional sections {{#Field}}...{{/Field}} and {{^Field}}...{{/Field}}
+    out = out.replace(/{{#([^}]+)}}([\s\S]*?){{\/\1}}/g, (m, field, inner) => {
+      const val = fieldMap[field.trim()];
+      return (val && val.trim() !== '') ? inner : '';
+    });
+    out = out.replace(/{{\^([^}]+)}}([\s\S]*?){{\/\1}}/g, (m, field, inner) => {
+      const val = fieldMap[field.trim()];
+      return (!val || val.trim() === '') ? inner : '';
+    });
+
+    // Simple / modified field refs: {{Field}}, {{text:Field}}, {{type:Field}}, {{hint:Field}}
+    out = out.replace(/{{([a-zA-Z0-9_:]+)}}/g, (m, ref) => {
+      let field = ref;
+      if (ref.indexOf(':') !== -1) field = ref.split(':').pop();
+      if (field === 'FrontSide') return '__FRONTSIDE__';
+      return fieldMap[field] != null ? fieldMap[field] : '';
+    });
+
+    return out;
+  }
+
+  function stripUnresolvedTags(str){
+    return str.replace(/{{[^}]*}}/g, '');
+  }
+
+  /* ---------------- Cloze handling ---------------- */
+  function renderCloze(text, ordinal, isBack){
+    // {{c1::answer}} or {{c1::answer::hint}}
+    return text.replace(/{{c(\d+)::(.*?)}}/gs, (m, num, body) => {
+      const n = parseInt(num, 10);
+      const parts = body.split('::');
+      const answer = parts[0];
+      const hint = parts[1];
+      if (n === ordinal){
+        if (isBack){
+          return `<span class="cloze-blank">${answer}</span>`;
+        }
+        return `<span class="cloze-blank">${hint ? '[' + hint + ']' : '[...]'}</span>`;
+      }
+      return answer;
+    });
+  }
+
+  /* ---------------- Media URL rewriting ---------------- */
+  function rewriteMediaRefs(html, mediaUrlMap){
+    // src="filename.jpg" or src='filename.jpg' -> blob URL
+    return html.replace(/(src|SRC)=(["'])([^"']+)\2/g, (m, attr, quote, fname) => {
+      const decoded = decodeURIComponent(fname);
+      const url = mediaUrlMap[fname] || mediaUrlMap[decoded];
+      if (url) return `${attr}=${quote}${url}${quote}`;
+      return m;
+    });
+  }
+
+  /* ---------------- .apkg parsing ---------------- */
+  async function parseApkg(arrayBuffer){
+    const zip = await JSZip.loadAsync(arrayBuffer);
+
+    const hasLatest = !!zip.file('collection.anki21b');
+    const dbFile = zip.file('collection.anki21') || zip.file('collection.anki2');
+
+    if (!dbFile){
+      if (hasLatest){
+        throw { code: 'LATEST_FORMAT' };
+      }
+      throw { code: 'NO_DB' };
+    }
+
+    // media map: JSON { "0": "filename.jpg", "1": "audio.mp3", ... }
+    let mediaMap = {};
+    const mediaFile = zip.file('media');
+    if (mediaFile){
+      try {
+        const mediaText = await mediaFile.async('string');
+        mediaMap = JSON.parse(mediaText);
+      } catch (e) { /* no media */ }
+    }
+
+    // Build blob URLs for every referenced media file, keyed by real filename
+    const mediaUrlMap = {};
+    const mediaEntries = Object.entries(mediaMap);
+    for (const [num, realName] of mediaEntries){
+      const f = zip.file(num);
+      if (!f) continue;
+      const blob = await f.async('blob');
+      const url = URL.createObjectURL(blob);
+      mediaUrlMap[realName] = url;
+    }
+
+    // Load SQLite database
+    const dbBytes = await dbFile.async('uint8array');
+
+    const SQL = await initSqlJs({
+      locateFile: file => `https://cdn.jsdelivr.net/npm/sql.js@1.10.3/dist/${file}`
+    });
+    const db = new SQL.Database(dbBytes);
+
+    // notetypes / models: stored as JSON in col.models (schema v11) — older/Legacy format
+    const colRes = db.exec("SELECT models, decks FROM col LIMIT 1");
+    if (!colRes || !colRes.length){
+      throw { code: 'BAD_DB' };
+    }
+    const modelsJson = colRes[0].values[0][0];
+    let models;
+    try {
+      models = JSON.parse(modelsJson);
+    } catch (e){
+      throw { code: 'BAD_DB' };
+    }
+
+    // notes: id, mid (model id), flds (fields joined by \x1f)
+    const notesRes = db.exec("SELECT id, mid, flds FROM notes");
+    const notes = (notesRes.length ? notesRes[0].values : []).map(row => ({
+      id: row[0], mid: String(row[1]), flds: row[2]
+    }));
+
+    // cards: id, nid (note id), ord (which template)
+    const cardsRes = db.exec("SELECT id, nid, ord FROM cards ORDER BY id ASC");
+    const cardRows = (cardsRes.length ? cardsRes[0].values : []).map(row => ({
+      id: row[0], nid: row[1], ord: row[2]
+    }));
+
+    const notesById = {};
+    notes.forEach(n => { notesById[n.id] = n; });
+
+    const cards = [];
+
+    for (const cardRow of cardRows){
+      const note = notesById[cardRow.nid];
+      if (!note) continue;
+      const model = models[note.mid];
+      if (!model) continue;
+
+      const fieldNames = model.flds.map(f => f.name);
+      const fieldValues = note.flds.split('\x1f');
+      const fieldMap = {};
+      fieldNames.forEach((name, i) => { fieldMap[name] = fieldValues[i] || ''; });
+
+      const isCloze = model.type === 1;
+      const tmpl = model.tmpls[cardRow.ord];
+      if (!tmpl) continue;
+
+      let frontHtml, backHtml;
+
+      if (isCloze){
+        // Cloze note type: qfmt/afmt reference {{cloze:Field}}, ordinal = card.ord + 1
+        const clozeOrdinal = cardRow.ord + 1;
+        const clozeFieldMatch = tmpl.qfmt.match(/{{cloze:([^}]+)}}/);
+        const clozeFieldName = clozeFieldMatch ? clozeFieldMatch[1] : (fieldNames[0] || '');
+        const rawField = fieldMap[clozeFieldName] || '';
+
+        frontHtml = renderCloze(rawField, clozeOrdinal, false);
+        backHtml = renderCloze(rawField, clozeOrdinal, true);
+
+        // Extra field (if present) appended on back, common in cloze templates
+        if (fieldNames.length > 1 && fieldMap[fieldNames[1]]){
+          backHtml += '<hr>' + fieldMap[fieldNames[1]];
+        }
+      } else {
+        frontHtml = fillTemplate(tmpl.qfmt, fieldMap);
+        frontHtml = stripUnresolvedTags(frontHtml);
+
+        let afmt = fillTemplate(tmpl.afmt, fieldMap);
+        afmt = afmt.replace('__FRONTSIDE__', frontHtml);
+        backHtml = stripUnresolvedTags(afmt);
+      }
+
+      frontHtml = rewriteMediaRefs(frontHtml, mediaUrlMap);
+      backHtml = rewriteMediaRefs(backHtml, mediaUrlMap);
+
+      cards.push({ id: cardRow.id, front: frontHtml, back: backHtml });
+    }
+
+    db.close();
+
+    if (cards.length === 0){
+      throw { code: 'NO_CARDS' };
+    }
+
+    return cards;
+  }
+
+  /* ---------------- flashcard UI ---------------- */
+  function renderProgress(){
+    if (!deckCards.length) return;
+    progressRow.style.display = 'flex';
+    const pct = ((currentIndex + 1) / deckCards.length) * 100;
+    progressFill.style.width = pct + '%';
+    progressCount.textContent = currentLang === 'ar'
+      ? `${currentIndex + 1} / ${deckCards.length}`
+      : `${currentIndex + 1} / ${deckCards.length}`;
+  }
+
+  function renderStudyMode(){
+    viewMode = 'study';
+    const card = deckCards[currentIndex];
+    if (!card) return;
+
+    mainEl.innerHTML = `
+      <div class="deck-toolbar">
+        <div class="mode-toggle">
+          <div class="mode-toggle-opt active" data-mode="study" data-en="Study" data-ar="مذاكرة">Study</div>
+          <div class="mode-toggle-opt" data-mode="browse" data-en="Browse all" data-ar="كل البطاقات">Browse all</div>
+        </div>
+      </div>
+
+      <div class="card-stage">
+        <div class="flip-card" id="flipCard">
+          <div class="flip-card-inner" id="flipCardInner">
+            <div class="flip-face face-front">
+              <div class="flip-face-label" data-en="Question" data-ar="السؤال">Question</div>
+              <div class="flip-face-content" id="frontContent"></div>
+            </div>
+            <div class="flip-face face-back">
+              <div class="flip-face-label" data-en="Answer" data-ar="الإجابة">Answer</div>
+              <div class="flip-face-content" id="backContent"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tap-hint" data-en="Tap the card to flip it" data-ar="اضغط على البطاقة عشان تقلبها">Tap the card to flip it</div>
+
+      <div class="nav-row">
+        <button class="nav-btn nav-prev" id="prevBtn" aria-label="Previous">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+        </button>
+        <button class="flip-btn" id="flipBtnMain">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 2.1l4 4-4 4M3 12.9V9a4 4 0 014-4h14M7 21.9l-4-4 4-4M21 11.1V15a4 4 0 01-4 4H3"/></svg>
+          <span data-en="Flip" data-ar="اقلب">Flip</span>
+        </button>
+        <button class="nav-btn nav-next" id="nextBtn" aria-label="Next">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+        </button>
+      </div>
+    `;
+
+    document.getElementById('frontContent').innerHTML = card.front;
+    document.getElementById('backContent').innerHTML = card.back;
+
+    const flipCard = document.getElementById('flipCard');
+    flipCard.addEventListener('click', () => flipCard.classList.toggle('is-flipped'));
+    document.getElementById('flipBtnMain').addEventListener('click', (e) => {
+      e.stopPropagation();
+      flipCard.classList.toggle('is-flipped');
+    });
+
+    document.getElementById('prevBtn').disabled = currentIndex === 0;
+    document.getElementById('nextBtn').disabled = currentIndex === deckCards.length - 1;
+    document.getElementById('prevBtn').addEventListener('click', () => goToCard(currentIndex - 1));
+    document.getElementById('nextBtn').addEventListener('click', () => goToCard(currentIndex + 1));
+
+    document.querySelectorAll('.mode-toggle-opt').forEach(opt => {
+      opt.addEventListener('click', () => {
+        if (opt.dataset.mode === 'browse') renderBrowseMode();
+      });
+    });
+
+    applyStaticText(currentLang);
+    renderProgress();
+
+    // swipe support
+    let touchStartX = 0;
+    mainEl.addEventListener('touchstart', (e) => { touchStartX = e.touches[0].clientX; }, { passive:true });
+    mainEl.addEventListener('touchend', (e) => {
+      const dx = e.changedTouches[0].clientX - touchStartX;
+      if (Math.abs(dx) < 50) return;
+      const rtl = htmlEl.getAttribute('dir') === 'rtl';
+      const goingNext = rtl ? dx > 0 : dx < 0;
+      if (goingNext && currentIndex < deckCards.length - 1) goToCard(currentIndex + 1);
+      else if (!goingNext && currentIndex > 0) goToCard(currentIndex - 1);
+    }, { passive:true });
+  }
+
+  function goToCard(idx){
+    if (idx < 0 || idx >= deckCards.length) return;
+    currentIndex = idx;
+    renderStudyMode();
+  }
+
+  function plainTextPreview(html){
+    const div = document.createElement('div');
+    div.innerHTML = html;
+    div.querySelectorAll('img').forEach(img => img.replaceWith(currentLang==='ar' ? '📷 صورة' : '📷 Image'));
+    div.querySelectorAll('audio').forEach(a => a.replaceWith(currentLang==='ar' ? '🔊 صوت' : '🔊 Audio'));
+    const text = (div.textContent || '').replace(/\s+/g, ' ').trim();
+    return text || (currentLang==='ar' ? '(بدون نص)' : '(no text)');
+  }
+
+  function renderBrowseMode(){
+    viewMode = 'browse';
+    mainEl.innerHTML = `
+      <div class="deck-toolbar">
+        <div class="mode-toggle">
+          <div class="mode-toggle-opt" data-mode="study" data-en="Study" data-ar="مذاكرة">Study</div>
+          <div class="mode-toggle-opt active" data-mode="browse" data-en="Browse all" data-ar="كل البطاقات">Browse all</div>
+        </div>
+      </div>
+      <div class="card-list" id="cardListEl"></div>
+    `;
+    const listEl = document.getElementById('cardListEl');
+    listEl.innerHTML = deckCards.map((c, i) => `
+      <div class="card-list-item" data-idx="${i}">
+        <div class="card-list-num">${i+1}</div>
+        <div class="card-list-text">${escapeHtml(plainTextPreview(c.front))}</div>
+        <svg class="card-list-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+      </div>
+    `).join('');
+
+    listEl.querySelectorAll('.card-list-item').forEach(item => {
+      item.addEventListener('click', () => {
+        currentIndex = parseInt(item.dataset.idx, 10);
+        renderStudyMode();
+      });
+    });
+
+    document.querySelectorAll('.mode-toggle-opt').forEach(opt => {
+      opt.addEventListener('click', () => {
+        if (opt.dataset.mode === 'study') renderStudyMode();
+      });
+    });
+
+    applyStaticText(currentLang);
+    progressRow.style.display = 'none';
+  }
+
+  /* ---------------- init ---------------- */
+  (async function init(){
+    const storedLang = getStoredLang();
+    if (storedLang) setLang(storedLang, true);
+
+    const materialId = getQueryParam('id');
+    if (!materialId){
+      renderErrorState(
+        'No flashcard set specified', 'مفيش بطاقات محددة',
+        'This link is missing the flashcard ID.', 'اللينك ده ناقصه رقم مجموعة البطاقات.'
+      );
+      return;
+    }
+
+    // 1. look up the material row to get the .apkg url + title
+    const { data: material, error: matErr } = await supabase
+      .from('materials')
+      .select('id, title, url, file_name, type')
+      .eq('id', materialId)
+      .single();
+
+    if (matErr || !material){
+      renderErrorState(
+        'Flashcards not found', 'البطاقات مش موجودة',
+        'This flashcard set may have been removed or the link is incorrect.',
+        'ممكن مجموعة البطاقات دي اتشالت أو اللينك غلط.'
+      );
+      return;
+    }
+
+    deckTitle.textContent = material.title || (currentLang==='ar' ? 'بطاقات تعليمية' : 'Flashcards');
+    deckSub.textContent = currentLang==='ar' ? 'بيتم فتح البطاقات…' : 'Opening the deck…';
+
+    // 2. fetch the .apkg file bytes
+    let arrayBuffer;
+    try {
+      const resp = await fetch(material.url);
+      if (!resp.ok) throw new Error('fetch failed');
+      arrayBuffer = await resp.arrayBuffer();
+    } catch (e){
+      renderErrorState(
+        'Could not download the file', 'مقدرش يحمّل الملف',
+        'The flashcard file could not be downloaded. Check your connection and try again.',
+        'مقدرش يحمّل ملف البطاقات. اتأكد من النت وجرب تاني.'
+      );
+      return;
+    }
+
+    // 3. parse the .apkg
+    try {
+      deckCards = await parseApkg(arrayBuffer);
+    } catch (e){
+      const code = (e && e.code) || 'UNKNOWN';
+      if (code === 'LATEST_FORMAT'){
+        renderErrorState(
+          'Newer Anki format not supported yet',
+          'نوع الملف الجديد مش مدعوم لسه',
+          'This deck was exported in Anki\'s newest compressed format, which this viewer can\'t read yet.',
+          'الملف ده اتصدّر بصيغة Anki الجديدة المضغوطة، والصفحة دي لسه مش عارفة تقراها.',
+          'In Anki, re-export the deck and check "Support older Anki versions (slower/larger files)" before saving the .apkg, then re-upload it here.',
+          'في Anki، صدّر الملف تاني واختار خيار "Support older Anki versions" قبل ما تحفظ ملف الـ.apkg، وبعدين ارفعه هنا تاني.'
+        );
+      } else if (code === 'NO_DB' || code === 'BAD_DB'){
+        renderErrorState(
+          'Couldn\'t read this file', 'مقدرش يقرا الملف ده',
+          'This doesn\'t look like a valid Anki flashcard deck (.apkg) file.',
+          'الملف ده مش شكله ملف بطاقات Anki (.apkg) صحيح.'
+        );
+      } else if (code === 'NO_CARDS'){
+        renderErrorState(
+          'This deck is empty', 'المجموعة دي فاضية',
+          'No flashcards were found inside this file.',
+          'مفيش بطاقات جوا الملف ده.'
+        );
+      } else {
+        renderErrorState(
+          'Something went wrong', 'حصل خطأ',
+          'This flashcard file couldn\'t be opened. It may be corrupted or in an unsupported format.',
+          'ملف البطاقات ده مقدرش يتفتح. ممكن يكون تالف أو بصيغة مش مدعومة.'
+        );
+      }
+      return;
+    }
+
+    deckSub.textContent = currentLang==='ar'
+      ? `${deckCards.length} بطاقة`
+      : `${deckCards.length} card${deckCards.length===1?'':'s'}`;
+
+    currentIndex = 0;
+    renderStudyMode();
+  })();
+})();
+</script>
+</body>
+</html>
