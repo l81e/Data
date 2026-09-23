@@ -830,10 +830,42 @@
 
     const flipCard = document.getElementById('flipCard');
 
-    // Tapping the card flips it — but not when the tap/click originated
-    // from inside a scrolling gesture on the face content, and not while
-    // a face is actively scrolled (so a scroll-then-release doesn't flip).
+    // Tapping the card flips it — but a scroll-drag inside the face
+    // content must NOT also trigger a flip. Touch devices can fire a
+    // trailing synthetic "click" on touchend even after a real drag,
+    // and that stray click was flipping the card mid-scroll, landing on
+    // the other face already scrolled from the same finger movement.
+    // So we track whether real pointer/touch movement happened between
+    // press and release, and only flip when it didn't.
+    let pressX = 0, pressY = 0, movedPastThreshold = false;
+    const DRAG_THRESHOLD = 10; // px
+
+    function onPressStart(x, y){
+      pressX = x; pressY = y; movedPastThreshold = false;
+    }
+    function onPressMove(x, y){
+      if (Math.abs(x - pressX) > DRAG_THRESHOLD || Math.abs(y - pressY) > DRAG_THRESHOLD){
+        movedPastThreshold = true;
+      }
+    }
+
+    flipCard.addEventListener('mousedown', (e) => onPressStart(e.clientX, e.clientY));
+    flipCard.addEventListener('mousemove', (e) => { if (e.buttons) onPressMove(e.clientX, e.clientY); });
+    flipCard.addEventListener('touchstart', (e) => {
+      const t = e.touches[0];
+      onPressStart(t.clientX, t.clientY);
+    }, { passive:true });
+    flipCard.addEventListener('touchmove', (e) => {
+      const t = e.touches[0];
+      onPressMove(t.clientX, t.clientY);
+    }, { passive:true });
+
     flipCard.addEventListener('click', (e) => {
+      if (movedPastThreshold){
+        // This click is the tail end of a scroll/drag gesture, not a tap.
+        movedPastThreshold = false;
+        return;
+      }
       flipCard.classList.toggle('is-flipped');
     });
 
