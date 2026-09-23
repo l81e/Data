@@ -275,6 +275,13 @@
     overflow-y:auto;
     -webkit-overflow-scrolling:touch;
     overscroll-behavior:contain;
+    /* This element must own vertical touch panning itself. The global
+       touch-action:pan-y on html/body (added to block pinch-zoom) tells
+       iOS Safari the PAGE handles vertical panning — without an explicit
+       touch-action here too, iOS Safari can fail to ever hand a vertical
+       swipe over to this inner scroller, which is why the card looked
+       "stuck" even though scrollHeight/overflow were correct. */
+    touch-action:pan-y;
     display:flex; flex-direction:column;
   }
 
@@ -558,12 +565,15 @@
     if (e.ctrlKey) e.preventDefault();
   }, { passive:false });
 
-  // Prevent iOS double-tap-to-zoom without breaking single taps/clicks.
-  // We only block the SECOND tap of a fast double-tap on touch devices;
-  // real double-taps on buttons still fire a single click reliably since
-  // the first tap's click always goes through.
+  // Prevent iOS double-tap-to-zoom without breaking single taps/clicks
+  // or scrolling. We only block the SECOND tap of a fast double-tap on
+  // touch devices, and only outside scrollable card content — a
+  // document-wide version of this guard was cancelling touchend events
+  // during normal scroll-flick-scroll reading inside the flashcard,
+  // which is what made the card feel stuck/unscrollable.
   let lastTouchEnd = 0;
   document.addEventListener('touchend', (e) => {
+    if (e.target.closest('.flip-face-scroll')) return;
     const now = Date.now();
     if (now - lastTouchEnd <= 300) {
       e.preventDefault();
