@@ -256,25 +256,35 @@
     background:var(--panel);
     border:1px solid var(--line-soft);
     border-radius:14px;
-    padding:22px 20px;
-    display:flex; flex-direction:column;
-    /* This face is the scroll container — fills the whole card height */
-    overflow-y:auto;
-    -webkit-overflow-scrolling:touch;
-    overscroll-behavior:contain;
+    /* IMPORTANT: this element itself must NOT scroll. iOS Safari has a
+       long-standing bug where overflow:auto on an element that also has
+       backface-visibility:hidden inside a preserve-3d parent silently
+       fails to scroll, even though the CSS is otherwise correct. So this
+       face is just a non-scrolling shell; the actual scrolling happens
+       on .flip-face-scroll below, which carries no backface-visibility. */
+    overflow:hidden;
     height:100%;
   }
   .flip-face.face-back{transform:rotateY(180deg);}
   html[dir="rtl"] .flip-face.face-back{transform:rotateY(-180deg);}
+
+  .flip-face-scroll{
+    height:100%;
+    padding:22px 20px;
+    overflow-y:auto;
+    -webkit-overflow-scrolling:touch;
+    overscroll-behavior:contain;
+    display:flex; flex-direction:column;
+  }
 
   .flip-face-label{
     font-size:0.66rem; font-weight:800; text-transform:uppercase; letter-spacing:0.06em;
     color:var(--text-faint); margin-bottom:14px; flex-shrink:0;
   }
   .flip-face-content{
-    /* .flip-face is a flex column with overflow-y:auto. Without
-       flex-shrink:0 here, a flex child is allowed to be squashed down
-       to fit the visible box instead of overflowing it — which is
+    /* .flip-face-scroll (parent) is a flex column with overflow-y:auto.
+       Without flex-shrink:0 here, a flex child is allowed to be squashed
+       down to fit the visible box instead of overflowing it — which is
        exactly why long text wasn't scrollable before. This forces the
        content to keep its natural (possibly tall) height so the
        parent's overflow-y:auto has something to actually scroll. */
@@ -802,12 +812,16 @@
           <div class="flip-card" id="flipCard">
             <div class="flip-card-inner" id="flipCardInner">
               <div class="flip-face face-front" id="frontFace">
-                <div class="flip-face-label" data-en="Question" data-ar="السؤال">Question</div>
-                <div class="flip-face-content" id="frontContent"></div>
+                <div class="flip-face-scroll">
+                  <div class="flip-face-label" data-en="Question" data-ar="السؤال">Question</div>
+                  <div class="flip-face-content" id="frontContent"></div>
+                </div>
               </div>
               <div class="flip-face face-back" id="backFace">
-                <div class="flip-face-label" data-en="Answer" data-ar="الإجابة">Answer</div>
-                <div class="flip-face-content" id="backContent"></div>
+                <div class="flip-face-scroll">
+                  <div class="flip-face-label" data-en="Answer" data-ar="الإجابة">Answer</div>
+                  <div class="flip-face-content" id="backContent"></div>
+                </div>
               </div>
             </div>
           </div>
