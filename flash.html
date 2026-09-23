@@ -38,6 +38,7 @@
     /* Hard block on pinch/double-tap zoom everywhere */
     touch-action:pan-y;
     -ms-touch-action:pan-y;
+    overscroll-behavior:none;
   }
   body{
     font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
@@ -45,9 +46,13 @@
     color:var(--text);
     line-height:1.6;
     position:relative;
-    min-height:100vh;
-    min-height:100dvh;
-    overflow-x:hidden;
+    /* Fixed viewport frame — this is what lets the card claim the
+       leftover space below the header instead of shrink-wrapping it. */
+    height:100vh;
+    height:100dvh;
+    overflow:hidden;
+    display:flex;
+    flex-direction:column;
     -webkit-text-size-adjust:none;
     text-size-adjust:none;
   }
@@ -62,6 +67,7 @@
     position:relative; z-index:30;
     padding:20px 40px 4px;
     display:flex; align-items:flex-start; justify-content:space-between;
+    flex-shrink:0;
   }
   .header-left{display:flex; flex-direction:column; align-items:flex-start; gap:2px;}
   .logo-wrap{display:flex; align-items:center; gap:10px; margin-bottom:14px;}
@@ -139,6 +145,7 @@
     position:relative; z-index:2;
     padding:6px 40px 18px;
     text-align:left;
+    flex-shrink:0;
   }
   html[dir="rtl"] .deck-hero{text-align:right;}
   .deck-title{
@@ -173,17 +180,16 @@
   /* ---------- MAIN ---------- */
   main{
     position:relative; z-index:2;
+    width:100%;
     max-width:720px; margin:0 auto;
     padding:0 24px 24px;
-    /* main is a column: card stage grows, nav row stays put */
+    /* main is the flexible region below the header/hero: it must take
+       all remaining viewport height, and min-height:0 is required or
+       flex children will refuse to shrink below their content size. */
     display:flex; flex-direction:column;
+    flex:1 1 auto;
     min-height:0;
-    flex:1;
   }
-
-  /* Overall page layout so the card can flex to fill remaining height */
-  body{display:flex; flex-direction:column;}
-  #mainEl{flex:1; display:flex; flex-direction:column; min-height:0;}
 
   .loading-row{text-align:center; padding:70px 20px; color:var(--text-faint); font-size:0.85rem; margin:auto;}
   .loading-row .spin-icon{
@@ -266,8 +272,13 @@
     color:var(--text-faint); margin-bottom:14px; flex-shrink:0;
   }
   .flip-face-content{
-    /* Do NOT flex/clip this — it must be free to grow taller than the
-       visible face so the face's own overflow-y:auto can scroll it. */
+    /* .flip-face is a flex column with overflow-y:auto. Without
+       flex-shrink:0 here, a flex child is allowed to be squashed down
+       to fit the visible box instead of overflowing it — which is
+       exactly why long text wasn't scrollable before. This forces the
+       content to keep its natural (possibly tall) height so the
+       parent's overflow-y:auto has something to actually scroll. */
+    flex-shrink:0;
     font-size:1.02rem; line-height:1.65; color:var(--text);
     word-break:break-word;
   }
