@@ -2,7 +2,7 @@
 <html lang="en" dir="ltr">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover" />
 <title>Flashcards — MedicineBank</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -33,7 +33,12 @@
     --today-green-hi:#46bd68;
   }
 
-  html,body{height:100%;}
+  html,body{
+    height:100%;
+    /* Hard block on pinch/double-tap zoom everywhere */
+    touch-action:pan-y;
+    -ms-touch-action:pan-y;
+  }
   body{
     font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
     background:var(--bg);
@@ -41,13 +46,16 @@
     line-height:1.6;
     position:relative;
     min-height:100vh;
+    min-height:100dvh;
     overflow-x:hidden;
+    -webkit-text-size-adjust:none;
+    text-size-adjust:none;
   }
   html[dir="rtl"] body{font-family:'Cairo',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;}
 
   a{color:inherit; text-decoration:none;}
   ul{list-style:none;}
-  button{font-family:inherit;}
+  button{font-family:inherit; touch-action:manipulation;}
 
   /* ---------- HEADER (matches parent) ---------- */
   .site-header{
@@ -78,24 +86,58 @@
   .back-link svg{width:14px; height:14px; flex-shrink:0;}
   html[dir="rtl"] .back-link svg{transform:scaleX(-1);}
 
-  .lang-switch-btn{
+  .header-right{display:flex; align-items:center; gap:8px;}
+  html[dir="rtl"] .header-right{flex-direction:row-reverse;}
+
+  /* settings (gear) button — replaces old lang-switch + holds lang + view mode */
+  .settings-btn{
     width:34px; height:34px; border-radius:50%;
     background:transparent; border:1px solid var(--line-soft);
     display:flex; align-items:center; justify-content:center;
     cursor:pointer; color:var(--text-faint);
     transition:border-color .15s, color .15s;
     flex-shrink:0;
+    position:relative;
   }
-  .lang-switch-btn:hover{border-color:var(--text-faint); color:var(--text-dim);}
-  .lang-switch-btn svg{width:16px; height:16px;}
+  .settings-btn:hover{border-color:var(--text-faint); color:var(--text-dim);}
+  .settings-btn svg{width:16px; height:16px;}
 
-  .header-right{display:flex; align-items:center; gap:8px;}
-  html[dir="rtl"] .header-right{flex-direction:row-reverse;}
+  /* settings dropdown panel */
+  .settings-panel{
+    position:absolute;
+    top:42px;
+    right:0;
+    min-width:190px;
+    background:var(--panel);
+    border:1px solid var(--line-soft);
+    border-radius:12px;
+    padding:6px;
+    display:none;
+    flex-direction:column;
+    gap:2px;
+    z-index:50;
+    box-shadow:0 10px 30px rgba(0,0,0,0.45);
+  }
+  html[dir="rtl"] .settings-panel{right:auto; left:0;}
+  .settings-panel.open{display:flex;}
+  .settings-item{
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    padding:9px 10px; border-radius:8px;
+    font-size:0.78rem; font-weight:700; color:var(--text-dim);
+    cursor:pointer;
+  }
+  .settings-item:hover{background:var(--panel-hi); color:var(--text);}
+  .settings-item.active-row{color:var(--text);}
+  .settings-item svg{width:15px; height:15px; flex-shrink:0;}
+  .settings-item .row-label{display:flex; align-items:center; gap:9px;}
+  .settings-divider{height:1px; background:var(--line-soft); margin:4px 2px;}
+  .settings-check{width:14px; height:14px; color:var(--text-faint); flex-shrink:0; visibility:hidden;}
+  .settings-item.active-row .settings-check{visibility:visible; color:var(--text);}
 
   /* ---------- DECK TITLE HERO ---------- */
   .deck-hero{
     position:relative; z-index:2;
-    padding:6px 40px 22px;
+    padding:6px 40px 18px;
     text-align:left;
   }
   html[dir="rtl"] .deck-hero{text-align:right;}
@@ -111,7 +153,7 @@
 
   .progress-row{
     display:flex; align-items:center; gap:10px;
-    margin-top:16px;
+    margin-top:14px;
   }
   .progress-track{
     flex:1; height:5px; border-radius:4px;
@@ -130,10 +172,20 @@
 
   /* ---------- MAIN ---------- */
   main{
-    position:relative; z-index:2; max-width:720px; margin:0 auto; padding:0 24px 40px;
+    position:relative; z-index:2;
+    max-width:720px; margin:0 auto;
+    padding:0 24px 24px;
+    /* main is a column: card stage grows, nav row stays put */
+    display:flex; flex-direction:column;
+    min-height:0;
+    flex:1;
   }
 
-  .loading-row{text-align:center; padding:70px 20px; color:var(--text-faint); font-size:0.85rem;}
+  /* Overall page layout so the card can flex to fill remaining height */
+  body{display:flex; flex-direction:column;}
+  #mainEl{flex:1; display:flex; flex-direction:column; min-height:0;}
+
+  .loading-row{text-align:center; padding:70px 20px; color:var(--text-faint); font-size:0.85rem; margin:auto;}
   .loading-row .spin-icon{
     width:26px; height:26px; margin:0 auto 16px;
     border:2px solid var(--line-soft); border-top-color:var(--text-dim);
@@ -143,7 +195,7 @@
   @keyframes spin{to{transform:rotate(360deg);}}
 
   .error-row{
-    text-align:center; padding:50px 24px 60px; color:var(--text-dim);
+    text-align:center; padding:50px 24px 60px; color:var(--text-dim); margin:auto;
   }
   .error-row .big-icon{font-size:2rem; margin-bottom:14px; opacity:0.6;}
   .error-row h3{font-size:1rem; font-weight:700; margin-bottom:8px; color:var(--text);}
@@ -156,24 +208,35 @@
   }
   html[dir="rtl"] .error-row .err-hint{text-align:right;}
 
+  /* ---------- STUDY VIEW WRAPPER ---------- */
+  .study-view{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    min-height:0;
+  }
+
   /* ---------- FLASHCARD ---------- */
   .card-stage{
     position:relative;
     perspective:1600px;
-    margin-bottom:22px;
+    margin-bottom:16px;
     touch-action:pan-y;
+    flex:1;
+    min-height:0;
+    display:flex;
   }
   .flip-card{
     position:relative;
     width:100%;
-    min-height:280px;
+    flex:1;
+    min-height:0;
     cursor:pointer;
   }
   .flip-card-inner{
     position:relative;
     width:100%;
     height:100%;
-    min-height:280px;
     transition:transform .38s cubic-bezier(.4,0,.2,1);
     transform-style:preserve-3d;
   }
@@ -187,10 +250,13 @@
     background:var(--panel);
     border:1px solid var(--line-soft);
     border-radius:14px;
-    padding:26px 22px;
+    padding:22px 20px;
     display:flex; flex-direction:column;
+    /* This face is the scroll container — fills the whole card height */
     overflow-y:auto;
-    max-height:62vh;
+    -webkit-overflow-scrolling:touch;
+    overscroll-behavior:contain;
+    height:100%;
   }
   .flip-face.face-back{transform:rotateY(180deg);}
   html[dir="rtl"] .flip-face.face-back{transform:rotateY(-180deg);}
@@ -200,7 +266,8 @@
     color:var(--text-faint); margin-bottom:14px; flex-shrink:0;
   }
   .flip-face-content{
-    flex:1;
+    /* Do NOT flex/clip this — it must be free to grow taller than the
+       visible face so the face's own overflow-y:auto can scroll it. */
     font-size:1.02rem; line-height:1.65; color:var(--text);
     word-break:break-word;
   }
@@ -234,13 +301,15 @@
 
   .tap-hint{
     text-align:center; font-size:0.72rem; color:var(--text-faint);
-    margin-bottom:20px;
+    margin-bottom:14px;
+    flex-shrink:0;
   }
 
   /* ---------- NAV CONTROLS ---------- */
   .nav-row{
     display:flex; align-items:center; justify-content:center; gap:10px;
-    margin-bottom:22px;
+    margin-bottom:6px;
+    flex-shrink:0;
   }
   .nav-btn{
     width:46px; height:46px; border-radius:50%;
@@ -269,19 +338,12 @@
   .flip-btn svg{width:15px; height:15px;}
 
   /* ---------- DECK LIST (browse all / jump to card) ---------- */
-  .deck-toolbar{
-    display:flex; align-items:center; justify-content:space-between;
-    margin-bottom:16px; gap:10px;
+  .browse-view{
+    flex:1;
+    min-height:0;
+    overflow-y:auto;
+    -webkit-overflow-scrolling:touch;
   }
-  .mode-toggle{
-    display:flex; gap:6px; background:var(--panel); border:1px solid var(--line-soft);
-    border-radius:20px; padding:3px;
-  }
-  .mode-toggle-opt{
-    padding:7px 14px; border-radius:17px; font-size:0.74rem; font-weight:700;
-    color:var(--text-faint); cursor:pointer; white-space:nowrap;
-  }
-  .mode-toggle-opt.active{background:var(--panel-hi); color:var(--text); border:1px solid var(--line-soft);}
 
   .card-list{display:flex; flex-direction:column; gap:8px;}
   .card-list-item{
@@ -310,9 +372,9 @@
 
   @media (max-width:560px){
     .site-header{padding:16px 18px 4px;}
-    .deck-hero{padding:6px 18px 20px;}
-    main{padding:0 14px 40px;}
-    .flip-face{padding:20px 16px; max-height:56vh;}
+    .deck-hero{padding:6px 18px 16px;}
+    main{padding:0 14px 16px;}
+    .flip-face{padding:18px 16px;}
   }
 </style>
 </head>
@@ -326,12 +388,35 @@
     </div>
   </div>
   <div class="header-right">
-    <button type="button" class="lang-switch-btn" id="langSwitchBtn" aria-label="Toggle language">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 010 20 15 15 0 010-20z"/></svg>
-    </button>
     <button type="button" class="back-link" id="backLinkBtn">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
       <span data-en="Back" data-ar="رجوع">Back</span>
+    </button>
+    <button type="button" class="settings-btn" id="settingsBtn" aria-label="Settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06A1.65 1.65 0 005 15a1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06A1.65 1.65 0 009 4.6a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+      <div class="settings-panel" id="settingsPanel">
+        <div class="settings-item" id="modeStudyRow" data-mode="study">
+          <span class="row-label">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M3 10h18"/></svg>
+            <span data-en="Study" data-ar="مذاكرة">Study</span>
+          </span>
+          <svg class="settings-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+        </div>
+        <div class="settings-item" id="modeBrowseRow" data-mode="browse">
+          <span class="row-label">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+            <span data-en="Browse all" data-ar="كل البطاقات">Browse all</span>
+          </span>
+          <svg class="settings-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+        </div>
+        <div class="settings-divider"></div>
+        <div class="settings-item" id="langToggleRow">
+          <span class="row-label">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 010 20 15 15 0 010-20z"/></svg>
+            <span id="langToggleLabel" data-en="Language: English" data-ar="اللغة: عربي">Language: English</span>
+          </span>
+        </div>
+      </div>
     </button>
   </div>
 </header>
@@ -373,18 +458,62 @@
     });
   }
 
+  function updateLangLabel(){
+    const label = document.getElementById('langToggleLabel');
+    if (!label) return;
+    label.dataset.en = currentLang === 'en' ? 'Language: English' : 'Language: English';
+    // Always show what tapping will switch TO, and reflect current state clearly
+    if (currentLang === 'en'){
+      label.textContent = 'Language: English';
+    } else {
+      label.textContent = 'اللغة: عربي';
+    }
+  }
+
   function setLang(lang, skipPersist){
     currentLang = lang;
     if (!skipPersist) setStoredLang(lang);
     htmlEl.setAttribute('lang', lang);
     htmlEl.setAttribute('dir', lang === 'ar' ? 'rtl' : 'ltr');
     applyStaticText(lang);
+    updateLangLabel();
     renderProgress();
   }
 
-  document.getElementById('langSwitchBtn').addEventListener('click', () => {
+  /* ---------------- settings dropdown ---------------- */
+  const settingsBtn = document.getElementById('settingsBtn');
+  const settingsPanel = document.getElementById('settingsPanel');
+
+  function closeSettings(){ settingsPanel.classList.remove('open'); }
+  function toggleSettings(e){
+    e.stopPropagation();
+    settingsPanel.classList.toggle('open');
+  }
+  settingsBtn.addEventListener('click', toggleSettings);
+  document.addEventListener('click', (e) => {
+    if (!settingsBtn.contains(e.target)) closeSettings();
+  });
+
+  document.getElementById('langToggleRow').addEventListener('click', (e) => {
+    e.stopPropagation();
     setLang(currentLang === 'en' ? 'ar' : 'en');
   });
+
+  document.getElementById('modeStudyRow').addEventListener('click', (e) => {
+    e.stopPropagation();
+    closeSettings();
+    if (typeof renderStudyMode === 'function' && deckCards.length) renderStudyMode();
+  });
+  document.getElementById('modeBrowseRow').addEventListener('click', (e) => {
+    e.stopPropagation();
+    closeSettings();
+    if (typeof renderBrowseMode === 'function' && deckCards.length) renderBrowseMode();
+  });
+
+  function updateModeCheckmarks(){
+    document.getElementById('modeStudyRow').classList.toggle('active-row', viewMode === 'study');
+    document.getElementById('modeBrowseRow').classList.toggle('active-row', viewMode === 'browse');
+  }
 
   /* ---------------- back navigation ---------------- */
   document.getElementById('backLinkBtn').addEventListener('click', () => {
@@ -394,6 +523,31 @@
       window.location.href = '/';
     }
   });
+
+  /* ---------------- Anti-zoom hardening ---------------- */
+  // Belt-and-suspenders on top of the viewport meta tag + touch-action CSS:
+  // block pinch gestures, ctrl/cmd + wheel zoom, and iOS Safari's
+  // "gesturestart" pinch-zoom, plus swallow any accidental double-tap zoom.
+  document.addEventListener('gesturestart', (e) => e.preventDefault());
+  document.addEventListener('gesturechange', (e) => e.preventDefault());
+  document.addEventListener('gestureend', (e) => e.preventDefault());
+
+  document.addEventListener('wheel', (e) => {
+    if (e.ctrlKey) e.preventDefault();
+  }, { passive:false });
+
+  // Prevent iOS double-tap-to-zoom without breaking single taps/clicks.
+  // We only block the SECOND tap of a fast double-tap on touch devices;
+  // real double-taps on buttons still fire a single click reliably since
+  // the first tap's click always goes through.
+  let lastTouchEnd = 0;
+  document.addEventListener('touchend', (e) => {
+    const now = Date.now();
+    if (now - lastTouchEnd <= 300) {
+      e.preventDefault();
+    }
+    lastTouchEnd = now;
+  }, { passive:false });
 
   /* ---------------- Supabase ---------------- */
   const SUPABASE_URL = 'https://igfooetzorzhhvpakgqa.supabase.co';
@@ -440,14 +594,12 @@
   let deckCards = [];       // [{ front, back, id }]
   let currentIndex = 0;
   let viewMode = 'study';   // 'study' | 'browse'
+  let isAnimatingNav = false; // guards against rapid multi-step swipes/taps
 
   /* ---------------- HTML template rendering (Anki field substitution) ---------------- */
   function fillTemplate(tpl, fieldMap){
-    // Basic mustache-style field replacement: {{FieldName}}, {{text:FieldName}}, conditional {{#Field}}...{{/Field}}
     let out = tpl;
 
-    // Strip {{FrontSide}} placeholder gracefully if unresolved later
-    // Conditional sections {{#Field}}...{{/Field}} and {{^Field}}...{{/Field}}
     out = out.replace(/{{#([^}]+)}}([\s\S]*?){{\/\1}}/g, (m, field, inner) => {
       const val = fieldMap[field.trim()];
       return (val && val.trim() !== '') ? inner : '';
@@ -457,7 +609,6 @@
       return (!val || val.trim() === '') ? inner : '';
     });
 
-    // Simple / modified field refs: {{Field}}, {{text:Field}}, {{type:Field}}, {{hint:Field}}
     out = out.replace(/{{([a-zA-Z0-9_:]+)}}/g, (m, ref) => {
       let field = ref;
       if (ref.indexOf(':') !== -1) field = ref.split(':').pop();
@@ -474,7 +625,6 @@
 
   /* ---------------- Cloze handling ---------------- */
   function renderCloze(text, ordinal, isBack){
-    // {{c1::answer}} or {{c1::answer::hint}}
     return text.replace(/{{c(\d+)::(.*?)}}/gs, (m, num, body) => {
       const n = parseInt(num, 10);
       const parts = body.split('::');
@@ -492,7 +642,6 @@
 
   /* ---------------- Media URL rewriting ---------------- */
   function rewriteMediaRefs(html, mediaUrlMap){
-    // src="filename.jpg" or src='filename.jpg' -> blob URL
     return html.replace(/(src|SRC)=(["'])([^"']+)\2/g, (m, attr, quote, fname) => {
       const decoded = decodeURIComponent(fname);
       const url = mediaUrlMap[fname] || mediaUrlMap[decoded];
@@ -515,7 +664,6 @@
       throw { code: 'NO_DB' };
     }
 
-    // media map: JSON { "0": "filename.jpg", "1": "audio.mp3", ... }
     let mediaMap = {};
     const mediaFile = zip.file('media');
     if (mediaFile){
@@ -525,7 +673,6 @@
       } catch (e) { /* no media */ }
     }
 
-    // Build blob URLs for every referenced media file, keyed by real filename
     const mediaUrlMap = {};
     const mediaEntries = Object.entries(mediaMap);
     for (const [num, realName] of mediaEntries){
@@ -536,7 +683,6 @@
       mediaUrlMap[realName] = url;
     }
 
-    // Load SQLite database
     const dbBytes = await dbFile.async('uint8array');
 
     const SQL = await initSqlJs({
@@ -544,7 +690,6 @@
     });
     const db = new SQL.Database(dbBytes);
 
-    // notetypes / models: stored as JSON in col.models (schema v11) — older/Legacy format
     const colRes = db.exec("SELECT models, decks FROM col LIMIT 1");
     if (!colRes || !colRes.length){
       throw { code: 'BAD_DB' };
@@ -557,13 +702,11 @@
       throw { code: 'BAD_DB' };
     }
 
-    // notes: id, mid (model id), flds (fields joined by \x1f)
     const notesRes = db.exec("SELECT id, mid, flds FROM notes");
     const notes = (notesRes.length ? notesRes[0].values : []).map(row => ({
       id: row[0], mid: String(row[1]), flds: row[2]
     }));
 
-    // cards: id, nid (note id), ord (which template)
     const cardsRes = db.exec("SELECT id, nid, ord FROM cards ORDER BY id ASC");
     const cardRows = (cardsRes.length ? cardsRes[0].values : []).map(row => ({
       id: row[0], nid: row[1], ord: row[2]
@@ -592,7 +735,6 @@
       let frontHtml, backHtml;
 
       if (isCloze){
-        // Cloze note type: qfmt/afmt reference {{cloze:Field}}, ordinal = card.ord + 1
         const clozeOrdinal = cardRow.ord + 1;
         const clozeFieldMatch = tmpl.qfmt.match(/{{cloze:([^}]+)}}/);
         const clozeFieldName = clozeFieldMatch ? clozeFieldMatch[1] : (fieldNames[0] || '');
@@ -601,7 +743,6 @@
         frontHtml = renderCloze(rawField, clozeOrdinal, false);
         backHtml = renderCloze(rawField, clozeOrdinal, true);
 
-        // Extra field (if present) appended on back, common in cloze templates
         if (fieldNames.length > 1 && fieldMap[fieldNames[1]]){
           backHtml += '<hr>' + fieldMap[fieldNames[1]];
         }
@@ -635,52 +776,46 @@
     progressRow.style.display = 'flex';
     const pct = ((currentIndex + 1) / deckCards.length) * 100;
     progressFill.style.width = pct + '%';
-    progressCount.textContent = currentLang === 'ar'
-      ? `${currentIndex + 1} / ${deckCards.length}`
-      : `${currentIndex + 1} / ${deckCards.length}`;
+    progressCount.textContent = `${currentIndex + 1} / ${deckCards.length}`;
   }
 
   function renderStudyMode(){
     viewMode = 'study';
+    updateModeCheckmarks();
     const card = deckCards[currentIndex];
     if (!card) return;
 
     mainEl.innerHTML = `
-      <div class="deck-toolbar">
-        <div class="mode-toggle">
-          <div class="mode-toggle-opt active" data-mode="study" data-en="Study" data-ar="مذاكرة">Study</div>
-          <div class="mode-toggle-opt" data-mode="browse" data-en="Browse all" data-ar="كل البطاقات">Browse all</div>
-        </div>
-      </div>
-
-      <div class="card-stage">
-        <div class="flip-card" id="flipCard">
-          <div class="flip-card-inner" id="flipCardInner">
-            <div class="flip-face face-front">
-              <div class="flip-face-label" data-en="Question" data-ar="السؤال">Question</div>
-              <div class="flip-face-content" id="frontContent"></div>
-            </div>
-            <div class="flip-face face-back">
-              <div class="flip-face-label" data-en="Answer" data-ar="الإجابة">Answer</div>
-              <div class="flip-face-content" id="backContent"></div>
+      <div class="study-view">
+        <div class="card-stage">
+          <div class="flip-card" id="flipCard">
+            <div class="flip-card-inner" id="flipCardInner">
+              <div class="flip-face face-front" id="frontFace">
+                <div class="flip-face-label" data-en="Question" data-ar="السؤال">Question</div>
+                <div class="flip-face-content" id="frontContent"></div>
+              </div>
+              <div class="flip-face face-back" id="backFace">
+                <div class="flip-face-label" data-en="Answer" data-ar="الإجابة">Answer</div>
+                <div class="flip-face-content" id="backContent"></div>
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <div class="tap-hint" data-en="Tap the card to flip it" data-ar="اضغط على البطاقة عشان تقلبها">Tap the card to flip it</div>
+        <div class="tap-hint" data-en="Tap the card to flip it" data-ar="اضغط على البطاقة عشان تقلبها">Tap the card to flip it</div>
 
-      <div class="nav-row">
-        <button class="nav-btn nav-prev" id="prevBtn" aria-label="Previous">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
-        </button>
-        <button class="flip-btn" id="flipBtnMain">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 2.1l4 4-4 4M3 12.9V9a4 4 0 014-4h14M7 21.9l-4-4 4-4M21 11.1V15a4 4 0 01-4 4H3"/></svg>
-          <span data-en="Flip" data-ar="اقلب">Flip</span>
-        </button>
-        <button class="nav-btn nav-next" id="nextBtn" aria-label="Next">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
-        </button>
+        <div class="nav-row">
+          <button class="nav-btn nav-prev" id="prevBtn" aria-label="Previous">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+          </button>
+          <button class="flip-btn" id="flipBtnMain">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 2.1l4 4-4 4M3 12.9V9a4 4 0 014-4h14M7 21.9l-4-4 4-4M21 11.1V15a4 4 0 01-4 4H3"/></svg>
+            <span data-en="Flip" data-ar="اقلب">Flip</span>
+          </button>
+          <button class="nav-btn nav-next" id="nextBtn" aria-label="Next">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+          </button>
+        </div>
       </div>
     `;
 
@@ -688,32 +823,58 @@
     document.getElementById('backContent').innerHTML = card.back;
 
     const flipCard = document.getElementById('flipCard');
-    flipCard.addEventListener('click', () => flipCard.classList.toggle('is-flipped'));
+
+    // Tapping the card flips it — but not when the tap/click originated
+    // from inside a scrolling gesture on the face content, and not while
+    // a face is actively scrolled (so a scroll-then-release doesn't flip).
+    flipCard.addEventListener('click', (e) => {
+      flipCard.classList.toggle('is-flipped');
+    });
+
     document.getElementById('flipBtnMain').addEventListener('click', (e) => {
       e.stopPropagation();
       flipCard.classList.toggle('is-flipped');
     });
 
-    document.getElementById('prevBtn').disabled = currentIndex === 0;
-    document.getElementById('nextBtn').disabled = currentIndex === deckCards.length - 1;
-    document.getElementById('prevBtn').addEventListener('click', () => goToCard(currentIndex - 1));
-    document.getElementById('nextBtn').addEventListener('click', () => goToCard(currentIndex + 1));
-
-    document.querySelectorAll('.mode-toggle-opt').forEach(opt => {
-      opt.addEventListener('click', () => {
-        if (opt.dataset.mode === 'browse') renderBrowseMode();
-      });
-    });
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    prevBtn.disabled = currentIndex === 0;
+    nextBtn.disabled = currentIndex === deckCards.length - 1;
+    prevBtn.addEventListener('click', (e) => { e.stopPropagation(); goToCard(currentIndex - 1); });
+    nextBtn.addEventListener('click', (e) => { e.stopPropagation(); goToCard(currentIndex + 1); });
 
     applyStaticText(currentLang);
     renderProgress();
 
-    // swipe support
+    // ---- swipe support: exactly one card per swipe gesture ----
+    const stage = document.querySelector('.card-stage');
     let touchStartX = 0;
-    mainEl.addEventListener('touchstart', (e) => { touchStartX = e.touches[0].clientX; }, { passive:true });
-    mainEl.addEventListener('touchend', (e) => {
-      const dx = e.changedTouches[0].clientX - touchStartX;
-      if (Math.abs(dx) < 50) return;
+    let touchStartY = 0;
+    let swipeHandled = false;
+
+    stage.addEventListener('touchstart', (e) => {
+      touchStartX = e.touches[0].clientX;
+      touchStartY = e.touches[0].clientY;
+      swipeHandled = false;
+    }, { passive:true });
+
+    stage.addEventListener('touchmove', (e) => {
+      // Once we've already committed to a card change for this gesture,
+      // ignore further movement so continuing to drag doesn't skip more cards.
+      if (swipeHandled) return;
+    }, { passive:true });
+
+    stage.addEventListener('touchend', (e) => {
+      if (swipeHandled || isAnimatingNav) return;
+      const touch = e.changedTouches[0];
+      const dx = touch.clientX - touchStartX;
+      const dy = touch.clientY - touchStartY;
+
+      // Require a clearly horizontal, deliberate swipe (ignore vertical
+      // scrolling inside the card face, and ignore tiny jitters).
+      if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.2) return;
+
+      swipeHandled = true;
       const rtl = htmlEl.getAttribute('dir') === 'rtl';
       const goingNext = rtl ? dx > 0 : dx < 0;
       if (goingNext && currentIndex < deckCards.length - 1) goToCard(currentIndex + 1);
@@ -723,8 +884,13 @@
 
   function goToCard(idx){
     if (idx < 0 || idx >= deckCards.length) return;
+    if (isAnimatingNav) return;
+    isAnimatingNav = true;
     currentIndex = idx;
     renderStudyMode();
+    // Small guard window so a fast next-button double-click or a lingering
+    // touch sequence can't advance more than one card at a time.
+    setTimeout(() => { isAnimatingNav = false; }, 150);
   }
 
   function plainTextPreview(html){
@@ -738,14 +904,11 @@
 
   function renderBrowseMode(){
     viewMode = 'browse';
+    updateModeCheckmarks();
     mainEl.innerHTML = `
-      <div class="deck-toolbar">
-        <div class="mode-toggle">
-          <div class="mode-toggle-opt" data-mode="study" data-en="Study" data-ar="مذاكرة">Study</div>
-          <div class="mode-toggle-opt active" data-mode="browse" data-en="Browse all" data-ar="كل البطاقات">Browse all</div>
-        </div>
+      <div class="browse-view">
+        <div class="card-list" id="cardListEl"></div>
       </div>
-      <div class="card-list" id="cardListEl"></div>
     `;
     const listEl = document.getElementById('cardListEl');
     listEl.innerHTML = deckCards.map((c, i) => `
@@ -763,12 +926,6 @@
       });
     });
 
-    document.querySelectorAll('.mode-toggle-opt').forEach(opt => {
-      opt.addEventListener('click', () => {
-        if (opt.dataset.mode === 'study') renderStudyMode();
-      });
-    });
-
     applyStaticText(currentLang);
     progressRow.style.display = 'none';
   }
@@ -777,6 +934,7 @@
   (async function init(){
     const storedLang = getStoredLang();
     if (storedLang) setLang(storedLang, true);
+    else updateLangLabel();
 
     const materialId = getQueryParam('id');
     if (!materialId){
@@ -787,7 +945,6 @@
       return;
     }
 
-    // 1. look up the material row to get the .apkg url + title
     const { data: material, error: matErr } = await supabase
       .from('materials')
       .select('id, title, url, file_name, type')
@@ -806,7 +963,6 @@
     deckTitle.textContent = material.title || (currentLang==='ar' ? 'بطاقات تعليمية' : 'Flashcards');
     deckSub.textContent = currentLang==='ar' ? 'بيتم فتح البطاقات…' : 'Opening the deck…';
 
-    // 2. fetch the .apkg file bytes
     let arrayBuffer;
     try {
       const resp = await fetch(material.url);
@@ -821,7 +977,6 @@
       return;
     }
 
-    // 3. parse the .apkg
     try {
       deckCards = await parseApkg(arrayBuffer);
     } catch (e){
