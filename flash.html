@@ -253,23 +253,24 @@
     position:absolute; inset:0;
     backface-visibility:hidden;
     -webkit-backface-visibility:hidden;
-    background:var(--panel);
-    border:1px solid var(--line-soft);
-    border-radius:14px;
-    /* IMPORTANT: this element itself must NOT scroll. iOS Safari has a
-       long-standing bug where overflow:auto on an element that also has
-       backface-visibility:hidden inside a preserve-3d parent silently
-       fails to scroll, even though the CSS is otherwise correct. So this
-       face is just a non-scrolling shell; the actual scrolling happens
-       on .flip-face-scroll below, which carries no backface-visibility. */
-    overflow:hidden;
     height:100%;
+    /* CRITICAL: this element must carry NO overflow value (not even
+       hidden) and no border-radius/background clipping. In WebKit,
+       combining backface-visibility:hidden with overflow on the same
+       element breaks 3D face-hiding (the other face bleeds through
+       during rotation) AND breaks scrolling/touch on any scrollable
+       descendant. All visual styling + clipping + scrolling is pushed
+       down to .flip-face-scroll, a plain 2D element with none of
+       these 3D properties. */
   }
   .flip-face.face-back{transform:rotateY(180deg);}
   html[dir="rtl"] .flip-face.face-back{transform:rotateY(-180deg);}
 
   .flip-face-scroll{
     height:100%;
+    background:var(--panel);
+    border:1px solid var(--line-soft);
+    border-radius:14px;
     padding:22px 20px;
     overflow-y:auto;
     -webkit-overflow-scrolling:touch;
@@ -395,7 +396,7 @@
     .site-header{padding:16px 18px 4px;}
     .deck-hero{padding:6px 18px 16px;}
     main{padding:0 14px 16px;}
-    .flip-face{padding:18px 16px;}
+    .flip-face-scroll{padding:18px 16px;}
   }
 </style>
 </head>
