@@ -38,7 +38,6 @@
     /* Hard block on pinch/double-tap zoom everywhere */
     touch-action:pan-y;
     -ms-touch-action:pan-y;
-    overscroll-behavior:none;
   }
   body{
     font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
@@ -46,13 +45,9 @@
     color:var(--text);
     line-height:1.6;
     position:relative;
-    /* Fixed viewport frame — this is what lets the card claim the
-       leftover space below the header instead of shrink-wrapping it. */
-    height:100vh;
-    height:100dvh;
-    overflow:hidden;
-    display:flex;
-    flex-direction:column;
+    min-height:100vh;
+    min-height:100dvh;
+    overflow-x:hidden;
     -webkit-text-size-adjust:none;
     text-size-adjust:none;
   }
@@ -67,7 +62,6 @@
     position:relative; z-index:30;
     padding:20px 40px 4px;
     display:flex; align-items:flex-start; justify-content:space-between;
-    flex-shrink:0;
   }
   .header-left{display:flex; flex-direction:column; align-items:flex-start; gap:2px;}
   .logo-wrap{display:flex; align-items:center; gap:10px; margin-bottom:14px;}
@@ -145,7 +139,6 @@
     position:relative; z-index:2;
     padding:6px 40px 18px;
     text-align:left;
-    flex-shrink:0;
   }
   html[dir="rtl"] .deck-hero{text-align:right;}
   .deck-title{
@@ -180,16 +173,17 @@
   /* ---------- MAIN ---------- */
   main{
     position:relative; z-index:2;
-    width:100%;
     max-width:720px; margin:0 auto;
     padding:0 24px 24px;
-    /* main is the flexible region below the header/hero: it must take
-       all remaining viewport height, and min-height:0 is required or
-       flex children will refuse to shrink below their content size. */
+    /* main is a column: card stage grows, nav row stays put */
     display:flex; flex-direction:column;
-    flex:1 1 auto;
     min-height:0;
+    flex:1;
   }
+
+  /* Overall page layout so the card can flex to fill remaining height */
+  body{display:flex; flex-direction:column;}
+  #mainEl{flex:1; display:flex; flex-direction:column; min-height:0;}
 
   .loading-row{text-align:center; padding:70px 20px; color:var(--text-faint); font-size:0.85rem; margin:auto;}
   .loading-row .spin-icon{
@@ -253,50 +247,27 @@
     position:absolute; inset:0;
     backface-visibility:hidden;
     -webkit-backface-visibility:hidden;
-    height:100%;
-    /* CRITICAL: this element must carry NO overflow value (not even
-       hidden) and no border-radius/background clipping. In WebKit,
-       combining backface-visibility:hidden with overflow on the same
-       element breaks 3D face-hiding (the other face bleeds through
-       during rotation) AND breaks scrolling/touch on any scrollable
-       descendant. All visual styling + clipping + scrolling is pushed
-       down to .flip-face-scroll, a plain 2D element with none of
-       these 3D properties. */
-  }
-  .flip-face.face-back{transform:rotateY(180deg);}
-  html[dir="rtl"] .flip-face.face-back{transform:rotateY(-180deg);}
-
-  .flip-face-scroll{
-    height:100%;
     background:var(--panel);
     border:1px solid var(--line-soft);
     border-radius:14px;
     padding:22px 20px;
+    display:flex; flex-direction:column;
+    /* This face is the scroll container — fills the whole card height */
     overflow-y:auto;
     -webkit-overflow-scrolling:touch;
     overscroll-behavior:contain;
-    /* This element must own vertical touch panning itself. The global
-       touch-action:pan-y on html/body (added to block pinch-zoom) tells
-       iOS Safari the PAGE handles vertical panning — without an explicit
-       touch-action here too, iOS Safari can fail to ever hand a vertical
-       swipe over to this inner scroller, which is why the card looked
-       "stuck" even though scrollHeight/overflow were correct. */
-    touch-action:pan-y;
-    display:flex; flex-direction:column;
+    height:100%;
   }
+  .flip-face.face-back{transform:rotateY(180deg);}
+  html[dir="rtl"] .flip-face.face-back{transform:rotateY(-180deg);}
 
   .flip-face-label{
     font-size:0.66rem; font-weight:800; text-transform:uppercase; letter-spacing:0.06em;
     color:var(--text-faint); margin-bottom:14px; flex-shrink:0;
   }
   .flip-face-content{
-    /* .flip-face-scroll (parent) is a flex column with overflow-y:auto.
-       Without flex-shrink:0 here, a flex child is allowed to be squashed
-       down to fit the visible box instead of overflowing it — which is
-       exactly why long text wasn't scrollable before. This forces the
-       content to keep its natural (possibly tall) height so the
-       parent's overflow-y:auto has something to actually scroll. */
-    flex-shrink:0;
+    /* Do NOT flex/clip this — it must be free to grow taller than the
+       visible face so the face's own overflow-y:auto can scroll it. */
     font-size:1.02rem; line-height:1.65; color:var(--text);
     word-break:break-word;
   }
@@ -403,7 +374,7 @@
     .site-header{padding:16px 18px 4px;}
     .deck-hero{padding:6px 18px 16px;}
     main{padding:0 14px 16px;}
-    .flip-face-scroll{padding:18px 16px;}
+    .flip-face{padding:18px 16px;}
   }
 </style>
 </head>
@@ -565,15 +536,12 @@
     if (e.ctrlKey) e.preventDefault();
   }, { passive:false });
 
-  // Prevent iOS double-tap-to-zoom without breaking single taps/clicks
-  // or scrolling. We only block the SECOND tap of a fast double-tap on
-  // touch devices, and only outside scrollable card content — a
-  // document-wide version of this guard was cancelling touchend events
-  // during normal scroll-flick-scroll reading inside the flashcard,
-  // which is what made the card feel stuck/unscrollable.
+  // Prevent iOS double-tap-to-zoom without breaking single taps/clicks.
+  // We only block the SECOND tap of a fast double-tap on touch devices;
+  // real double-taps on buttons still fire a single click reliably since
+  // the first tap's click always goes through.
   let lastTouchEnd = 0;
   document.addEventListener('touchend', (e) => {
-    if (e.target.closest('.flip-face-scroll')) return;
     const now = Date.now();
     if (now - lastTouchEnd <= 300) {
       e.preventDefault();
@@ -823,16 +791,12 @@
           <div class="flip-card" id="flipCard">
             <div class="flip-card-inner" id="flipCardInner">
               <div class="flip-face face-front" id="frontFace">
-                <div class="flip-face-scroll">
-                  <div class="flip-face-label" data-en="Question" data-ar="السؤال">Question</div>
-                  <div class="flip-face-content" id="frontContent"></div>
-                </div>
+                <div class="flip-face-label" data-en="Question" data-ar="السؤال">Question</div>
+                <div class="flip-face-content" id="frontContent"></div>
               </div>
               <div class="flip-face face-back" id="backFace">
-                <div class="flip-face-scroll">
-                  <div class="flip-face-label" data-en="Answer" data-ar="الإجابة">Answer</div>
-                  <div class="flip-face-content" id="backContent"></div>
-                </div>
+                <div class="flip-face-label" data-en="Answer" data-ar="الإجابة">Answer</div>
+                <div class="flip-face-content" id="backContent"></div>
               </div>
             </div>
           </div>
