@@ -31,92 +31,6 @@
     --today-green-hi:#46bd68;
   }
 
-  /* ---------- THEMES ---------- */
-  html[data-theme="light"]{
-    --bg:            #f4f4f2;
-    --panel:         #ffffff;
-    --panel-hi:      #f0f0ee;
-    --line:          #dcdcd8;
-    --line-soft:     #e4e4e0;
-    --text:          #171715;
-    --text-dim:      #55554f;
-    --text-faint:    #8c8c85;
-    --accent:        #171715;
-    --accent-dark:   #000000;
-    --accent-glow:   rgba(0,0,0,0.06);
-    --err:           #b3261e;
-  }
-  html[data-theme="maroon"]{
-    --bg:            #200a0d;
-    --panel:         #33141a;
-    --panel-hi:      #3d1a20;
-    --line:          #532029;
-    --line-soft:     #451b22;
-    --text:          #f6e8ea;
-    --text-dim:      #cf9fa6;
-    --text-faint:    #8f6167;
-    --accent:        #e8a3ab;
-    --accent-dark:   #ffffff;
-    --accent-glow:   rgba(232,163,171,0.1);
-    --err:           #ff9b9b;
-  }
-  html[data-theme="blue"]{
-    --bg:            #0a1622;
-    --panel:         #122438;
-    --panel-hi:      #172c42;
-    --line:          #24405c;
-    --line-soft:     #1d3450;
-    --text:          #e9f1fa;
-    --text-dim:      #a4c1dc;
-    --text-faint:    #6c88a4;
-    --accent:        #8fc3ef;
-    --accent-dark:   #ffffff;
-    --accent-glow:   rgba(143,195,239,0.1);
-    --err:           #ff9b9b;
-  }
-  html[data-theme="orange"]{
-    --bg:            #1f1006;
-    --panel:         #32190a;
-    --panel-hi:      #3d200d;
-    --line:          #5c331a;
-    --line-soft:     #4a2812;
-    --text:          #fbebdd;
-    --text-dim:      #e0af86;
-    --text-faint:    #a17451;
-    --accent:        #f2a35f;
-    --accent-dark:   #ffffff;
-    --accent-glow:   rgba(242,163,95,0.1);
-    --err:           #ff9b7a;
-  }
-  html[data-theme="champagne"]{
-    --bg:            #ece2c9;
-    --panel:         #f7f1e1;
-    --panel-hi:      #fbf7ec;
-    --line:          #d9cba3;
-    --line-soft:     #e2d6b3;
-    --text:          #3a3220;
-    --text-dim:      #6d5f3f;
-    --text-faint:    #998a63;
-    --accent:        #3a3220;
-    --accent-dark:   #000000;
-    --accent-glow:   rgba(58,50,32,0.07);
-    --err:           #a3402a;
-  }
-  html[data-theme="brown"]{
-    --bg:            #1b120c;
-    --panel:         #291c13;
-    --panel-hi:      #322318;
-    --line:          #4a3524;
-    --line-soft:     #3c2a1d;
-    --text:          #f1e6da;
-    --text-dim:      #c7ab8e;
-    --text-faint:    #8d735a;
-    --accent:        #d9ac7d;
-    --accent-dark:   #ffffff;
-    --accent-glow:   rgba(217,172,125,0.1);
-    --err:           #ff9b7a;
-  }
-
   html,body{height:100%;}
   body{
     font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
@@ -143,10 +57,6 @@
   .header-left{display:flex; flex-direction:column; align-items:flex-start; gap:2px;}
   .logo-wrap{display:flex; align-items:center; gap:10px; margin-bottom:14px;}
   .logo-img{height:28px; width:auto; display:block;}
-  html[data-theme="light"] .logo-img,
-  html[data-theme="champagne"] .logo-img{
-    filter:invert(1) hue-rotate(180deg);
-  }
   .logo-fallback{
     display:flex; align-items:center; justify-content:center;
     width:28px; height:28px; border-radius:6px;
@@ -269,22 +179,6 @@
   }
   .cal-year-select:focus{outline:none; border-color:var(--text-dim);}
 
-  .theme-swatch-row{
-    display:none;
-    flex-wrap:wrap; gap:8px;
-    padding:10px 8px 2px;
-  }
-  .theme-swatch-row.open{display:flex;}
-  .theme-swatch-btn{
-    width:26px; height:26px; border-radius:50%;
-    border:2px solid transparent;
-    cursor:pointer;
-    box-shadow:inset 0 0 0 1px var(--line-soft);
-    transition:border-color .15s, transform .15s;
-  }
-  .theme-swatch-btn:hover{transform:scale(1.08);}
-  .theme-swatch-btn.selected{border-color:var(--text);}
-
   /* ---------- DATE HERO ---------- */
   .date-hero{
     position:relative; z-index:2;
@@ -299,10 +193,8 @@
     font-size:clamp(1.7rem, 6vw, 2.5rem);
     letter-spacing:-0.02em;
     line-height:1.05;
-    transition:opacity .16s ease;
   }
   html[dir="rtl"] .date-big{font-family:'Cairo',sans-serif; font-weight:700;}
-  .date-big.is-fading{opacity:0;}
   .date-sub{font-size:0.78rem; color:var(--text-faint); margin-top:6px;}
 
   .today-pill{
@@ -458,6 +350,15 @@
   .material-meta{font-size:0.68rem; color:var(--text-faint); font-weight:600; text-transform:uppercase; letter-spacing:0.02em;}
   .material-dot-sep{width:2px; height:2px; border-radius:50%; background:var(--text-faint); flex-shrink:0;}
   .material-uploader{font-size:0.68rem; color:var(--text-faint);}
+
+  .material-card-del{
+    flex-shrink:0; width:22px; height:22px; border-radius:6px;
+    border:none; background:none; color:var(--text-faint); cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+    opacity:0.45; transition:opacity .15s, color .15s;
+  }
+  .material-card-del:hover{opacity:1; color:var(--text);}
+  .material-card-del svg{width:12px; height:12px;}
 
   .material-caption{font-size:0.74rem; color:var(--text-dim); font-style:italic; line-height:1.5;}
 
@@ -709,15 +610,6 @@
           </span>
           <span class="cal-lang-value" id="langValueLabel">EN</span>
         </button>
-        <div class="cal-menu-divider"></div>
-        <button class="cal-menu-item" id="themeMenuBtn">
-          <span class="cal-menu-item-left">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
-            <span data-en="Theme" data-ar="المظهر">Theme</span>
-          </span>
-          <span class="cal-lang-value" id="themeValueLabel">Dark</span>
-        </button>
-        <div class="theme-swatch-row" id="themeSwatchRow"></div>
       </div>
     </div>
   </div>
@@ -777,6 +669,28 @@
   </div>
 </div>
 
+<!-- ADD SUBJECT MODAL -->
+<div class="modal-overlay" id="subjectModalOverlay">
+  <div class="modal-sheet">
+    <div class="modal-title" data-en="Add a subject" data-ar="إضافة داتا">Add a subject</div>
+    <div class="mfield" id="subjectNameField">
+      <label data-en="Subject / lecture name" data-ar="اسم المادة / المحاضرة">Subject / lecture name</label>
+      <input type="text" id="subjectNameInput" data-ph-en="e.g. Cardiology — Arrhythmias" data-ph-ar="اكتب اسم المادة بعدها على طول اسم المحاضرة" placeholder="e.g. Cardiology — Arrhythmias" />
+      <div class="mfield-err" data-en="Please enter a name." data-ar="من فضلك اكتب اسم.">Please enter a name.</div>
+    </div>
+    <div class="mfield">
+      <label data-en="Color" data-ar="اللون">Color</label>
+      <div id="subjectColorSwatches" style="display:flex; gap:8px; flex-wrap:wrap;"></div>
+      <input type="hidden" id="subjectColorInput" value="#7aaee8" />
+    </div>
+    <div class="mfield-hint" id="subjectYearHint" data-en="Will be added under Year 1." data-ar="هتتضاف تحت السنة الأولى.">Will be added under Year 1.</div>
+    <div class="modal-btn-row">
+      <button class="modal-btn" id="subjectCancelBtn" data-en="Cancel" data-ar="إلغاء">Cancel</button>
+      <button class="modal-btn primary" id="subjectSaveBtn" data-en="Add subject" data-ar="إضافة">Add subject</button>
+    </div>
+  </div>
+</div>
+
 <!-- ADD / EDIT MATERIAL MODAL -->
 <div class="modal-overlay" id="materialModalOverlay">
   <div class="modal-sheet">
@@ -822,13 +736,13 @@
     <div class="mfield" id="pdfSourceField">
       <label id="pdfSourceLabel" data-en="How are you adding this file?" data-ar="هتضيف الملف إزاي؟">How are you adding this file?</label>
       <div class="source-toggle" id="pdfSourceToggle">
-        <div class="source-opt" id="srcLinkOpt" data-en="Paste a link" data-ar="حط لينك">Paste a link</div>
-        <div class="source-opt active" id="srcUploadOpt" data-en="Upload file" data-ar="ارفع ملف">Upload file</div>
+        <div class="source-opt active" id="srcLinkOpt" data-en="Paste a link" data-ar="حط لينك">Paste a link</div>
+        <div class="source-opt" id="srcUploadOpt" data-en="Upload file" data-ar="ارفع ملف">Upload file</div>
       </div>
-      <div id="linkInputWrap" style="display:none;">
+      <div id="linkInputWrap">
         <input type="url" id="materialLinkInput" data-ph-en="https://drive.google.com/…" data-ph-ar="https://drive.google.com/…" placeholder="https://drive.google.com/…" />
       </div>
-      <div id="uploadInputWrap">
+      <div id="uploadInputWrap" style="display:none;">
         <div class="upload-drop" id="uploadDrop">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="display:block;margin:0 auto 8px;"><path d="M12 16V4M12 4l-4 4M12 4l4 4"/><path d="M4 16v3a2 2 0 002 2h12a2 2 0 002-2v-3"/></svg>
           <span id="uploadDropText" data-en="Tap to choose a PDF" data-ar="اضغط لاختيار ملف PDF">Tap to choose a PDF</span>
@@ -1012,75 +926,8 @@
     try { localStorage.setItem(LANG_LS_KEY, v); } catch (e) {}
   }
 
-  /* ---------------- theme ---------------- */
-  const THEME_LS_KEY = 'mb_theme';
-  const THEMES = {
-    dark:      { nameEn:'Dark',      nameAr:'داكن',        swatch:'#0b0b0b' },
-    light:     { nameEn:'Light',     nameAr:'فاتح',        swatch:'#f4f4f2' },
-    maroon:    { nameEn:'Maroon',    nameAr:'كستنائي',      swatch:'#5c1a24' },
-    blue:      { nameEn:'Blue',      nameAr:'أزرق',        swatch:'#173a5e' },
-    orange:    { nameEn:'Orange',    nameAr:'برتقالي',      swatch:'#7a3410' },
-    champagne: { nameEn:'Champagne', nameAr:'شمبانيا',      swatch:'#e8dcc4' },
-    brown:     { nameEn:'Dark Brown',nameAr:'بني غامق',     swatch:'#2b1c14' }
-  };
-  const VALID_THEMES = Object.keys(THEMES);
-  let currentTheme = 'dark';
-
-  function getStoredTheme(){
-    try {
-      const v = localStorage.getItem(THEME_LS_KEY);
-      return VALID_THEMES.includes(v) ? v : null;
-    } catch (e) {
-      return null;
-    }
-  }
-  function setStoredTheme(v){
-    try { localStorage.setItem(THEME_LS_KEY, v); } catch (e) {}
-  }
-
-  function applyTheme(theme, skipPersist){
-    if (!VALID_THEMES.includes(theme)) theme = 'dark';
-    currentTheme = theme;
-    if (theme === 'dark'){
-      htmlEl.removeAttribute('data-theme');
-    } else {
-      htmlEl.setAttribute('data-theme', theme);
-    }
-    if (!skipPersist) setStoredTheme(theme);
-    renderThemeMenu();
-  }
-
-  function renderThemeMenu(){
-    const valueLabel = document.getElementById('themeValueLabel');
-    if (valueLabel){
-      const meta = THEMES[currentTheme];
-      valueLabel.textContent = currentLang === 'ar' ? meta.nameAr : meta.nameEn;
-    }
-    const row = document.getElementById('themeSwatchRow');
-    if (!row) return;
-    row.innerHTML = VALID_THEMES.map(key => {
-      const meta = THEMES[key];
-      const label = currentLang === 'ar' ? meta.nameAr : meta.nameEn;
-      const selected = key === currentTheme;
-      return `<button type="button" class="theme-swatch-btn ${selected?'selected':''}" data-theme-pick="${key}" style="background:${meta.swatch};" aria-label="${escapeHtml(label)}" title="${escapeHtml(label)}"></button>`;
-    }).join('');
-    row.querySelectorAll('[data-theme-pick]').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        applyTheme(btn.dataset.themePick);
-      });
-    });
-  }
-
-  document.getElementById('themeMenuBtn').addEventListener('click', (e) => {
-    e.stopPropagation();
-    document.getElementById('themeSwatchRow').classList.toggle('open');
-  });
-
   /* ================================================================
-     NO SIGN-IN. Anyone can add / edit / delete materials inside
-     existing subjects. Subjects themselves are fixed: they cannot be
-     added or removed from this screen anymore.
+     NO SIGN-IN. Anyone can add / edit / delete.
      A display name is stored in localStorage and written to the
      `created_by` / `uploaded_by` text columns, so uploads still show
      who added them. The name is optional.
@@ -1199,15 +1046,6 @@
     renderYearBadge();
   }
 
-  /* Fade the date title whenever it changes (swipe, tap, calendar pick, today jump) */
-  function renderDateWithFade(){
-    dateBig.classList.add('is-fading');
-    setTimeout(() => {
-      renderDate();
-      dateBig.classList.remove('is-fading');
-    }, 160);
-  }
-
   function renderCalBtnDate(){
     let label = document.getElementById('calDateLabel');
     if (!label){
@@ -1234,7 +1072,7 @@
     } else {
       viewDate = newDate;
       calMonthCursor = new Date(viewDate.getFullYear(), viewDate.getMonth(), 1);
-      renderDateWithFade();
+      renderDate();
       renderCalBtnDate();
       if (!opts.skipUrlSync) syncUrlToDate(viewDate, opts.replaceUrl);
       loadDay();
@@ -1274,15 +1112,6 @@
     return d;
   }
 
-  /* In RTL, "next" (later date) should visually enter from the left and
-     the content should exit to the right — the mirror of LTR — so that a
-     finger-swipe in either direction moves the day the same physical way
-     the finger moved. We keep `dir` meaning "next"/"prev" in date terms
-     throughout, and only flip the on-screen X placement here. */
-  function screenSign(){
-    return htmlEl.getAttribute('dir') === 'rtl' ? -1 : 1;
-  }
-
   mainEl.addEventListener('touchstart', (e) => {
     if (e.touches.length !== 1 || isAnimating) return;
     dragStartX = e.touches[0].clientX;
@@ -1305,17 +1134,16 @@
 
     e.preventDefault();
 
-    // Finger moving left -> reveal next day; finger moving right -> reveal prev day.
-    // This holds regardless of language direction (natural touch behavior).
-    const dir = dx < 0 ? 'next' : 'prev';
+    const rtl = htmlEl.getAttribute('dir') === 'rtl';
+    const draggingToShowNext = rtl ? dx > 0 : dx < 0;
+
+    const dir = draggingToShowNext ? 'next' : 'prev';
     ensurePreviewCard(dir);
 
-    const sign = screenSign();
     const currentCard = dayViewport.querySelector('.day-card.is-current');
     if (currentCard) currentCard.style.transform = `translateX(${dx}px)`;
     if (previewCard){
-      const dirSign = (dir === 'next') ? 1 : -1;
-      const basePos = sign * dirSign * dragWidth;
+      const basePos = (dir === 'next') ? dragWidth : -dragWidth;
       previewCard.style.transform = `translateX(${basePos + dx}px)`;
     }
   }, { passive: false });
@@ -1328,9 +1156,11 @@
       return;
     }
     const dx = e.changedTouches[0].clientX - dragStartX;
+    const rtl = htmlEl.getAttribute('dir') === 'rtl';
     const SWIPE_THRESHOLD = Math.min(90, dragWidth * 0.18);
 
-    const dir = dx < 0 ? 'next' : 'prev';
+    const draggingToShowNext = rtl ? dx > 0 : dx < 0;
+    const dir = draggingToShowNext ? 'next' : 'prev';
 
     if (Math.abs(dx) >= SWIPE_THRESHOLD && previewCard){
       commitSwipe(dir);
@@ -1367,9 +1197,7 @@
     dayViewport.appendChild(previewCard);
     bindDayCardEvents(previewCard, nd, cached);
 
-    const sign = screenSign();
-    const dirSign = (dir === 'next') ? 1 : -1;
-    const basePos = sign * dirSign * dragWidth;
+    const basePos = (dir === 'next') ? dragWidth : -dragWidth;
     previewCard.style.transform = `translateX(${basePos}px)`;
 
     if (cached === undefined) prefetchDay(nd);
@@ -1384,9 +1212,7 @@
     }
     if (previewCard){
       const dir = previewDirection;
-      const sign = screenSign();
-      const dirSign = (dir === 'next') ? 1 : -1;
-      const basePos = sign * dirSign * dragWidth;
+      const basePos = (dir === 'next') ? dragWidth : -dragWidth;
       previewCard.style.transition = 'transform .18s ease';
       previewCard.style.transform = `translateX(${basePos}px)`;
       const toRemove = previewCard;
@@ -1403,10 +1229,8 @@
     previewCard = null;
     previewDirection = null;
 
-    const sign = screenSign();
-    const dirSign = (dir === 'next') ? 1 : -1;
     const finishOffset = 0;
-    const exitOffset = -sign * dirSign * dragWidth;
+    const exitOffset = (dir === 'next') ? -dragWidth : dragWidth;
 
     if (currentCard){
       currentCard.style.transition = 'transform .16s ease';
@@ -1417,14 +1241,11 @@
       incoming.style.transform = `translateX(${finishOffset}px)`;
     }
 
-    dateBig.classList.add('is-fading');
-
     await wait(170);
 
     viewDate = neighborDate(dir, viewDate);
     calMonthCursor = new Date(viewDate.getFullYear(), viewDate.getMonth(), 1);
     renderDate();
-    dateBig.classList.remove('is-fading');
     renderCalBtnDate();
     syncUrlToDate(viewDate, false);
 
@@ -1479,15 +1300,12 @@
     dayViewport.appendChild(incoming);
     bindDayCardEvents(incoming, targetDate, cached);
 
-    const sign = screenSign();
-    const dirSign = (direction === 'next') ? 1 : -1;
-    const startPos = sign * dirSign * dragWidth;
+    const startPos = (direction === 'next') ? dragWidth : -dragWidth;
     incoming.style.transform = `translateX(${startPos}px)`;
 
     incoming.getBoundingClientRect();
 
-    const exitOffset = -sign * dirSign * dragWidth;
-    dateBig.classList.add('is-fading');
+    const exitOffset = (direction === 'next') ? -dragWidth : dragWidth;
     requestAnimationFrame(() => {
       if (currentCard){
         currentCard.style.transition = 'transform .22s ease';
@@ -1507,7 +1325,6 @@
     viewDate = targetDate;
     calMonthCursor = new Date(viewDate.getFullYear(), viewDate.getMonth(), 1);
     renderDate();
-    dateBig.classList.remove('is-fading');
     renderCalBtnDate();
     if (!opts.skipUrlSync) syncUrlToDate(viewDate, opts.replaceUrl);
 
@@ -1557,11 +1374,7 @@
       renderCalendarPopup();
     }
   });
-  document.addEventListener('click', () => {
-    calendarPopup.classList.remove('open');
-    const swatchRow = document.getElementById('themeSwatchRow');
-    if (swatchRow) swatchRow.classList.remove('open');
-  });
+  document.addEventListener('click', () => calendarPopup.classList.remove('open'));
   calendarPopup.addEventListener('click', (e) => e.stopPropagation());
 
   document.getElementById('calPrevMonth').addEventListener('click', () => {
@@ -1650,7 +1463,6 @@
     renderCalendarPopup();
     renderAuthChip();
     renderSubjectYearHint();
-    renderThemeMenu();
     renderDay();
   }
 
@@ -1864,8 +1676,12 @@
         <div class="day-empty">
           <div class="big-icon">🗓️</div>
           <h3>${currentLang==='ar'?'لسه مفيش حد رفع داتا لليوم ده':'No one uploaded data for this day yet'}</h3>
-          <p>${currentLang==='ar'?'لسه مفيش مواد مضافة لليوم ده.':'No subjects have been added for this day yet.'}</p>
+          <p>${currentLang==='ar'?'لو عندك حاجة تقدر ترفعهااضغط على علامة ال + الي تحت    .':'Be the first to add one by the + button below.'}</p>
         </div>
+        <button class="add-subject-btn" data-role="add-subject">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+          <span>${currentLang==='ar'?'إضافة داتا':'Add a subject'}</span>
+        </button>
       `;
     }
 
@@ -1927,6 +1743,9 @@
                     ${uploaderChip}
                   </div>
                 </div>
+                <button class="material-card-del" data-del-subject="${subj.id}" data-del-material="${m.id}" aria-label="Delete">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                </button>
               </div>
               ${captionLine}
               ${embedHtml || ''}
@@ -1966,15 +1785,27 @@
       `;
     });
 
+    html += `
+      <button class="add-subject-btn" data-role="add-subject">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        <span>${currentLang==='ar'?'إضافة داتا':'Add a subject'}</span>
+      </button>
+    `;
     return html;
   }
 
   function bindDayCardEvents(cardEl, date, subjects){
+    const addBtn = cardEl.querySelector('[data-role="add-subject"]');
+    if (addBtn) addBtn.addEventListener('click', () => openSubjectModal());
+
     cardEl.querySelectorAll('[data-toggle-subject]').forEach(head => {
       head.addEventListener('click', () => toggleSubject(head.dataset.toggleSubject));
     });
     cardEl.querySelectorAll('[data-add-material]').forEach(btn => {
       btn.addEventListener('click', (e) => { e.stopPropagation(); openMaterialModal(btn.dataset.addMaterial); });
+    });
+    cardEl.querySelectorAll('.material-card-del').forEach(btn => {
+      btn.addEventListener('click', (e) => { e.stopPropagation(); deleteMaterial(btn.dataset.delSubject, btn.dataset.delMaterial); });
     });
     cardEl.querySelectorAll('[data-edit-material]').forEach(row => {
       row.addEventListener('click', (e) => {
@@ -1983,7 +1814,8 @@
       });
     });
     cardEl.querySelectorAll('[data-flashcards-open]').forEach(row => {
-      row.addEventListener('click', () => {
+      row.addEventListener('click', (e) => {
+        if (e.target.closest('.material-card-del')) return;
         window.location.href = flashcardsViewerUrl(row.dataset.flashcardsOpen);
       });
     });
@@ -2029,6 +1861,78 @@
     setTimeout(() => toast.classList.remove('show'), 2200);
   }
 
+  /* ---------------- subject modal ---------------- */
+  const subjectModalOverlay = document.getElementById('subjectModalOverlay');
+  const subjectNameInput = document.getElementById('subjectNameInput');
+  const subjectNameField = document.getElementById('subjectNameField');
+  const subjectColorInput = document.getElementById('subjectColorInput');
+  const subjectColorSwatches = document.getElementById('subjectColorSwatches');
+
+  function renderSubjectColorSwatches(selected){
+    subjectColorSwatches.innerHTML = SUBJECT_COLORS.map(c => `
+      <button type="button" class="swatch-btn ${c===selected?'selected':''}" style="background:${c}; width:30px; height:30px; border-radius:50%; border:2px solid ${c===selected?'#fff':'transparent'}; cursor:pointer;" data-pick="${c}"></button>
+    `).join('');
+    subjectColorSwatches.querySelectorAll('[data-pick]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        subjectColorInput.value = btn.dataset.pick;
+        subjectColorSwatches.querySelectorAll('.swatch-btn').forEach(b => {
+          b.style.border = b === btn ? '2px solid #fff' : '2px solid transparent';
+        });
+      });
+    });
+  }
+
+  function openSubjectModal(){
+    subjectNameInput.value = '';
+    const randomColor = SUBJECT_COLORS[Math.floor(Math.random()*SUBJECT_COLORS.length)];
+    subjectColorInput.value = randomColor;
+    renderSubjectColorSwatches(randomColor);
+    subjectNameField.classList.remove('invalid');
+    renderSubjectYearHint();
+    subjectModalOverlay.classList.add('open');
+    setTimeout(() => subjectNameInput.focus(), 50);
+  }
+  function closeSubjectModal(){ subjectModalOverlay.classList.remove('open'); }
+
+  document.getElementById('subjectCancelBtn').addEventListener('click', closeSubjectModal);
+  subjectModalOverlay.addEventListener('click', (e) => { if(e.target === subjectModalOverlay) closeSubjectModal(); });
+
+  document.getElementById('subjectSaveBtn').addEventListener('click', async () => {
+    const name = subjectNameInput.value.trim();
+    if (!name){ subjectNameField.classList.add('invalid'); return; }
+
+    const saveBtn = document.getElementById('subjectSaveBtn');
+    saveBtn.disabled = true;
+
+    const { data, error } = await supabase
+      .from('lectures')
+      .insert({
+        date: fmtKey(viewDate),
+        name,
+        color: subjectColorInput.value,
+        year_of_view: currentYear,
+        created_by: getDisplayName() || null
+      })
+      .select('id, name, color, year_of_view, created_at')
+      .single();
+
+    saveBtn.disabled = false;
+
+    if (error){
+      console.error(error);
+      showToast(currentLang==='ar' ? 'حصل خطأ، جرب تاني' : 'Something went wrong, try again');
+      return;
+    }
+
+    currentDayData.subjects = currentDayData.subjects || [];
+    currentDayData.subjects.push({ id: data.id, name: data.name, color: data.color, yearOfView: data.year_of_view, collapsed: true, materials: [] });
+    dayCache.set(fmtKey(viewDate), currentDayData.subjects);
+    lsSetDay(fmtKey(viewDate), currentDayData.subjects);
+    closeSubjectModal();
+    renderDay();
+    showToast(currentLang==='ar' ? 'تمت إضافة المرجع' : 'Subject added');
+  });
+
   /* ---------------- material modal (add + edit) ---------------- */
   const materialModalOverlay = document.getElementById('materialModalOverlay');
   const materialModalTitle = document.getElementById('materialModalTitle');
@@ -2062,7 +1966,7 @@
   let activeSubjectId = null;
   let editingMaterialId = null;
   let currentType = 'pdf';
-  let currentSource = 'upload';
+  let currentSource = 'link';
   let uploadedFile = null;
   let uploadedFlashFile = null;
   let advancedOpen = false;
@@ -2132,7 +2036,7 @@
       materialModalTitle.textContent = currentLang==='ar' ? 'إضافة حاجة للمحاضرة' : 'Add material';
       document.querySelector('input[name="mtype"][value="pdf"]').checked = true;
       updateTypeVisual('pdf');
-      setSource('upload');
+      setSource('link');
       materialSaveBtn.textContent = currentLang==='ar' ? 'إضافة' : 'Add';
     }
 
@@ -2358,6 +2262,22 @@
     showToast(wasEditing ? (currentLang==='ar' ? 'تم الحفظ' : 'Saved') : (currentLang==='ar' ? 'تمت الإضافة' : 'Added'));
   });
 
+  async function deleteMaterial(subjectId, materialId){
+    const subj = (currentDayData.subjects || []).find(s => s.id === subjectId);
+    if (!subj) return;
+
+    const { error } = await supabase.from('materials').delete().eq('id', materialId);
+    if (error){
+      console.error(error);
+      showToast(currentLang==='ar' ? 'حصل خطأ، جرب تاني' : 'Something went wrong, try again');
+      return;
+    }
+    subj.materials = subj.materials.filter(m => m.id !== materialId);
+    dayCache.set(fmtKey(viewDate), currentDayData.subjects);
+    lsSetDay(fmtKey(viewDate), currentDayData.subjects);
+    renderDay();
+  }
+
   /* ---------------- init ---------------- */
   (async function init(){
     let redirectPath = null;
@@ -2379,9 +2299,6 @@
       setLang(storedLang, true);
     }
 
-    const storedTheme = getStoredTheme();
-    applyTheme(storedTheme || 'dark', true);
-
     const stored = getStoredYear();
     if (stored){
       currentYear = stored;
@@ -2401,7 +2318,6 @@
     renderDate();
     renderCalBtnDate();
     renderYearBadge();
-    renderThemeMenu();
     await loadDay();
   })();
 })();
