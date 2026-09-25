@@ -33,6 +33,92 @@
     --today-green-hi:#46bd68;
   }
 
+  /* ---------- THEMES ---------- */
+  html[data-theme="light"]{
+    --bg:            #f4f4f2;
+    --panel:         #ffffff;
+    --panel-hi:      #f0f0ee;
+    --line:          #dcdcd8;
+    --line-soft:     #e4e4e0;
+    --text:          #171715;
+    --text-dim:      #55554f;
+    --text-faint:    #8c8c85;
+    --accent:        #171715;
+    --accent-dark:   #000000;
+    --accent-glow:   rgba(0,0,0,0.06);
+    --err:           #b3261e;
+  }
+  html[data-theme="maroon"]{
+    --bg:            #200a0d;
+    --panel:         #33141a;
+    --panel-hi:      #3d1a20;
+    --line:          #532029;
+    --line-soft:     #451b22;
+    --text:          #f6e8ea;
+    --text-dim:      #cf9fa6;
+    --text-faint:    #8f6167;
+    --accent:        #e8a3ab;
+    --accent-dark:   #ffffff;
+    --accent-glow:   rgba(232,163,171,0.1);
+    --err:           #ff9b9b;
+  }
+  html[data-theme="blue"]{
+    --bg:            #0a1622;
+    --panel:         #122438;
+    --panel-hi:      #172c42;
+    --line:          #24405c;
+    --line-soft:     #1d3450;
+    --text:          #e9f1fa;
+    --text-dim:      #a4c1dc;
+    --text-faint:    #6c88a4;
+    --accent:        #8fc3ef;
+    --accent-dark:   #ffffff;
+    --accent-glow:   rgba(143,195,239,0.1);
+    --err:           #ff9b9b;
+  }
+  html[data-theme="orange"]{
+    --bg:            #1f1006;
+    --panel:         #32190a;
+    --panel-hi:      #3d200d;
+    --line:          #5c331a;
+    --line-soft:     #4a2812;
+    --text:          #fbebdd;
+    --text-dim:      #e0af86;
+    --text-faint:    #a17451;
+    --accent:        #f2a35f;
+    --accent-dark:   #ffffff;
+    --accent-glow:   rgba(242,163,95,0.1);
+    --err:           #ff9b7a;
+  }
+  html[data-theme="champagne"]{
+    --bg:            #ece2c9;
+    --panel:         #f7f1e1;
+    --panel-hi:      #fbf7ec;
+    --line:          #d9cba3;
+    --line-soft:     #e2d6b3;
+    --text:          #3a3220;
+    --text-dim:      #6d5f3f;
+    --text-faint:    #998a63;
+    --accent:        #3a3220;
+    --accent-dark:   #000000;
+    --accent-glow:   rgba(58,50,32,0.07);
+    --err:           #a3402a;
+  }
+  html[data-theme="brown"]{
+    --bg:            #1b120c;
+    --panel:         #291c13;
+    --panel-hi:      #322318;
+    --line:          #4a3524;
+    --line-soft:     #3c2a1d;
+    --text:          #f1e6da;
+    --text-dim:      #c7ab8e;
+    --text-faint:    #8d735a;
+    --accent:        #d9ac7d;
+    --accent-dark:   #ffffff;
+    --accent-glow:   rgba(217,172,125,0.1);
+    --err:           #ff9b7a;
+  }
+
   html,body{
     height:100%;
     /* Hard block on pinch/double-tap zoom everywhere */
@@ -72,6 +158,10 @@
   .header-left{display:flex; flex-direction:column; align-items:flex-start; gap:2px;}
   .logo-wrap{display:flex; align-items:center; gap:10px; margin-bottom:14px;}
   .logo-img{height:28px; width:auto; display:block;}
+  html[data-theme="light"] .logo-img,
+  html[data-theme="champagne"] .logo-img{
+    filter:invert(1) hue-rotate(180deg);
+  }
   .logo-fallback{
     display:flex; align-items:center; justify-content:center;
     width:28px; height:28px; border-radius:6px;
@@ -139,6 +229,22 @@
   .settings-divider{height:1px; background:var(--line-soft); margin:4px 2px;}
   .settings-check{width:14px; height:14px; color:var(--text-faint); flex-shrink:0; visibility:hidden;}
   .settings-item.active-row .settings-check{visibility:visible; color:var(--text);}
+
+  .theme-swatch-row{
+    display:none;
+    flex-wrap:wrap; gap:8px;
+    padding:8px 8px 4px;
+  }
+  .theme-swatch-row.open{display:flex;}
+  .theme-swatch-btn{
+    width:24px; height:24px; border-radius:50%;
+    border:2px solid transparent;
+    cursor:pointer;
+    box-shadow:inset 0 0 0 1px var(--line-soft);
+    transition:border-color .15s, transform .15s;
+  }
+  .theme-swatch-btn:hover{transform:scale(1.08);}
+  .theme-swatch-btn.selected{border-color:var(--text);}
 
   /* ---------- DECK TITLE HERO ---------- */
   .deck-hero{
@@ -422,6 +528,14 @@
             <span id="langToggleLabel" data-en="Language: English" data-ar="اللغة: عربي">Language: English</span>
           </span>
         </div>
+        <div class="settings-divider"></div>
+        <div class="settings-item" id="themeMenuRow">
+          <span class="row-label">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+            <span id="themeMenuLabel" data-en="Theme: Dark" data-ar="المظهر: داكن">Theme: Dark</span>
+          </span>
+        </div>
+        <div class="theme-swatch-row" id="themeSwatchRow"></div>
       </div>
     </button>
   </div>
@@ -457,6 +571,64 @@
   }
   function setStoredLang(v){ try { localStorage.setItem(LANG_LS_KEY, v); } catch (e) {} }
 
+  /* ---------------- theme ---------------- */
+  const THEME_LS_KEY = 'mb_theme';
+  const THEMES = {
+    dark:      { nameEn:'Dark',      nameAr:'داكن',        swatch:'#0b0b0b' },
+    light:     { nameEn:'Light',     nameAr:'فاتح',        swatch:'#f4f4f2' },
+    maroon:    { nameEn:'Maroon',    nameAr:'كستنائي',      swatch:'#5c1a24' },
+    blue:      { nameEn:'Blue',      nameAr:'أزرق',        swatch:'#173a5e' },
+    orange:    { nameEn:'Orange',    nameAr:'برتقالي',      swatch:'#7a3410' },
+    champagne: { nameEn:'Champagne', nameAr:'شمبانيا',      swatch:'#e8dcc4' },
+    brown:     { nameEn:'Dark Brown',nameAr:'بني غامق',     swatch:'#2b1c14' }
+  };
+  const VALID_THEMES = Object.keys(THEMES);
+  let currentTheme = 'dark';
+
+  function getStoredTheme(){
+    try {
+      const v = localStorage.getItem(THEME_LS_KEY);
+      return VALID_THEMES.includes(v) ? v : null;
+    } catch (e) { return null; }
+  }
+  function setStoredTheme(v){ try { localStorage.setItem(THEME_LS_KEY, v); } catch (e) {} }
+
+  function applyTheme(theme, skipPersist){
+    if (!VALID_THEMES.includes(theme)) theme = 'dark';
+    currentTheme = theme;
+    if (theme === 'dark'){
+      htmlEl.removeAttribute('data-theme');
+    } else {
+      htmlEl.setAttribute('data-theme', theme);
+    }
+    if (!skipPersist) setStoredTheme(theme);
+    renderThemeMenu();
+  }
+
+  function renderThemeMenu(){
+    const label = document.getElementById('themeMenuLabel');
+    if (label){
+      const meta = THEMES[currentTheme];
+      label.textContent = currentLang === 'ar'
+        ? `المظهر: ${meta.nameAr}`
+        : `Theme: ${meta.nameEn}`;
+    }
+    const row = document.getElementById('themeSwatchRow');
+    if (!row) return;
+    row.innerHTML = VALID_THEMES.map(key => {
+      const meta = THEMES[key];
+      const swatchLabel = currentLang === 'ar' ? meta.nameAr : meta.nameEn;
+      const selected = key === currentTheme;
+      return `<button type="button" class="theme-swatch-btn ${selected?'selected':''}" data-theme-pick="${key}" style="background:${meta.swatch};" aria-label="${escapeHtml(swatchLabel)}" title="${escapeHtml(swatchLabel)}"></button>`;
+    }).join('');
+    row.querySelectorAll('[data-theme-pick]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        applyTheme(btn.dataset.themePick);
+      });
+    });
+  }
+
   function applyStaticText(lang){
     document.querySelectorAll('[data-en]').forEach(el => {
       const t = lang === 'ar' ? el.dataset.ar : el.dataset.en;
@@ -483,6 +655,7 @@
     htmlEl.setAttribute('dir', lang === 'ar' ? 'rtl' : 'ltr');
     applyStaticText(lang);
     updateLangLabel();
+    renderThemeMenu();
     renderProgress();
   }
 
@@ -490,7 +663,11 @@
   const settingsBtn = document.getElementById('settingsBtn');
   const settingsPanel = document.getElementById('settingsPanel');
 
-  function closeSettings(){ settingsPanel.classList.remove('open'); }
+  function closeSettings(){
+    settingsPanel.classList.remove('open');
+    const swatchRow = document.getElementById('themeSwatchRow');
+    if (swatchRow) swatchRow.classList.remove('open');
+  }
   function toggleSettings(e){
     e.stopPropagation();
     settingsPanel.classList.toggle('open');
@@ -503,6 +680,11 @@
   document.getElementById('langToggleRow').addEventListener('click', (e) => {
     e.stopPropagation();
     setLang(currentLang === 'en' ? 'ar' : 'en');
+  });
+
+  document.getElementById('themeMenuRow').addEventListener('click', (e) => {
+    e.stopPropagation();
+    document.getElementById('themeSwatchRow').classList.toggle('open');
   });
 
   document.getElementById('modeStudyRow').addEventListener('click', (e) => {
@@ -973,6 +1155,9 @@
     const storedLang = getStoredLang();
     if (storedLang) setLang(storedLang, true);
     else updateLangLabel();
+
+    const storedTheme = getStoredTheme();
+    applyTheme(storedTheme || 'dark', true);
 
     const materialId = getQueryParam('id');
     if (!materialId){
