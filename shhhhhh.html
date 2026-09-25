@@ -143,6 +143,10 @@
   .header-left{display:flex; flex-direction:column; align-items:flex-start; gap:2px;}
   .logo-wrap{display:flex; align-items:center; gap:10px; margin-bottom:14px;}
   .logo-img{height:28px; width:auto; display:block;}
+  html[data-theme="light"] .logo-img,
+  html[data-theme="champagne"] .logo-img{
+    filter:invert(1) hue-rotate(180deg);
+  }
   .logo-fallback{
     display:flex; align-items:center; justify-content:center;
     width:28px; height:28px; border-radius:6px;
@@ -454,15 +458,6 @@
   .material-meta{font-size:0.68rem; color:var(--text-faint); font-weight:600; text-transform:uppercase; letter-spacing:0.02em;}
   .material-dot-sep{width:2px; height:2px; border-radius:50%; background:var(--text-faint); flex-shrink:0;}
   .material-uploader{font-size:0.68rem; color:var(--text-faint);}
-
-  .material-card-del{
-    flex-shrink:0; width:22px; height:22px; border-radius:6px;
-    border:none; background:none; color:var(--text-faint); cursor:pointer;
-    display:flex; align-items:center; justify-content:center;
-    opacity:0.45; transition:opacity .15s, color .15s;
-  }
-  .material-card-del:hover{opacity:1; color:var(--text);}
-  .material-card-del svg{width:12px; height:12px;}
 
   .material-caption{font-size:0.74rem; color:var(--text-dim); font-style:italic; line-height:1.5;}
 
@@ -1932,9 +1927,6 @@
                     ${uploaderChip}
                   </div>
                 </div>
-                <button class="material-card-del" data-del-subject="${subj.id}" data-del-material="${m.id}" aria-label="Delete">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
-                </button>
               </div>
               ${captionLine}
               ${embedHtml || ''}
@@ -1984,9 +1976,6 @@
     cardEl.querySelectorAll('[data-add-material]').forEach(btn => {
       btn.addEventListener('click', (e) => { e.stopPropagation(); openMaterialModal(btn.dataset.addMaterial); });
     });
-    cardEl.querySelectorAll('.material-card-del').forEach(btn => {
-      btn.addEventListener('click', (e) => { e.stopPropagation(); deleteMaterial(btn.dataset.delSubject, btn.dataset.delMaterial); });
-    });
     cardEl.querySelectorAll('[data-edit-material]').forEach(row => {
       row.addEventListener('click', (e) => {
         if (e.target.closest('.material-embed-wrap') || e.target.closest('.material-link-btn')) return;
@@ -1994,8 +1983,7 @@
       });
     });
     cardEl.querySelectorAll('[data-flashcards-open]').forEach(row => {
-      row.addEventListener('click', (e) => {
-        if (e.target.closest('.material-card-del')) return;
+      row.addEventListener('click', () => {
         window.location.href = flashcardsViewerUrl(row.dataset.flashcardsOpen);
       });
     });
@@ -2369,22 +2357,6 @@
     renderDay();
     showToast(wasEditing ? (currentLang==='ar' ? 'تم الحفظ' : 'Saved') : (currentLang==='ar' ? 'تمت الإضافة' : 'Added'));
   });
-
-  async function deleteMaterial(subjectId, materialId){
-    const subj = (currentDayData.subjects || []).find(s => s.id === subjectId);
-    if (!subj) return;
-
-    const { error } = await supabase.from('materials').delete().eq('id', materialId);
-    if (error){
-      console.error(error);
-      showToast(currentLang==='ar' ? 'حصل خطأ، جرب تاني' : 'Something went wrong, try again');
-      return;
-    }
-    subj.materials = subj.materials.filter(m => m.id !== materialId);
-    dayCache.set(fmtKey(viewDate), currentDayData.subjects);
-    lsSetDay(fmtKey(viewDate), currentDayData.subjects);
-    renderDay();
-  }
 
   /* ---------------- init ---------------- */
   (async function init(){
