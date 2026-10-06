@@ -1887,6 +1887,250 @@
       height: 18px;
     }
   }
+
+  /* ── Minimalist Site Colophon Footer & Credits ── */
+  .site-colophon-footer {
+    width: 100%;
+    margin-top: 56px;
+    padding: 32px 0 24px;
+    border-top: 1px solid var(--line-soft);
+    box-sizing: border-box;
+    position: relative;
+    z-index: 10;
+  }
+  .colophon-footer-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+    padding: 0 4px;
+  }
+  .colophon-brand-side {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.82rem;
+    color: var(--text-faint);
+    letter-spacing: -0.01em;
+  }
+  .colophon-brand-mark {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 700;
+    color: var(--text);
+  }
+  .colophon-status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--today-green, #10b981);
+    box-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
+    display: inline-block;
+  }
+  .colophon-sep {
+    color: var(--line-mid);
+    user-select: none;
+  }
+  .colophon-year {
+    font-size: 0.78rem;
+    color: var(--text-dim);
+  }
+  .colophon-credits-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--panel-hi);
+    border: 1px solid var(--line-soft);
+    border-radius: 9999px;
+    padding: 6px 16px;
+    color: var(--text-dim);
+    font-size: 0.8rem;
+    line-height: 1.4;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+    outline: none;
+    user-select: none;
+    font-family: inherit;
+  }
+  .colophon-credits-pill:hover,
+  .colophon-credits-pill:focus-visible {
+    background: var(--panel);
+    border-color: var(--line-mid);
+    color: var(--text);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+    transform: translateY(-1px);
+  }
+  .colophon-credits-pill:focus-visible {
+    box-shadow: 0 0 0 2px var(--accent);
+  }
+  .colophon-author-names {
+    color: var(--text);
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+  .colophon-pill-sparkle {
+    font-size: 0.72rem;
+    color: var(--accent);
+    opacity: 0.85;
+    transition: transform 0.25s ease;
+  }
+  .colophon-credits-pill:hover .colophon-pill-sparkle {
+    transform: scale(1.25) rotate(15deg);
+    opacity: 1;
+  }
+  .colophon-meta-side {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .colophon-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    padding: 4px 10px;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--line-soft);
+    color: var(--text-faint);
+  }
+
+  /* ── Ultra-Minimal Colophon Modal Sheet ── */
+  .modal-sheet.colophon-sheet {
+    max-width: 460px;
+    padding: 24px;
+    background: var(--panel-hi);
+    border: 1px solid var(--line-mid);
+    border-radius: 16px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+  }
+  .colophon-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 18px;
+  }
+  .colophon-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  .colophon-eyebrow-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    display: inline-block;
+  }
+  .colophon-title-row {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+  .colophon-title {
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: var(--text);
+    margin: 0;
+    letter-spacing: -0.02em;
+  }
+  .colophon-version-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--text-faint);
+    background: rgba(255, 255, 255, 0.05);
+    padding: 2px 7px;
+    border-radius: 4px;
+    border: 1px solid var(--line-soft);
+  }
+  .colophon-tribute {
+    font-size: 0.85rem;
+    line-height: 1.5;
+    color: var(--text-dim);
+    margin: 0 0 16px 0;
+  }
+  .colophon-rule {
+    height: 1px;
+    background: var(--line-soft);
+    margin: 16px 0;
+  }
+  .colophon-credits-card {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--line-soft);
+    border-radius: 12px;
+    padding: 16px 18px;
+    transition: border-color 0.2s ease;
+  }
+  .colophon-credits-card:hover {
+    border-color: var(--line-mid);
+  }
+  .colophon-role-tag {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    margin-bottom: 6px;
+  }
+  .colophon-team-names {
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: var(--text);
+    letter-spacing: -0.01em;
+  }
+  .colophon-meta-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+    font-size: 0.74rem;
+    color: var(--text-faint);
+    margin-top: 4px;
+  }
+  .colophon-location {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .colophon-engine-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.66rem;
+    color: var(--text-dim);
+  }
+
+  @media (max-width: 768px) {
+    .site-colophon-footer {
+      margin-top: 40px;
+      padding: 24px 0 20px;
+    }
+    .colophon-footer-inner {
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 12px;
+    }
+    .colophon-credits-pill {
+      width: 100%;
+      max-width: 380px;
+      justify-content: center;
+      padding: 8px 14px;
+      font-size: 0.78rem;
+    }
+  }
 </style>
 </head>
 <body>
@@ -2023,6 +2267,30 @@
     <div class="curriculum-modules-list" id="curriculumModulesList">
       <div class="loading-row" id="curriculumLoading" data-en="Loading medical flashcards curriculum…" data-ar="جاري تحميل منهج الفلاش كاردز…">Loading medical flashcards curriculum…</div>
     </div>
+
+    <!-- MINIMALIST SITE FOOTER & CREDITS COLOPHON -->
+    <footer class="site-colophon-footer" id="siteColophonFooter" role="contentinfo">
+      <div class="colophon-footer-inner">
+        <div class="colophon-brand-side">
+          <span class="colophon-brand-mark">
+            <span class="colophon-status-dot"></span>
+            <span class="colophon-brand-title">MedicineBank</span>
+          </span>
+          <span class="colophon-sep" aria-hidden="true">·</span>
+          <span class="colophon-year" data-en="2026 Academic Edition" data-ar="نسخة ٢٠٢٦ الأكاديمية">2026 Academic Edition</span>
+        </div>
+
+        <button type="button" class="colophon-credits-pill" id="colophonCreditsTrigger" aria-haspopup="dialog" aria-expanded="false" title="View Project Colophon & Credits">
+          <span class="colophon-credits-label" data-en="Architected & Developed by" data-ar="تصميم وتطوير:">Architected & Developed by</span>
+          <span class="colophon-author-names" data-en="Eyad Ayman & Muhammad Shabana" data-ar="إياد أيمن ومحمد شبانة">Eyad Ayman & Muhammad Shabana</span>
+          <span class="colophon-pill-sparkle" aria-hidden="true">✦</span>
+        </button>
+
+        <div class="colophon-meta-side">
+          <span class="colophon-badge" data-en="FSRS-5 · Offline First" data-ar="FSRS-5 · بدون إنترنت">FSRS-5 · Offline First</span>
+        </div>
+      </div>
+    </footer>
   </div>
 </main>
 
@@ -2745,6 +3013,49 @@
   </div>
 </div>
 
+<!-- ABOUT & CREDITS COLOPHON MODAL -->
+<div class="modal-overlay" id="colophonModalOverlay" role="dialog" aria-modal="true" aria-labelledby="colophonModalTitle" style="display:none;">
+  <div class="modal-sheet colophon-sheet">
+    <div class="colophon-header">
+      <div class="colophon-eyebrow">
+        <span class="colophon-eyebrow-dot"></span>
+        <span data-en="Project Colophon & Credits" data-ar="عن المشروع وهيئة التطوير">Project Colophon & Credits</span>
+      </div>
+      <button type="button" class="admin-close-btn" id="colophonCloseBtn" aria-label="Close Credits Modal">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+
+    <div class="colophon-body">
+      <div class="colophon-title-row">
+        <h3 class="colophon-title" id="colophonModalTitle">MedicineBank</h3>
+        <span class="colophon-version-tag">v2.6</span>
+      </div>
+
+      <p class="colophon-tribute" data-en="Crafted for medical excellence, active recall, and open access learning." data-ar="صُمم لدعم التميز الطبي والتعلم المفتوح والاستذكار الفعّال.">Crafted for medical excellence, active recall, and open access learning.</p>
+
+      <div class="colophon-rule" aria-hidden="true"></div>
+
+      <div class="colophon-credits-card">
+        <div class="colophon-role-tag" data-en="Lead Architecture & Engineering" data-ar="الهندسة المعمارية والتطوير البرمجي">Lead Architecture & Engineering</div>
+        <div class="colophon-team-names" data-en="Eyad Ayman & Muhammad Shabana" data-ar="إياد أيمن ومحمد شبانة">Eyad Ayman & Muhammad Shabana</div>
+      </div>
+
+      <div class="colophon-rule" aria-hidden="true"></div>
+
+      <div class="colophon-meta-footer">
+        <div class="colophon-location">
+          <span class="colophon-loc-icon">📍</span>
+          <span data-en="Cairo, Egypt · 2026" data-ar="القاهرة، مصر · ٢٠٢٦">Cairo, Egypt · 2026</span>
+        </div>
+        <div class="colophon-engine-badge">
+          <span>Active Recall & Spaced Repetition</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -2976,6 +3287,13 @@
           <span class="theme-toggle-slider"></span>
         </label>
       </div>
+      <div class="theme-popup-divider"></div>
+      <div class="theme-popup-option">
+        <button type="button" class="theme-popup-action-btn" id="themeAboutColophonBtn" style="background:none; border:none; padding:4px 0; width:100%; display:flex; align-items:center; justify-content:space-between; font-size:0.75rem; font-weight:600; color:var(--text-dim); cursor:pointer;">
+          <span data-en="About & Credits" data-ar="عن المشروع وهيئة التطوير">${currentLang === 'ar' ? 'عن المشروع وهيئة التطوير' : 'About & Credits'}</span>
+          <span style="font-size:0.7rem; color:var(--accent);">✦</span>
+        </button>
+      </div>
     `;
 
     row.querySelectorAll('[data-theme-pick]').forEach(btn => {
@@ -3002,6 +3320,15 @@
           localStorage.setItem('mb_show_compass', val);
           localStorage.setItem('mb_enable_gestures', val);
         } catch(err){}
+      });
+    }
+
+    const themeColophonBtn = document.getElementById('themeAboutColophonBtn');
+    if (themeColophonBtn){
+      themeColophonBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        row.classList.remove('open');
+        if (typeof openColophonModal === 'function') openColophonModal();
       });
     }
   }
@@ -5178,8 +5505,54 @@
   adminDashboardOverlay.addEventListener('click', (e) => {
     if (e.target === adminDashboardOverlay) closeAdminDashboard();
   });
+
+  /* ---------------- About & Credits Colophon Modal ---------------- */
+  const colophonModalOverlay = document.getElementById('colophonModalOverlay');
+  const colophonCreditsTrigger = document.getElementById('colophonCreditsTrigger');
+  const colophonCloseBtn = document.getElementById('colophonCloseBtn');
+
+  function openColophonModal(){
+    if (colophonModalOverlay){
+      colophonModalOverlay.style.display = 'flex';
+      colophonModalOverlay.classList.add('open');
+      document.body.style.overflow = 'hidden';
+      if (colophonCreditsTrigger) colophonCreditsTrigger.setAttribute('aria-expanded', 'true');
+    }
+  }
+
+  function closeColophonModal(){
+    if (colophonModalOverlay){
+      colophonModalOverlay.classList.remove('open');
+      colophonModalOverlay.style.display = 'none';
+      document.body.style.overflow = '';
+      if (colophonCreditsTrigger){
+        colophonCreditsTrigger.setAttribute('aria-expanded', 'false');
+        try { colophonCreditsTrigger.focus(); } catch(e){}
+      }
+    }
+  }
+
+  window.openColophonModal = openColophonModal;
+  window.closeColophonModal = closeColophonModal;
+
+  if (colophonCreditsTrigger){
+    colophonCreditsTrigger.addEventListener('click', openColophonModal);
+  }
+  if (colophonCloseBtn){
+    colophonCloseBtn.addEventListener('click', closeColophonModal);
+  }
+  if (colophonModalOverlay){
+    colophonModalOverlay.addEventListener('click', (e) => {
+      if (e.target === colophonModalOverlay) closeColophonModal();
+    });
+  }
+
   window.addEventListener('keydown', (e) => {
     if (e.key === 'Escape'){
+      if (colophonModalOverlay && colophonModalOverlay.classList.contains('open')){
+        closeColophonModal();
+        return;
+      }
       if (moveDeckModalOverlay && moveDeckModalOverlay.classList.contains('open')){
         closeMoveDeckModal();
         return;

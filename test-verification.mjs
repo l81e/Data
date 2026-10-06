@@ -519,6 +519,24 @@ assert(fs.existsSync('fzstd.min.js'), 'fzstd.min.js is bundled locally for 100% 
   assert(indexHtml.includes("localStorage.setItem('mb_enable_gestures'"), 'index.html updates mb_enable_gestures when toggling gesture compass');
 }
 
+// 30. Verify State-of-the-Art Minimalist Credits Colophon and Interactive Modal
+{
+  assert(indexHtml.includes('id="siteColophonFooter"'), 'index.html contains siteColophonFooter element');
+  assert(indexHtml.includes('role="contentinfo"'), 'siteColophonFooter includes semantic role="contentinfo"');
+  assert(indexHtml.includes('id="colophonCreditsTrigger"'), 'siteColophonFooter contains interactive colophonCreditsTrigger');
+  assert(indexHtml.includes('Eyad Ayman & Muhammad Shabana'), 'Credits attribution includes Eyad Ayman & Muhammad Shabana in English');
+  assert(indexHtml.includes('إياد أيمن ومحمد شبانة'), 'Credits attribution includes Eyad Ayman & Muhammad Shabana in Arabic');
+  assert(indexHtml.includes('Architected & Developed by') && indexHtml.includes('تصميم وتطوير:'), 'Credits attribution uses agreed phrasing in English and Arabic');
+  assert(indexHtml.includes('id="colophonModalOverlay"'), 'index.html includes colophonModalOverlay');
+  assert(indexHtml.includes('role="dialog"') && indexHtml.includes('aria-modal="true"'), 'Colophon modal has proper ARIA accessibility attributes');
+  assert(indexHtml.includes('Lead Architecture & Engineering') && indexHtml.includes('الهندسة المعمارية والتطوير البرمجي'), 'Colophon modal includes Lead Architecture & Engineering role in English and Arabic');
+  assert(indexHtml.includes('Crafted for medical excellence, active recall, and open access learning.'), 'Colophon modal includes agreed tribute in English');
+  assert(indexHtml.includes('صُمم لدعم التميز الطبي والتعلم المفتوح والاستذكار الفعّال.'), 'Colophon modal includes agreed tribute in Arabic');
+  assert(indexHtml.includes('function openColophonModal') && indexHtml.includes('function closeColophonModal'), 'index.html defines openColophonModal and closeColophonModal controllers');
+  assert(indexHtml.includes('closeColophonModal();') && indexHtml.includes("e.key === 'Escape'"), 'Escape key handler dismisses colophon modal');
+  assert(indexHtml.includes('themeAboutColophonBtn'), 'Theme menu provides quick access to About & Credits colophon');
+}
+
 console.log('\n==================================================');
 if (failures === 0) {
   console.log(`🎉 ALL ${passed} VERIFICATION CHECKS PASSED PERFECTLY!`);
