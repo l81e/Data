@@ -964,6 +964,8 @@
     box-shadow:0 0 8px var(--today-green); display:none;
   }
   .admin-auth-chip.unlocked .admin-auth-dot{display:inline-block;}
+  .admin-only{display:none !important;}
+  body.admin-authenticated .admin-only{display:inline-flex !important;}
 
   /* ---------- ANKIWEB MINIMALIST DECK TABLE WORKSPACE ---------- */
   .anki-workspace{
@@ -1914,11 +1916,11 @@
           <button type="button" class="curriculum-sem-pill" data-sem="1" data-en="Semester 1" data-ar="الترم الأول">Semester 1</button>
           <button type="button" class="curriculum-sem-pill" data-sem="2" data-en="Semester 2" data-ar="الترم الثاني">Semester 2</button>
         </div>
-        <button type="button" class="anki-add-deck-btn" id="curriculumAddModuleBtn" title="Add or configure curriculum module">
+        <button type="button" class="anki-add-deck-btn admin-only" id="curriculumAddModuleBtn" title="Add or configure curriculum module">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
           <span data-en="Add Module" data-ar="إضافة موديول">Add Module</span>
         </button>
-        <button type="button" class="anki-add-deck-btn" id="curriculumUploadDeckBtn" title="Upload new Anki flashcard deck">
+        <button type="button" class="anki-add-deck-btn admin-only" id="curriculumUploadDeckBtn" title="Upload new Anki flashcard deck">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
           <span data-en="Upload Deck" data-ar="رفع حزمة كروت">Upload Deck</span>
         </button>
@@ -3051,6 +3053,7 @@
 
   function updateAdminUIState(){
     const isAuthed = isAdminAuthenticated();
+    document.body.classList.toggle('admin-authenticated', isAuthed);
     const chip = document.getElementById('adminAuthChip');
     const chipLabel = document.getElementById('adminAuthChipLabel');
     if (chip && chipLabel){
@@ -3067,10 +3070,13 @@
       }
     }
     document.querySelectorAll('.admin-only').forEach(el => {
-      el.style.display = isAuthed ? '' : 'none';
+      el.style.display = isAuthed ? 'inline-flex' : 'none';
     });
     if (typeof renderCurriculumExplorer === 'function'){
       renderCurriculumExplorer();
+    }
+    if (typeof renderDay === 'function'){
+      renderDay();
     }
   }
 
@@ -3933,7 +3939,7 @@
           </div>
           <h3 data-en="No Decks Uploaded for this Day" data-ar="لا توجد كروت مضافة لهذا اليوم">${currentLang==='ar'?'لا توجد كروت مضافة لهذا اليوم':'No Decks Uploaded for this Day'}</h3>
           <p data-en="No active flashcard decks or curriculum modules have been added for this date yet." data-ar="لم تتم إضافة أي حزم كروت أو مواد لهذا التاريخ بعد.">${currentLang==='ar'?'لم تتم إضافة أي حزم كروت أو مواد لهذا التاريخ بعد.':'No active flashcard decks or curriculum modules have been added for this date yet.'}</p>
-          <button type="button" class="day-empty-admin-btn" id="dayEmptyAdminBtn">
+          <button type="button" class="day-empty-admin-btn admin-only" id="dayEmptyAdminBtn">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
             <span data-en="Admin dashboard" data-ar="لوحة الأدمن">${currentLang==='ar' ? 'لوحة الأدمن' : 'Admin dashboard'}</span>
           </button>
@@ -6005,12 +6011,45 @@
     adminPublishBtn.disabled = true;
     adminPublishBtn.innerHTML = `<span>${currentLang==='ar'?'جاري الحفظ…':'Saving…'}</span>`;
 
+    let detectedCardCount = 0;
+    if (selectedAdminType === 'flashcards' && adminSelectedFile && adminSelectedFile.name.toLowerCase().endsWith('.apkg')){
+      try {
+        const ab = await adminSelectedFile.arrayBuffer();
+        const zip = await JSZip.loadAsync(ab);
+        const anki21bFile = zip.file('collection.anki21b');
+        const anki21File = zip.file('collection.anki21');
+        const anki2File = zip.file('collection.anki2');
+        const dbFile = anki21bFile || anki21File || anki2File;
+        if (dbFile){
+          let dbBytes;
+          if (anki21bFile && typeof fzstd !== 'undefined' && fzstd.decompress){
+            const rawZstd = await anki21bFile.async('uint8array');
+            dbBytes = fzstd.decompress(rawZstd);
+          } else {
+            dbBytes = await dbFile.async('uint8array');
+          }
+          if (typeof initSqlJs !== 'undefined'){
+            const SQL = await initSqlJs({ locateFile: file => `https://cdn.jsdelivr.net/npm/sql.js@1.10.3/dist/${file}` });
+            const db = new SQL.Database(dbBytes);
+            const cardRes = db.exec("SELECT count(*) FROM cards");
+            if (cardRes.length && cardRes[0].values.length){
+              detectedCardCount = cardRes[0].values[0][0];
+            }
+            db.close();
+          }
+        }
+      } catch(countErr){
+        console.warn('Could not auto-count cards during upload:', countErr);
+      }
+    }
+
     const structuredCaption = JSON.stringify({
       module: modVal,
       subject: subjVal,
       semester: semVal,
       lecture: title,
-      note: caption
+      note: caption,
+      cardCount: detectedCardCount || undefined
     });
 
     const { error: insertErr } = await supabase.from('materials').insert({
@@ -6241,8 +6280,45 @@
     return [];
   }
 
+  let vaultStatsCache = {};
+  async function loadVaultStatsCache(){
+    try {
+      if (typeof indexedDB === 'undefined') return;
+      const db = await new Promise((resolve, reject) => {
+        const req = indexedDB.open('mb_synaptic_vault', 3);
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      });
+      if (!db.objectStoreNames.contains('cards')) {
+        db.close();
+        return;
+      }
+      const tx = db.transaction('cards', 'readonly');
+      const store = tx.objectStore('cards');
+      const req = store.getAll();
+      const allCards = await new Promise(r => { req.onsuccess = () => r(req.result || []); req.onerror = () => r([]); });
+      db.close();
+
+      const byDeck = {};
+      const now = Date.now();
+      allCards.forEach(c => {
+        if (!c.deckId) return;
+        if (!byDeck[c.deckId]) byDeck[c.deckId] = { total: 0, due: 0, newCount: 0 };
+        byDeck[c.deckId].total++;
+        if (!c.reps || c.reps === 0){
+          byDeck[c.deckId].newCount++;
+        } else {
+          const dueTime = (c.lastReview || 0) + ((c.stability || 1) * 86400000);
+          if (now >= dueTime) byDeck[c.deckId].due++;
+        }
+      });
+      vaultStatsCache = byDeck;
+    } catch(e){}
+  }
+
   async function fetchCurriculumHierarchy(year){
     try {
+      await loadVaultStatsCache();
       const { data: lectures, error: lecErr } = await supabase
         .from('lectures')
         .select('id, name, color, year_of_view, created_at, date')
@@ -6316,6 +6392,21 @@
               modulesMap[mCode].subjects[sName] = [];
             }
             const existingIdx = modulesMap[mCode].subjects[sName].findIndex(x => x.materialId === mat.id || x.id === mat.id);
+
+            const matId = mat.id || lec.id;
+            let parsedCardCount = 0;
+            try {
+              const meta = JSON.parse(mat.caption || '{}');
+              if (meta && typeof meta.cardCount === 'number' && meta.cardCount > 0){
+                parsedCardCount = meta.cardCount;
+              }
+            } catch(e){}
+
+            const localStats = vaultStatsCache[matId] || vaultStatsCache[mat.id] || null;
+            const totalCards = localStats ? localStats.total : parsedCardCount;
+            const dueCards = localStats ? localStats.due : 0;
+            const newCards = localStats ? localStats.newCount : totalCards;
+
             const deckObj = {
               id: mat.id || lec.id,
               materialId: mat.id,
@@ -6333,9 +6424,9 @@
               moduleCode: mCode,
               subjectName: sName,
               semester: classified.semester,
-              dueCount: 15,
-              newCount: 30,
-              totalCount: 45
+              dueCount: dueCards,
+              newCount: newCards,
+              totalCount: totalCards
             };
             if (existingIdx >= 0){
               modulesMap[mCode].subjects[sName][existingIdx] = deckObj;
@@ -6535,19 +6626,21 @@
                               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
                             </a>
                           ` : ''}
-                          <button type="button" class="anki-admin-btn edit" data-curriculum-edit="${escapeHtml(deck.id)}" title="${isAuth ? (currentLang === 'ar' ? 'تعديل الحزمة' : 'Edit Deck') : (currentLang === 'ar' ? 'يتطلب تسجيل دخول أدمن للتعديل' : 'Admin Login required to edit')}">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-                          </button>
-                          <button type="button" class="anki-admin-btn move" data-curriculum-move="${escapeHtml(deck.id)}" title="${isAuth ? (currentLang === 'ar' ? 'نقل الحزمة' : 'Move Deck') : (currentLang === 'ar' ? 'يتطلب تسجيل دخول أدمن للنقل' : 'Admin Login required to move')}">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="5 9 2 12 5 15"/><polyline points="9 5 12 2 15 5"/><polyline points="15 19 12 22 9 19"/><polyline points="19 9 22 12 19 15"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="12" y1="2" x2="12" y2="22"/></svg>
-                          </button>
-                          <button type="button" class="anki-admin-btn del" data-curriculum-del="${escapeHtml(deck.id)}" title="${isAuth ? (currentLang === 'ar' ? 'حذف الحزمة' : 'Delete Deck') : (currentLang === 'ar' ? 'يتطلب تسجيل دخول أدمن للحذف' : 'Admin Login required to delete')}">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-                          </button>
-                          ${deck.url && deck.url !== '#' ? `
-                            <button type="button" class="anki-admin-btn inspect" data-curriculum-inspect="${escapeHtml(deck.id)}" title="${currentLang === 'ar' ? 'فحص وتعديل الكروت (SQLite WASM)' : 'Inspect & Edit Cards (SQLite WASM)'}">
-                              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="15" height="12" rx="2"/><path d="M7 2h15v12"/></svg>
+                          ${isAuth ? `
+                            <button type="button" class="anki-admin-btn edit" data-curriculum-edit="${escapeHtml(deck.id)}" title="${currentLang === 'ar' ? 'تعديل الحزمة' : 'Edit Deck'}">
+                              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
                             </button>
+                            <button type="button" class="anki-admin-btn move" data-curriculum-move="${escapeHtml(deck.id)}" title="${currentLang === 'ar' ? 'نقل الحزمة' : 'Move Deck'}">
+                              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="5 9 2 12 5 15"/><polyline points="9 5 12 2 15 5"/><polyline points="15 19 12 22 9 19"/><polyline points="19 9 22 12 19 15"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="12" y1="2" x2="12" y2="22"/></svg>
+                            </button>
+                            <button type="button" class="anki-admin-btn del" data-curriculum-del="${escapeHtml(deck.id)}" title="${currentLang === 'ar' ? 'حذف الحزمة' : 'Delete Deck'}">
+                              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                            </button>
+                            ${deck.url && deck.url !== '#' ? `
+                              <button type="button" class="anki-admin-btn inspect" data-curriculum-inspect="${escapeHtml(deck.id)}" title="${currentLang === 'ar' ? 'فحص وتعديل الكروت (SQLite WASM)' : 'Inspect & Edit Cards (SQLite WASM)'}">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="15" height="12" rx="2"/><path d="M7 2h15v12"/></svg>
+                              </button>
+                            ` : ''}
                           ` : ''}
                         </div>
                       `;
@@ -6602,10 +6695,12 @@
           <p style="font-size:0.82rem; color:var(--text-faint); max-width:440px; margin:0 auto 18px;">
             ${currentLang === 'ar' ? 'جرب تغيير معايير البحث أو اختيار فصل دراسي مختلف.' : 'Try adjusting your search query or switching the semester filter.'}
           </p>
-          <button type="button" class="modal-btn primary" id="curriculumEmptyUploadBtn" style="display:inline-flex; align-items:center; gap:6px;">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;"><path d="M12 5v14M5 12h14"/></svg>
-            <span>${currentLang === 'ar' ? 'رفع حزمة كروت جديدة' : 'Upload New Deck'}</span>
-          </button>
+          ${isAdminAuthenticated() ? `
+            <button type="button" class="modal-btn primary" id="curriculumEmptyUploadBtn" style="display:inline-flex; align-items:center; gap:6px;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;"><path d="M12 5v14M5 12h14"/></svg>
+              <span>${currentLang === 'ar' ? 'رفع حزمة كروت جديدة' : 'Upload New Deck'}</span>
+            </button>
+          ` : ''}
         </div>
       `;
     }
@@ -7465,6 +7560,7 @@
     }
 
     renderAuthChip();
+    updateAdminUIState();
     renderThemeMenu();
     setFloatingScrubberEnabled(isFloatingScrubberEnabled());
     initPageSlider();

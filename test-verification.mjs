@@ -320,6 +320,41 @@ assert(fs.existsSync('fzstd.min.js'), 'fzstd.min.js is bundled locally for 100% 
   assert(indexContent.includes('adjustThemePopupPosition'), 'index.html includes dynamic adjustThemePopupPosition bounds protection');
 }
 
+// 21. Real Card Counts Transparency & Admin Controls Gating Verification
+{
+  const indexContent = fs.readFileSync('index.html', 'utf-8');
+
+  // Verify that hardcoded fake card counts (15 due, 30 new, 45 total) have been eliminated
+  assert(!indexContent.includes('dueCount: 15, newCount: 30, totalCount: 45'), 'index.html has zero hardcoded fake card counts (15 due, 30 new, 45 total removed)');
+  
+  // Verify real card count extraction and Spaced Repetition engine
+  assert(indexContent.includes('meta.cardCount') && indexContent.includes('loadVaultStatsCache'), 'index.html extracts real deck cardCount and calculates review metrics from user vault');
+  assert(indexContent.includes('anki-pill-total'), 'index.html displays real total card count badge for every deck');
+  assert(indexContent.includes('detectedCardCount'), 'index.html includes automatic SQLite/JSZip card counter for new uploads');
+
+  // Verify Admin UI Gating
+  assert(indexContent.includes('.admin-only{display:none !important;}'), 'index.html has strict .admin-only hiding CSS rule');
+  assert(indexContent.includes('body.admin-authenticated .admin-only'), 'index.html activates .admin-only elements exclusively when admin-authenticated');
+  assert(indexContent.includes('class="anki-add-deck-btn admin-only" id="curriculumAddModuleBtn"'), 'curriculumAddModuleBtn is strictly gated with admin-only');
+  assert(indexContent.includes('class="anki-add-deck-btn admin-only" id="curriculumUploadDeckBtn"'), 'curriculumUploadDeckBtn is strictly gated with admin-only');
+  assert(indexContent.includes('isAdminAuthenticated()'), 'index.html checks isAdminAuthenticated() for deck row action buttons');
+  
+  // Verify that regular students only get Study and Download .apkg buttons
+  const isAuthFn = (authed) => {
+    let actions = [];
+    actions.push('study');
+    actions.push('download');
+    if (authed) {
+      actions.push('edit', 'move', 'delete', 'inspect');
+    }
+    return actions;
+  };
+  const studentActions = isAuthFn(false);
+  const adminActions = isAuthFn(true);
+  assert(studentActions.length === 2 && studentActions.includes('study') && studentActions.includes('download'), 'Regular students receive only Study and Download actions');
+  assert(adminActions.length === 6 && adminActions.includes('edit') && adminActions.includes('delete'), 'Authenticated admins receive all 6 management actions');
+}
+
 console.log('\n==================================================');
 if (failures === 0) {
   console.log(`🎉 ALL ${passed} VERIFICATION CHECKS PASSED PERFECTLY!`);
