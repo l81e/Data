@@ -519,22 +519,23 @@ assert(fs.existsSync('fzstd.min.js'), 'fzstd.min.js is bundled locally for 100% 
   assert(indexHtml.includes("localStorage.setItem('mb_enable_gestures'"), 'index.html updates mb_enable_gestures when toggling gesture compass');
 }
 
-// 30. Verify State-of-the-Art Minimalist Credits Colophon and Interactive Modal
+// 30. Verify MedicineBank Initiative (MBI) Institutional Footer and Social Links
 {
-  assert(indexHtml.includes('id="siteColophonFooter"'), 'index.html contains siteColophonFooter element');
+  assert(indexHtml.includes('id="siteColophonFooter"') && indexHtml.includes('class="mbi-site-footer"'), 'index.html contains mbi-site-footer element');
   assert(indexHtml.includes('role="contentinfo"'), 'siteColophonFooter includes semantic role="contentinfo"');
-  assert(indexHtml.includes('id="colophonCreditsTrigger"'), 'siteColophonFooter contains interactive colophonCreditsTrigger');
+  assert(indexHtml.includes('IMG_3083.png'), 'MBI footer includes authentic IMG_3083.png emblem logo');
+  assert(indexHtml.includes('https://academic.medicinebank.org/'), 'MBI footer links to main academic portal (https://academic.medicinebank.org/)');
+  assert(indexHtml.includes('A student-driven foundation fostering academic excellence'), 'MBI footer contains official student-driven foundation mission statement');
+  assert(indexHtml.includes('Accredited by Mansoura National University · March 2026'), 'MBI footer displays Mansoura National University accreditation statement');
+  assert(indexHtml.includes('https://www.instagram.com/medicinebank.in?igsh=MXUzdmx6YXM3cW1xeQ%3D%3D'), 'MBI footer includes authentic Instagram link');
+  assert(indexHtml.includes('https://www.linkedin.com/company/medicinebank/'), 'MBI footer includes authentic LinkedIn link');
+  assert(indexHtml.includes('https://discord.com/invite/jsY3mGPKC4'), 'MBI footer includes authentic Discord link');
+  assert(indexHtml.includes('https://www.youtube.com/@MedicineBank.initiative'), 'MBI footer includes authentic YouTube link');
+  assert(indexHtml.includes('Dakahlia, Egypt') && indexHtml.includes('الدقهلية، مصر'), 'MBI footer includes Dakahlia, Egypt location in English and Arabic');
+  assert(indexHtml.includes('https://academic.medicinebank.org/contact.php'), 'MBI footer includes Contact Us link to portal');
   assert(indexHtml.includes('Eyad Ayman & Muhammad Shabana'), 'Credits attribution includes Eyad Ayman & Muhammad Shabana in English');
   assert(indexHtml.includes('إياد أيمن ومحمد شبانة'), 'Credits attribution includes Eyad Ayman & Muhammad Shabana in Arabic');
   assert(indexHtml.includes('Architected & Developed by') && indexHtml.includes('تصميم وتطوير:'), 'Credits attribution uses agreed phrasing in English and Arabic');
-  assert(indexHtml.includes('id="colophonModalOverlay"'), 'index.html includes colophonModalOverlay');
-  assert(indexHtml.includes('role="dialog"') && indexHtml.includes('aria-modal="true"'), 'Colophon modal has proper ARIA accessibility attributes');
-  assert(indexHtml.includes('Lead Architecture & Engineering') && indexHtml.includes('الهندسة المعمارية والتطوير البرمجي'), 'Colophon modal includes Lead Architecture & Engineering role in English and Arabic');
-  assert(indexHtml.includes('Crafted for medical excellence, active recall, and open access learning.'), 'Colophon modal includes agreed tribute in English');
-  assert(indexHtml.includes('صُمم لدعم التميز الطبي والتعلم المفتوح والاستذكار الفعّال.'), 'Colophon modal includes agreed tribute in Arabic');
-  assert(indexHtml.includes('function openColophonModal') && indexHtml.includes('function closeColophonModal'), 'index.html defines openColophonModal and closeColophonModal controllers');
-  assert(indexHtml.includes('closeColophonModal();') && indexHtml.includes("e.key === 'Escape'"), 'Escape key handler dismisses colophon modal');
-  assert(indexHtml.includes('themeAboutColophonBtn'), 'Theme menu provides quick access to About & Credits colophon');
 }
 
 console.log('\n==================================================');

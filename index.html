@@ -1888,247 +1888,182 @@
     }
   }
 
-  /* ── Minimalist Site Colophon Footer & Credits ── */
-  .site-colophon-footer {
+  /* ── MedicineBank Initiative (MBI) Institutional Footer ── */
+  .mbi-site-footer {
     width: 100%;
-    margin-top: 56px;
-    padding: 32px 0 24px;
-    border-top: 1px solid var(--line-soft);
+    margin-top: 64px;
+    padding: 48px 0 32px;
+    background: #090a0d;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
     box-sizing: border-box;
     position: relative;
     z-index: 10;
-  }
-  .colophon-footer-inner {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 16px;
-    padding: 0 4px;
-  }
-  .colophon-brand-side {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 0.82rem;
-    color: var(--text-faint);
-    letter-spacing: -0.01em;
-  }
-  .colophon-brand-mark {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    font-weight: 700;
-    color: var(--text);
-  }
-  .colophon-status-dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: var(--today-green, #10b981);
-    box-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
-    display: inline-block;
-  }
-  .colophon-sep {
-    color: var(--line-mid);
-    user-select: none;
-  }
-  .colophon-year {
-    font-size: 0.78rem;
-    color: var(--text-dim);
-  }
-  .colophon-credits-pill {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    background: var(--panel-hi);
-    border: 1px solid var(--line-soft);
-    border-radius: 9999px;
-    padding: 6px 16px;
-    color: var(--text-dim);
-    font-size: 0.8rem;
-    line-height: 1.4;
-    cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
-    outline: none;
-    user-select: none;
+    color: #e2e8f0;
     font-family: inherit;
   }
-  .colophon-credits-pill:hover,
-  .colophon-credits-pill:focus-visible {
-    background: var(--panel);
-    border-color: var(--line-mid);
-    color: var(--text);
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
-    transform: translateY(-1px);
+  .mbi-footer-container {
+    max-width: 1120px;
+    margin: 0 auto;
+    padding: 0 20px;
+    box-sizing: border-box;
   }
-  .colophon-credits-pill:focus-visible {
-    box-shadow: 0 0 0 2px var(--accent);
-  }
-  .colophon-author-names {
-    color: var(--text);
-    font-weight: 700;
-    letter-spacing: -0.01em;
-  }
-  .colophon-pill-sparkle {
-    font-size: 0.72rem;
-    color: var(--accent);
-    opacity: 0.85;
-    transition: transform 0.25s ease;
-  }
-  .colophon-credits-pill:hover .colophon-pill-sparkle {
-    transform: scale(1.25) rotate(15deg);
-    opacity: 1;
-  }
-  .colophon-meta-side {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-  }
-  .colophon-badge {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.68rem;
-    font-weight: 600;
-    letter-spacing: 0.04em;
-    padding: 4px 10px;
-    border-radius: 6px;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid var(--line-soft);
-    color: var(--text-faint);
-  }
-
-  /* ── Ultra-Minimal Colophon Modal Sheet ── */
-  .modal-sheet.colophon-sheet {
-    max-width: 460px;
-    padding: 24px;
-    background: var(--panel-hi);
-    border: 1px solid var(--line-mid);
-    border-radius: 16px;
-    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
-  }
-  .colophon-header {
+  .mbi-footer-main {
     display: flex;
-    align-items: center;
     justify-content: space-between;
-    margin-bottom: 18px;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 36px;
   }
-  .colophon-eyebrow {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.68rem;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--accent);
+  .mbi-footer-left {
+    flex: 1;
+    min-width: 280px;
+    max-width: 680px;
   }
-  .colophon-eyebrow-dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: var(--accent);
+  .mbi-footer-logo-link {
     display: inline-block;
+    margin-bottom: 18px;
+    text-decoration: none;
+    line-height: 0;
+    transition: opacity 0.2s ease;
   }
-  .colophon-title-row {
-    display: flex;
-    align-items: baseline;
-    gap: 10px;
-    margin-bottom: 8px;
+  .mbi-footer-logo-link:hover {
+    opacity: 0.88;
   }
-  .colophon-title {
-    font-size: 1.35rem;
-    font-weight: 800;
-    color: var(--text);
-    margin: 0;
-    letter-spacing: -0.02em;
+  .mbi-footer-logo-img {
+    height: 38px;
+    width: auto;
+    display: block;
+    object-fit: contain;
   }
-  .colophon-version-tag {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.72rem;
-    font-weight: 700;
-    color: var(--text-faint);
-    background: rgba(255, 255, 255, 0.05);
-    padding: 2px 7px;
-    border-radius: 4px;
-    border: 1px solid var(--line-soft);
-  }
-  .colophon-tribute {
-    font-size: 0.85rem;
-    line-height: 1.5;
-    color: var(--text-dim);
-    margin: 0 0 16px 0;
-  }
-  .colophon-rule {
-    height: 1px;
-    background: var(--line-soft);
-    margin: 16px 0;
-  }
-  .colophon-credits-card {
-    background: rgba(255, 255, 255, 0.02);
-    border: 1px solid var(--line-soft);
-    border-radius: 12px;
-    padding: 16px 18px;
-    transition: border-color 0.2s ease;
-  }
-  .colophon-credits-card:hover {
-    border-color: var(--line-mid);
-  }
-  .colophon-role-tag {
-    font-size: 0.72rem;
-    font-weight: 700;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: var(--text-faint);
-    margin-bottom: 6px;
-  }
-  .colophon-team-names {
-    font-size: 1.05rem;
-    font-weight: 800;
-    color: var(--text);
+  .mbi-footer-desc {
+    font-size: 0.94rem;
+    line-height: 1.65;
+    color: #94a3b8;
+    margin: 0 0 14px 0;
     letter-spacing: -0.01em;
   }
-  .colophon-meta-footer {
+  .mbi-footer-accreditation {
+    font-size: 0.82rem;
+    color: #64748b;
+    margin: 0;
+    letter-spacing: 0.01em;
+  }
+  .mbi-footer-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 12px;
+  }
+  .mbi-footer-social-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #64748b;
+    margin: 0;
+  }
+  .mbi-footer-social-grid {
     display: flex;
     align-items: center;
+    gap: 10px;
+  }
+  .mbi-social-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #cbd5e1;
+    text-decoration: none;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .mbi-social-btn:hover {
+    background: rgba(255, 255, 255, 0.14);
+    border-color: rgba(255, 255, 255, 0.2);
+    color: #ffffff;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  }
+  .mbi-social-btn svg {
+    width: 18px;
+    height: 18px;
+    display: block;
+  }
+  .mbi-footer-divider {
+    height: 1px;
+    background: rgba(255, 255, 255, 0.08);
+    margin: 36px 0 20px;
+    width: 100%;
+  }
+  .mbi-footer-bottom {
+    display: flex;
     justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
+    font-size: 0.82rem;
+    color: #64748b;
+  }
+  .mbi-footer-bottom-left {
+    display: flex;
+    align-items: center;
     flex-wrap: wrap;
     gap: 10px;
-    font-size: 0.74rem;
-    color: var(--text-faint);
-    margin-top: 4px;
   }
-  .colophon-location {
-    display: inline-flex;
+  .mbi-footer-bottom-left a {
+    color: #94a3b8;
+    text-decoration: none;
+    transition: color 0.2s ease;
+  }
+  .mbi-footer-bottom-left a:hover {
+    color: #ffffff;
+    text-decoration: underline;
+  }
+  .mbi-footer-dot {
+    color: rgba(255, 255, 255, 0.2);
+    user-select: none;
+  }
+  .mbi-footer-bottom-right {
+    display: flex;
     align-items: center;
-    gap: 4px;
+    gap: 6px;
+    color: #94a3b8;
   }
-  .colophon-engine-badge {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.66rem;
-    color: var(--text-dim);
+  .mbi-footer-bottom-right strong {
+    color: #f1f5f9;
+    font-weight: 700;
+  }
+
+  /* RTL Support for MBI Footer */
+  html[dir="rtl"] .mbi-footer-right {
+    align-items: flex-start;
+  }
+  html[dir="rtl"] .mbi-footer-desc,
+  html[dir="rtl"] .mbi-footer-accreditation {
+    text-align: right;
   }
 
   @media (max-width: 768px) {
-    .site-colophon-footer {
+    .mbi-site-footer {
       margin-top: 40px;
-      padding: 24px 0 20px;
+      padding: 36px 0 24px;
     }
-    .colophon-footer-inner {
+    .mbi-footer-main {
       flex-direction: column;
-      align-items: center;
-      text-align: center;
-      gap: 12px;
+      align-items: flex-start;
+      gap: 24px;
     }
-    .colophon-credits-pill {
+    .mbi-footer-right {
+      align-items: flex-start;
       width: 100%;
-      max-width: 380px;
-      justify-content: center;
-      padding: 8px 14px;
-      font-size: 0.78rem;
+    }
+    .mbi-footer-bottom {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 12px;
     }
   }
 </style>
@@ -2268,26 +2203,61 @@
       <div class="loading-row" id="curriculumLoading" data-en="Loading medical flashcards curriculum…" data-ar="جاري تحميل منهج الفلاش كاردز…">Loading medical flashcards curriculum…</div>
     </div>
 
-    <!-- MINIMALIST SITE FOOTER & CREDITS COLOPHON -->
-    <footer class="site-colophon-footer" id="siteColophonFooter" role="contentinfo">
-      <div class="colophon-footer-inner">
-        <div class="colophon-brand-side">
-          <span class="colophon-brand-mark">
-            <span class="colophon-status-dot"></span>
-            <span class="colophon-brand-title">MedicineBank</span>
-          </span>
-          <span class="colophon-sep" aria-hidden="true">·</span>
-          <span class="colophon-year" data-en="2026 Academic Edition" data-ar="نسخة ٢٠٢٦ الأكاديمية">2026 Academic Edition</span>
+    <!-- MEDICINEBANK INITIATIVE (MBI) INSTITUTIONAL FOOTER -->
+    <footer class="mbi-site-footer" id="siteColophonFooter" role="contentinfo">
+      <div class="mbi-footer-container">
+        <div class="mbi-footer-main">
+          <!-- Left Column: Logo, Description & Accreditation -->
+          <div class="mbi-footer-left">
+            <a href="https://academic.medicinebank.org/" target="_blank" rel="noopener" class="mbi-footer-logo-link" title="MedicineBank Initiative Academic Portal">
+              <img src="IMG_3083.png" alt="MBI Logo" class="mbi-footer-logo-img" />
+            </a>
+            <p class="mbi-footer-desc" data-en="A student-driven foundation fostering academic excellence, research innovation, and global connectivity — serving medical students across Egypt and the Arab region." data-ar="مؤسسة يقودها طلاب الطب لدعم التميز الأكاديمي، الابتكار البحثي، والترابط العالمي — تخدم طلاب الطب في مصر والوطن العربي.">
+              A student-driven foundation fostering academic excellence, research innovation, and global connectivity — serving medical students across Egypt and the Arab region.
+            </p>
+            <p class="mbi-footer-accreditation" data-en="Accredited by Mansoura National University · March 2026" data-ar="معتمد من جامعة المنصورة الأهلية · مارس ٢٠٢٦">
+              Accredited by Mansoura National University · March 2026
+            </p>
+          </div>
+
+          <!-- Right Column: Social Links -->
+          <div class="mbi-footer-right">
+            <div class="mbi-footer-social-label" data-en="FOLLOW US" data-ar="تابعنا">FOLLOW US</div>
+            <div class="mbi-footer-social-grid">
+              <a href="https://www.instagram.com/medicinebank.in?igsh=MXUzdmx6YXM3cW1xeQ%3D%3D" target="_blank" rel="noopener" class="mbi-social-btn" aria-label="Instagram" title="Instagram">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
+              </a>
+              <a href="https://www.linkedin.com/company/medicinebank/" target="_blank" rel="noopener" class="mbi-social-btn" aria-label="LinkedIn" title="LinkedIn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"></path><rect x="2" y="9" width="4" height="12"></rect><circle cx="4" cy="4" r="2"></circle></svg>
+              </a>
+              <a href="https://discord.com/invite/jsY3mGPKC4" target="_blank" rel="noopener" class="mbi-social-btn" aria-label="Discord" title="Discord">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994.021-.041.001-.09-.041-.106a13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.929 1.793 8.18 1.793 12.061 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.894.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.028zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/></svg>
+              </a>
+              <a href="https://www.youtube.com/@MedicineBank.initiative" target="_blank" rel="noopener" class="mbi-social-btn" aria-label="YouTube" title="YouTube">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+              </a>
+            </div>
+          </div>
         </div>
 
-        <button type="button" class="colophon-credits-pill" id="colophonCreditsTrigger" aria-haspopup="dialog" aria-expanded="false" title="View Project Colophon & Credits">
-          <span class="colophon-credits-label" data-en="Architected & Developed by" data-ar="تصميم وتطوير:">Architected & Developed by</span>
-          <span class="colophon-author-names" data-en="Eyad Ayman & Muhammad Shabana" data-ar="إياد أيمن ومحمد شبانة">Eyad Ayman & Muhammad Shabana</span>
-          <span class="colophon-pill-sparkle" aria-hidden="true">✦</span>
-        </button>
+        <div class="mbi-footer-divider"></div>
 
-        <div class="colophon-meta-side">
-          <span class="colophon-badge" data-en="FSRS-5 · Offline First" data-ar="FSRS-5 · بدون إنترنت">FSRS-5 · Offline First</span>
+        <!-- Bottom Bar: Copyright, Location, Links & Credits -->
+        <div class="mbi-footer-bottom">
+          <div class="mbi-footer-bottom-left">
+            <span data-en="© 2026 MedicineBank Initiative" data-ar="© ٢٠٢٦ مبادرة بنك الطب">© 2026 MedicineBank Initiative</span>
+            <span class="mbi-footer-dot">·</span>
+            <span data-en="Dakahlia, Egypt" data-ar="الدقهلية، مصر">Dakahlia, Egypt</span>
+            <span class="mbi-footer-dot">·</span>
+            <a href="https://academic.medicinebank.org/" target="_blank" rel="noopener" data-en="MBI Academic Portal" data-ar="بوابة MBI الأكاديمية">MBI Academic Portal</a>
+            <span class="mbi-footer-dot">·</span>
+            <a href="https://academic.medicinebank.org/contact.php" target="_blank" rel="noopener" data-en="Contact Us" data-ar="تواصل معنا">Contact Us</a>
+          </div>
+
+          <div class="mbi-footer-bottom-right" id="colophonCreditsTrigger">
+            <span data-en="Architected & Developed by" data-ar="تصميم وتطوير:">Architected & Developed by</span>
+            <strong data-en="Eyad Ayman & Muhammad Shabana" data-ar="إياد أيمن ومحمد شبانة">Eyad Ayman & Muhammad Shabana</strong>
+          </div>
         </div>
       </div>
     </footer>
