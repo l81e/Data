@@ -4,6 +4,9 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 <title>Medical Flashcards Curriculum — MedicineBank</title>
+<link rel="icon" type="image/png" href="favicon.png" />
+<link rel="icon" type="image/x-icon" href="favicon.ico" />
+<link rel="apple-touch-icon" href="favicon.png" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
@@ -1338,6 +1341,8 @@
     .anki-td{padding:10px 12px;}
     .curriculum-module-card{max-width:100%;}
     .curriculum-subject-tabs{max-width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch;}
+    .theme-swatch-popup{left:0; right:auto; max-width:calc(100vw - 28px);}
+    html[dir="rtl"] .theme-swatch-popup{left:0; right:auto; max-width:calc(100vw - 28px);}
   }
 
   /* ---------- HEADER TOOL BUTTONS & THEME POPUP ---------- */
@@ -2891,20 +2896,46 @@
     }
   }
 
+  function adjustThemePopupPosition(){
+    const swatchRow = document.getElementById('themeSwatchRow');
+    if (!swatchRow || !swatchRow.classList.contains('open')) return;
+    swatchRow.style.transform = '';
+    const rect = swatchRow.getBoundingClientRect();
+    const pad = 12;
+    const viewportWidth = window.innerWidth || document.documentElement.clientWidth;
+    if (rect.left < pad){
+      const shift = Math.round(pad - rect.left);
+      swatchRow.style.transform = `translateX(${shift}px)`;
+    } else if (rect.right > viewportWidth - pad){
+      const shift = Math.round((viewportWidth - pad) - rect.right);
+      swatchRow.style.transform = `translateX(${shift}px)`;
+    }
+  }
+
   const themeMenuBtn = document.getElementById('themeMenuBtn');
   if (themeMenuBtn){
     themeMenuBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       const swatchRow = document.getElementById('themeSwatchRow');
-      if (swatchRow) swatchRow.classList.toggle('open');
+      if (swatchRow){
+        swatchRow.classList.toggle('open');
+        if (swatchRow.classList.contains('open')){
+          adjustThemePopupPosition();
+        } else {
+          swatchRow.style.transform = '';
+        }
+      }
     });
   }
+
+  window.addEventListener('resize', adjustThemePopupPosition);
 
   document.addEventListener('click', (e) => {
     const wrap = document.getElementById('themePickerWrap');
     const swatchRow = document.getElementById('themeSwatchRow');
     if (swatchRow && wrap && !wrap.contains(e.target)){
       swatchRow.classList.remove('open');
+      swatchRow.style.transform = '';
     }
   });
 
@@ -3686,6 +3717,7 @@
     renderDay();
     if (typeof renderCurriculumExplorer === 'function') renderCurriculumExplorer();
     if (typeof updateScrubberI18n === 'function') updateScrubberI18n();
+    if (typeof adjustThemePopupPosition === 'function') adjustThemePopupPosition();
   }
 
   /* ---------------- data layer ---------------- */

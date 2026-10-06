@@ -304,6 +304,22 @@ assert(fs.existsSync('fzstd.min.js'), 'fzstd.min.js is bundled locally for 100% 
   assert(zstdMagic[0] === 40 && zstdMagic[1] === 181 && zstdMagic[2] === 47 && zstdMagic[3] === 253, 'Zstandard magic number correctly calibrated');
 }
 
+// 20. Favicon & Mobile Theme Switcher Verification
+{
+  assert(fs.existsSync('favicon.png') && fs.statSync('favicon.png').size > 1000, 'favicon.png exists in root with authentic dimensions');
+  assert(fs.existsSync('favicon.ico') && fs.statSync('favicon.ico').size > 1000, 'favicon.ico exists in root with multi-resolution payload');
+
+  const files = ['index.html', 'flash.html', 'flashmake.html', '404.html', 'shhhhhh.html'];
+  for (const f of files) {
+    const content = fs.readFileSync(f, 'utf-8');
+    assert(content.includes('rel="icon"') && content.includes('favicon.png'), `${f} includes favicon link in head`);
+  }
+
+  const indexContent = fs.readFileSync('index.html', 'utf-8');
+  assert(indexContent.includes('.theme-swatch-popup{left:0; right:auto;'), 'index.html contains mobile responsive theme popup positioning');
+  assert(indexContent.includes('adjustThemePopupPosition'), 'index.html includes dynamic adjustThemePopupPosition bounds protection');
+}
+
 console.log('\n==================================================');
 if (failures === 0) {
   console.log(`🎉 ALL ${passed} VERIFICATION CHECKS PASSED PERFECTLY!`);
