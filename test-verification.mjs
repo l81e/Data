@@ -113,6 +113,181 @@ if (!neurovaFound) {
   assert(true, 'Zero mentions of Neurova across entire pull request codebase (strict project independence)');
 }
 
+// 9. AnkiWeb Minimalist UI Design for Homepage Decks
+assert(indexHtml.includes('anki-deck-table'), 'index.html renders Anki-style deck table (anki-deck-table)');
+assert(indexHtml.includes('anki-th-due') && indexHtml.includes('anki-th-new') && indexHtml.includes('anki-th-total'), 'index.html table headers include Due (green), New (blue), and Total');
+assert(indexHtml.includes('anki-pill-due') && indexHtml.includes('anki-pill-new'), 'index.html renders authentic Anki review count badges');
+assert(indexHtml.includes('anki-study-btn'), 'index.html includes direct Study action buttons for each deck');
+assert(indexHtml.includes('ankiDeckSearchInput'), 'index.html includes real-time Anki deck search and filter');
+assert(indexHtml.includes('anki-supplement-wrap'), 'index.html cleanly separates supplemental lecture resources');
+
+// 10. Master Admin Passcode Authentication Gate
+assert(indexHtml.includes('You want to join US then V73'), 'index.html defines the Master Admin Passcode: "You want to join US then V73"');
+assert(indexHtml.includes('ADMIN_PASSCODE_HASH'), 'index.html stores SHA-256 cryptographic hash of passcode');
+assert(indexHtml.includes('adminAuthModalOverlay'), 'index.html includes Admin Authentication modal (adminAuthModalOverlay)');
+assert(indexHtml.includes('adminAuthChip'), 'index.html includes Admin status indicator chip in header');
+assert(indexHtml.includes('verifyAdminPasscode'), 'index.html implements verifyAdminPasscode cryptographic routine');
+assert(indexHtml.includes('isAdminAuthenticated'), 'index.html provides session-based admin state checking');
+
+// 11. In-Dashboard Deck & Card Inspector (SQLite WASM + JSZip)
+assert(indexHtml.includes('jszip.min.js') && indexHtml.includes('sql-wasm.js'), 'index.html loads JSZip and SQLite WASM in head');
+assert(indexHtml.includes('deckCardInspectorOverlay'), 'index.html includes Deck & Card Inspector modal (deckCardInspectorOverlay)');
+assert(indexHtml.includes('openDeckCardInspector'), 'index.html implements openDeckCardInspector controller');
+assert(indexHtml.includes('inspectorSaveChangesBtn'), 'index.html includes inspectorSaveChangesBtn for repacking .apkg');
+assert(indexHtml.includes('cardEditModalOverlay'), 'index.html includes cardEditModalOverlay for editing/adding cards');
+assert(indexHtml.includes('openCardEditModal') && indexHtml.includes('deleteCardFromDeck'), 'index.html provides card add/edit/delete operations');
+assert(indexHtml.includes('editMaterialModalOverlay') && indexHtml.includes('openEditMaterialModal'), 'index.html provides Edit Deck/Material dialog');
+assert(indexHtml.includes('editSubjectModalOverlay') && indexHtml.includes('openEditSubjectModal'), 'index.html provides Edit Subject dialog');
+
+// 12. Dedicated Anki Flashcards Pure Curriculum Platform (Timetable UI Completely Purged)
+assert(!indexHtml.includes('timetableArchiveToggleBtn'), 'index.html has completely purged timetableArchiveToggleBtn (100% focused on flashcards)');
+assert(!indexHtml.includes('archiveBanner'), 'index.html has completely purged archiveBanner');
+assert(indexHtml.includes('curriculumContainer'), 'index.html contains primary Anki Curriculum Explorer container (curriculumContainer)');
+assert(indexHtml.includes('curriculumYearSelector'), 'index.html contains Academic Year selector pills (curriculumYearSelector)');
+assert(indexHtml.includes('curriculumSemesterFilter'), 'index.html contains Semester filter tabs (curriculumSemesterFilter)');
+assert(indexHtml.includes('curriculumSearchInput'), 'index.html contains real-time Curriculum fast search (curriculumSearchInput)');
+assert(indexHtml.includes('curriculumModulesList'), 'index.html contains Modular Module Cards container (curriculumModulesList)');
+assert(indexHtml.includes('fetchCurriculumHierarchy'), 'index.html implements fetchCurriculumHierarchy multi-level querying');
+assert(indexHtml.includes('renderCurriculumExplorer'), 'index.html implements renderCurriculumExplorer modular cards renderer');
+assert(indexHtml.includes('classifyCurriculumHierarchy'), 'index.html implements classifyCurriculumHierarchy auto-parser');
+assert(indexHtml.includes('adminUploadYearSelect') && indexHtml.includes('adminUploadModuleSelect'), 'index.html provides admin upload curriculum hierarchy selectors');
+assert(indexHtml.includes('extractHumanCaption'), 'index.html provides extractHumanCaption to prevent raw JSON captions');
+assert(flashHtml.includes('deckUrl'), 'flash.html supports deckUrl parameter for direct cloud deck loading');
+assert(flashHtml.includes('getSqlJs'), 'flash.html implements getSqlJs singleton cache for instant compilation');
+// 13. Mobile Responsiveness, Move Deck & Admin Module Management
+assert(indexHtml.includes('anki-deck-mobile-bar'), 'index.html contains dedicated mobile responsive deck bar (anki-deck-mobile-bar)');
+assert(indexHtml.includes('mobile-only') && indexHtml.includes('desktop-only'), 'index.html contains mobile-only and desktop-only responsive layout rules');
+assert(indexHtml.includes('moveDeckModalOverlay'), 'index.html contains Move Deck modal (moveDeckModalOverlay)');
+assert(indexHtml.includes('openMoveDeckModal') && indexHtml.includes('executeMoveDeck'), 'index.html implements openMoveDeckModal and executeMoveDeck controllers');
+assert(indexHtml.includes('data-curriculum-move'), 'index.html includes Move Deck action button (data-curriculum-move)');
+assert(indexHtml.includes('curriculumAddModuleBtn'), 'index.html includes Add Module button in curriculum explorer (curriculumAddModuleBtn)');
+assert(indexHtml.includes('adminPaneModules'), 'index.html includes Admin Modules Manager pane (adminPaneModules)');
+assert(indexHtml.includes('createCurriculumModule') && indexHtml.includes('deleteCurriculumModule'), 'index.html implements createCurriculumModule and deleteCurriculumModule controllers');
+assert(indexHtml.includes('curriculum-mod-del-btn'), 'index.html contains module delete buttons (curriculum-mod-del-btn)');
+assert(indexHtml.includes('renderAdminModulesList'), 'index.html implements renderAdminModulesList controller');
+// 14. Deck Upload Actions & Auth Flow
+assert(indexHtml.includes('curriculumEmptyUploadBtn'), 'index.html wires empty state upload button (curriculumEmptyUploadBtn)');
+assert(indexHtml.includes('curriculumUploadDeckBtn'), 'index.html includes toolbar Upload Deck button (curriculumUploadDeckBtn)');
+assert(indexHtml.includes('window.openAdminDashboard = openAdminDashboard'), 'index.html exports openAdminDashboard to window for reliable modal invocation');
+// 15. Custom Webpage Slider & Theme-Reactive Arrowless Scrollbar System
+assert(indexHtml.includes('--scrollbar-track') && indexHtml.includes('--scrollbar-thumb'), 'index.html defines theme-reactive scrollbar CSS variables');
+assert(indexHtml.includes('::-webkit-scrollbar-button') && indexHtml.includes('display: none !important'), 'index.html eliminates OS default arrow buttons');
+assert(indexHtml.includes('scrollProgressLine'), 'index.html includes top dynamic reading & scroll progress line (scrollProgressLine)');
+assert(indexHtml.includes('pageScrubber'), 'index.html includes custom interactive page slider dock (pageScrubber)');
+assert(indexHtml.includes('scrubberTrackWrap') && indexHtml.includes('scrubberThumb'), 'index.html includes draggable scrubber track and thumb');
+assert(indexHtml.includes('scrubberJumpTop') && indexHtml.includes('scrubberJumpBottom'), 'index.html includes quick top/bottom jump action buttons');
+assert(indexHtml.includes('initPageSlider') && indexHtml.includes('window.updatePageSlider'), 'index.html implements initPageSlider controller and exports helpers');
+assert(flashHtml.includes('--scrollbar-track') && flashHtml.includes('--scrollbar-thumb'), 'flash.html defines theme-reactive scrollbars for clinical workstation');
+assert(flashHtml.includes('::-webkit-scrollbar-button') && flashHtml.includes('display: none !important'), 'flash.html eliminates OS default arrow buttons');
+
+// 16. Single Slider Standard Look & Theme Dropdown Optional Toggle
+assert(indexHtml.includes('floatingScrubberToggle'), 'index.html includes floatingScrubberToggle in Theme Menu');
+assert(indexHtml.includes('has-floating-scrubber'), 'index.html applies .has-floating-scrubber class only when enabled');
+assert(indexHtml.includes('mb_floating_scrubber_enabled'), 'index.html stores mb_floating_scrubber_enabled in localStorage');
+assert(indexHtml.includes('.page-scrubber {') && indexHtml.includes('display: none;'), 'index.html keeps floating scrubber hidden by default for sleek single slider look');
+
+// 17. Universal Anki Parser & Template Engine
+assert(flashHtml.includes("zip.file('collection.anki21') || zip.file('collection.anki2')"), 'flash.html supports modern Anki 2.1+ (.anki21) and legacy (.anki2) schemas');
+assert(flashHtml.includes('FROM notetypes'), 'flash.html supports modern Anki schemas with separate notetypes table');
+assert(flashHtml.includes('compileAnkiTemplate'), 'flash.html implements compileAnkiTemplate engine');
+assert(flashHtml.includes('{{#([^}]+)}}'), 'flash.html supports conditional template blocks ({{#Field}}...{{/Field}})');
+assert(flashHtml.includes('{{\\^([^}]+)}}'), 'flash.html supports inverted conditional blocks ({{^Field}}...{{/Field}})');
+assert(flashHtml.includes('clinical-diagram-img'), 'flash.html marks clinical diagrams with clinical-diagram-img class');
+assert(flashHtml.includes('anki-reference-attachment'), 'flash.html provides automatic reference diagram attachment fallback');
+assert(indexHtml.includes("zip.file('collection.anki21') || zip.file('collection.anki2')"), 'index.html inspector supports both collection.anki21 and collection.anki2');
+
+// 18. Anki Template & Conditional Resolution Unit Verification
+{
+  function getFieldValue(fieldMap, key){
+    if (!key) return '';
+    if (fieldMap[key] !== undefined) return fieldMap[key];
+    const trimmed = key.trim();
+    if (fieldMap[trimmed] !== undefined) return fieldMap[trimmed];
+    const norm = trimmed.toLowerCase().replace(/[\s_\-]+/g, '');
+    for (const [k, v] of Object.entries(fieldMap)){
+      if (k.toLowerCase().replace(/[\s_\-]+/g, '') === norm) return v;
+    }
+    return undefined;
+  }
+
+  function isFieldPopulated(val){
+    if (val === undefined || val === null) return false;
+    const str = String(val).trim();
+    if (!str) return false;
+    if (/<img\b|<video\b|<audio\b|<iframe\b|<object\b/i.test(str)) return true;
+    return str.replace(/<[^>]+>/g, '').trim().length > 0;
+  }
+
+  function compileAnkiTemplate(templateStr, fieldMap, defaultFront = ''){
+    if (!templateStr) return '';
+    let out = templateStr;
+    out = out.replace(/{{FrontSide}}/g, defaultFront);
+    let passes = 10;
+    while (passes-- > 0 && /{{#([^}]+)}}([\s\S]*?){{\/\1}}/g.test(out)){
+      out = out.replace(/{{#([^}]+)}}([\s\S]*?){{\/\1}}/g, (_, fieldName, inner) => {
+        const val = getFieldValue(fieldMap, fieldName);
+        return isFieldPopulated(val) ? inner : '';
+      });
+    }
+    passes = 10;
+    while (passes-- > 0 && /{{\^([^}]+)}}([\s\S]*?){{\/\1}}/g.test(out)){
+      out = out.replace(/{{\^([^}]+)}}([\s\S]*?){{\/\1}}/g, (_, fieldName, inner) => {
+        const val = getFieldValue(fieldMap, fieldName);
+        return isFieldPopulated(val) ? '' : inner;
+      });
+    }
+    out = out.replace(/{{([^}]+)}}/g, (_, rawToken) => {
+      const token = rawToken.trim();
+      if (!token) return '';
+      const colonIdx = token.indexOf(':');
+      let filter = '';
+      let fn = token;
+      if (colonIdx !== -1){
+        filter = token.substring(0, colonIdx).trim().toLowerCase();
+        fn = token.substring(colonIdx + 1).trim();
+      }
+      let val = getFieldValue(fieldMap, fn);
+      if (val === undefined || val === null) return '';
+      if (filter === 'text') return val.replace(/<[^>]+>/g, '');
+      return val;
+    });
+    out = out.replace(/{{[^}]+}}/g, '');
+    return out;
+  }
+
+  const populatedFields = {
+    'Front': 'What is the mechanism of Action?',
+    'Back': 'Blocks Na+/K+ ATPase',
+    'PDF Reference': '<img src="slide_03.png">'
+  };
+  const template1 = '{{FrontSide}}<hr id=answer>{{Back}}<br><br>{{#PDF Reference}}\n📖 Lecture Slide Reference\n{{PDF Reference}}\n{{/PDF Reference}}';
+  const res1 = compileAnkiTemplate(template1, populatedFields, 'What is the mechanism of Action?');
+  assert(!res1.includes('{{#PDF Reference}}'), 'Anki template removes opening conditional tag {{#PDF Reference}}');
+  assert(!res1.includes('{{/PDF Reference}}'), 'Anki template removes closing conditional tag {{/PDF Reference}}');
+  assert(!res1.includes('{{PDF Reference}}'), 'Anki template replaces {{PDF Reference}} token with field value');
+  assert(res1.includes('<img src="slide_03.png">'), 'Anki template renders image reference tag');
+  assert(res1.includes('📖 Lecture Slide Reference'), 'Anki template renders conditional label when field is present');
+
+  const emptyFields = {
+    'Front': 'What is the mechanism of Action?',
+    'Back': 'Blocks Na+/K+ ATPase',
+    'PDF Reference': ''
+  };
+  const res2 = compileAnkiTemplate(template1, emptyFields, 'What is the mechanism of Action?');
+  assert(!res2.includes('📖 Lecture Slide Reference'), 'Anki template omits conditional block when field is empty');
+  assert(!res2.includes('{{'), 'Anki template leaves zero unparsed braces when field is empty');
+
+  const template3 = '{{Back}}<br>{{PDF Reference}}';
+  const res3 = compileAnkiTemplate(template3, populatedFields);
+  assert(res3.includes('<img src="slide_03.png">'), 'Anki template correctly parses fields with spaces {{PDF Reference}}');
+
+  const template4 = '{{^PDF Reference}}No Diagram Available{{/PDF Reference}}';
+  const res4_empty = compileAnkiTemplate(template4, emptyFields);
+  const res4_pop = compileAnkiTemplate(template4, populatedFields);
+  assert(res4_empty.includes('No Diagram Available'), 'Anki inverted conditional renders when field is empty');
+  assert(!res4_pop.includes('No Diagram Available'), 'Anki inverted conditional omitted when field is present');
+}
+
 console.log('\n==================================================');
 if (failures === 0) {
   console.log(`🎉 ALL ${passed} VERIFICATION CHECKS PASSED PERFECTLY!`);

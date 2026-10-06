@@ -54,6 +54,12 @@
 
     --today-green:   #3ba55c;
     --today-green-hi:#46bd68;
+
+    --scrollbar-track:        #0b0b0b;
+    --scrollbar-thumb:        rgba(6,182,212,0.25);
+    --scrollbar-thumb-hover:  rgba(6,182,212,0.50);
+    --scrollbar-thumb-active: rgba(6,182,212,0.80);
+    --scrollbar-glow:         rgba(6,182,212,0.20);
   }
 
   /* ---------- THEMES ---------- */
@@ -78,6 +84,12 @@
     --good-border:   rgba(5,150,105,0.4);
     --easy-bg:       rgba(2,132,199,0.12);
     --easy-border:   rgba(2,132,199,0.4);
+
+    --scrollbar-track:        #f4f4f2;
+    --scrollbar-thumb:        rgba(2,132,199,0.24);
+    --scrollbar-thumb-hover:  rgba(2,132,199,0.50);
+    --scrollbar-thumb-active: rgba(2,132,199,0.78);
+    --scrollbar-glow:         rgba(2,132,199,0.15);
   }
   html[data-theme="maroon"]{
     --bg:            #200a0d;
@@ -92,6 +104,12 @@
     --accent-dark:   #ffffff;
     --accent-glow:   rgba(232,163,171,0.15);
     --err:           #ff9b9b;
+
+    --scrollbar-track:        #200a0d;
+    --scrollbar-thumb:        rgba(232,163,171,0.30);
+    --scrollbar-thumb-hover:  rgba(232,163,171,0.58);
+    --scrollbar-thumb-active: rgba(255,200,210,0.88);
+    --scrollbar-glow:         rgba(232,163,171,0.24);
   }
   html[data-theme="blue"]{
     --bg:            #0a1622;
@@ -106,6 +124,12 @@
     --accent-dark:   #0284c7;
     --accent-glow:   rgba(56,189,248,0.15);
     --err:           #f87171;
+
+    --scrollbar-track:        #0a1622;
+    --scrollbar-thumb:        rgba(56,189,248,0.32);
+    --scrollbar-thumb-hover:  rgba(56,189,248,0.60);
+    --scrollbar-thumb-active: rgba(185,225,255,0.90);
+    --scrollbar-glow:         rgba(56,189,248,0.26);
   }
   html[data-theme="orange"]{
     --bg:            #1f1006;
@@ -120,6 +144,12 @@
     --accent-dark:   #ea580c;
     --accent-glow:   rgba(249,115,22,0.15);
     --err:           #ff9b7a;
+
+    --scrollbar-track:        #1f1006;
+    --scrollbar-thumb:        rgba(249,115,22,0.32);
+    --scrollbar-thumb-hover:  rgba(249,115,22,0.60);
+    --scrollbar-thumb-active: rgba(255,190,135,0.90);
+    --scrollbar-glow:         rgba(249,115,22,0.25);
   }
   html[data-theme="champagne"]{
     --bg:            #ece2c9;
@@ -134,6 +164,12 @@
     --accent-dark:   #451a03;
     --accent-glow:   rgba(120,53,15,0.12);
     --err:           #b91c1c;
+
+    --scrollbar-track:        #ece2c9;
+    --scrollbar-thumb:        rgba(120,53,15,0.26);
+    --scrollbar-thumb-hover:  rgba(120,53,15,0.50);
+    --scrollbar-thumb-active: rgba(70,30,10,0.78);
+    --scrollbar-glow:         rgba(120,53,15,0.16);
   }
   html[data-theme="brown"]{
     --bg:            #1b120c;
@@ -148,11 +184,56 @@
     --accent-dark:   #ffffff;
     --accent-glow:   rgba(217,172,125,0.15);
     --err:           #ff9b7a;
+
+    --scrollbar-track:        #1b120c;
+    --scrollbar-thumb:        rgba(217,172,125,0.32);
+    --scrollbar-thumb-hover:  rgba(217,172,125,0.60);
+    --scrollbar-thumb-active: rgba(245,215,185,0.90);
+    --scrollbar-glow:         rgba(217,172,125,0.25);
+  }
+
+  /* Universal Custom Scrollbar System & Standards */
+  *, *::before, *::after {
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+  }
+  ::-webkit-scrollbar {
+    width: 9px;
+    height: 9px;
+  }
+  ::-webkit-scrollbar-track {
+    background: var(--scrollbar-track);
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-thumb);
+    border-radius: 9999px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+    transition: background-color .2s ease, box-shadow .2s ease;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--scrollbar-thumb-hover);
+    background-clip: padding-box;
+    box-shadow: 0 0 10px var(--scrollbar-glow);
+  }
+  ::-webkit-scrollbar-thumb:active {
+    background: var(--scrollbar-thumb-active);
+    background-clip: padding-box;
+  }
+  ::-webkit-scrollbar-button {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+  }
+  ::-webkit-scrollbar-corner {
+    background: transparent !important;
   }
 
   html,body{
     height:100%;
     touch-action:manipulation;
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
   }
   body{
     font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
@@ -730,7 +811,7 @@
       </div>
       <button type="button" class="back-link" id="backLinkBtn" aria-label="Go back">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
-        <span data-en="Daily Schedule" data-ar="جدول اليوم">Daily Schedule</span>
+        <span data-en="Curriculum" data-ar="المنهج الدراسي">Curriculum</span>
       </button>
     </div>
 
@@ -1060,6 +1141,16 @@
       try { localStorage.setItem(key, val); } catch(e){}
     }
 
+    function escapeHtml(str){
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
     function applyTheme(theme){
       if (!VALID_THEMES.includes(theme)) theme = 'dark';
       currentTheme = theme;
@@ -1189,7 +1280,7 @@
        3. SOVEREIGN INDEXEDDB VAULT (100% Offline-First) & MEDIA RESOLVER
        ========================================================================= */
     const IDB_NAME = 'mb_synaptic_vault';
-    const IDB_VERSION = 1;
+    const IDB_VERSION = 3;
     let idbPromise = null;
     const inMemoryMediaCache = new Map();
 
@@ -2209,6 +2300,16 @@
     /* =========================================================================
        16. APKG PARSER & FILE IMPORTER (SQLite via sql.js + JSZip)
        ========================================================================= */
+    let sqlJsInstancePromise = null;
+    function getSqlJs(){
+      if (!sqlJsInstancePromise){
+        sqlJsInstancePromise = initSqlJs({
+          locateFile: file => `https://cdn.jsdelivr.net/npm/sql.js@1.10.3/dist/${file}`
+        });
+      }
+      return sqlJsInstancePromise;
+    }
+
     async function parseApkg(arrayBuffer){
       const zip = await JSZip.loadAsync(arrayBuffer);
       const dbFile = zip.file('collection.anki21') || zip.file('collection.anki2');
@@ -2222,30 +2323,80 @@
 
       const mediaUrlMap = {};
       const mediaBlobMap = {};
-      for (const [num, realName] of Object.entries(mediaMap)){
+      const mediaEntries = Object.entries(mediaMap);
+      await Promise.all(mediaEntries.map(async ([num, realName]) => {
         const f = zip.file(num);
-        if (!f) continue;
-        const blob = await f.async('blob');
-        mediaBlobMap[realName] = blob;
-        const url = URL.createObjectURL(blob);
-        mediaUrlMap[realName] = url;
-        mediaUrlMap[decodeURIComponent(realName)] = url;
-        inMemoryMediaCache.set(realName, url);
-        inMemoryMediaCache.set(decodeURIComponent(realName), url);
-      }
+        if (!f) return;
+        try {
+          const blob = await f.async('blob');
+          mediaBlobMap[realName] = blob;
+          const url = URL.createObjectURL(blob);
+          mediaUrlMap[realName] = url;
+          mediaUrlMap[decodeURIComponent(realName)] = url;
+          inMemoryMediaCache.set(realName, url);
+          inMemoryMediaCache.set(decodeURIComponent(realName), url);
+          // Case-insensitive mapping
+          mediaUrlMap[realName.toLowerCase()] = url;
+          inMemoryMediaCache.set(realName.toLowerCase(), url);
+        } catch(err){}
+      }));
+
+      // Also extract any media files stored directly by name in zip (alternative Anki exporters)
+      const zipFiles = Object.keys(zip.files);
+      await Promise.all(zipFiles.map(async (fname) => {
+        if (fname === 'collection.anki2' || fname === 'collection.anki21' || fname === 'collection.anki21b' || fname === 'media') return;
+        if (zip.files[fname].dir) return;
+        const baseName = fname.replace(/^.*[\\\/]/, '');
+        if (!mediaBlobMap[baseName] && /\.(png|jpe?g|gif|webp|svg|bmp|mp3|wav|ogg|m4a)$/i.test(fname)) {
+          try {
+            const blob = await zip.files[fname].async('blob');
+            mediaBlobMap[baseName] = blob;
+            const url = URL.createObjectURL(blob);
+            mediaUrlMap[baseName] = url;
+            mediaUrlMap[baseName.toLowerCase()] = url;
+            inMemoryMediaCache.set(baseName, url);
+            inMemoryMediaCache.set(baseName.toLowerCase(), url);
+          } catch(err){}
+        }
+      }));
 
       const dbBytes = await dbFile.async('uint8array');
-      const SQL = await initSqlJs({
-        locateFile: file => `https://cdn.jsdelivr.net/npm/sql.js@1.10.3/dist/${file}`
-      });
+      const SQL = await getSqlJs();
       const db = new SQL.Database(dbBytes);
 
-      const colRes = db.exec("SELECT models FROM col LIMIT 1");
-      if (!colRes || !colRes.length) throw new Error('BAD_DB');
-      const models = JSON.parse(colRes[0].values[0][0]);
+      // Support models from col.models (legacy) and notetypes table (modern Anki 2.1 schemas)
+      let models = {};
+      try {
+        const colRes = db.exec("SELECT models FROM col LIMIT 1");
+        if (colRes && colRes.length && colRes[0].values.length){
+          models = JSON.parse(colRes[0].values[0][0]);
+        }
+      } catch(e){}
 
-      const notesRes = db.exec("SELECT id, mid, flds FROM notes");
-      const notes = (notesRes.length ? notesRes[0].values : []).map(r => ({ id: r[0], mid: String(r[1]), flds: r[2] }));
+      if (!models || !Object.keys(models).length){
+        try {
+          const ntRes = db.exec("SELECT id, name, flds, tmpls FROM notetypes");
+          if (ntRes && ntRes.length && ntRes[0].values.length){
+            for (const r of ntRes[0].values){
+              const mid = String(r[0]);
+              models[mid] = {
+                id: r[0],
+                name: r[1],
+                flds: typeof r[2] === 'string' ? JSON.parse(r[2]) : r[2],
+                tmpls: typeof r[3] === 'string' ? JSON.parse(r[3]) : r[3]
+              };
+            }
+          }
+        } catch(e){}
+      }
+
+      const notesRes = db.exec("SELECT id, mid, flds, tags FROM notes");
+      const notes = (notesRes.length ? notesRes[0].values : []).map(r => ({
+        id: r[0],
+        mid: String(r[1]),
+        flds: r[2],
+        tags: r[3] || ''
+      }));
 
       const cardsRes = db.exec("SELECT id, nid, ord FROM cards ORDER BY id ASC");
       const cardRows = (cardsRes.length ? cardsRes[0].values : []).map(r => ({ id: r[0], nid: r[1], ord: r[2] }));
@@ -2253,45 +2404,202 @@
       const notesById = {};
       notes.forEach(n => { notesById[n.id] = n; });
 
+      // Media resolver helper
+      function resolveMediaUrl(fn){
+        if (!fn) return '';
+        if (fn.startsWith('data:') || fn.startsWith('blob:') || fn.startsWith('http:') || fn.startsWith('https:')) {
+          return fn;
+        }
+        let clean = fn;
+        try { clean = decodeURIComponent(fn); } catch(e){}
+        clean = clean.trim().replace(/^.*[\\\/]/, '');
+        if (mediaUrlMap[clean]) return mediaUrlMap[clean];
+        if (mediaUrlMap[fn]) return mediaUrlMap[fn];
+        if (mediaUrlMap[clean.toLowerCase()]) return mediaUrlMap[clean.toLowerCase()];
+        if (inMemoryMediaCache.has(clean)) return inMemoryMediaCache.get(clean);
+        if (inMemoryMediaCache.has(clean.toLowerCase())) return inMemoryMediaCache.get(clean.toLowerCase());
+        return fn;
+      }
+
+      // Media rewriter: converts image tags and sound tags into resolved URLs
+      const rewriteMedia = (str) => {
+        if (!str) return '';
+        return str
+          .replace(/(<img\b[^>]*?)\bsrc=(["'])([^"']+)\2([^>]*>)/gi, (full, before, q, fn, after) => {
+            const resolvedSrc = resolveMediaUrl(fn);
+            let cleanFn = fn;
+            if (!fn.startsWith('data:')){
+              try { cleanFn = decodeURIComponent(fn).replace(/^.*[\\\/]/, ''); } catch(e){}
+            }
+            return `${before}src=${q}${resolvedSrc}${q} data-filename=${q}${cleanFn}${q} class="clinical-diagram-img" alt="Clinical Reference Diagram"${after}`;
+          })
+          .replace(/\[sound:([^\]]+)\]/gi, (match, soundFn) => {
+            const cleanFn = soundFn.trim().replace(/^.*[\\\/]/, '');
+            const u = resolveMediaUrl(cleanFn);
+            return u ? `<audio controls src="${u}"></audio>` : `<audio controls data-filename="${cleanFn}"></audio>`;
+          });
+      };
+
+      // Helper to fetch field value case-insensitively and space-insensitively
+      function getFieldValue(fieldMap, key){
+        if (!key) return '';
+        if (fieldMap[key] !== undefined) return fieldMap[key];
+        const trimmed = key.trim();
+        if (fieldMap[trimmed] !== undefined) return fieldMap[trimmed];
+        const norm = trimmed.toLowerCase().replace(/[\s_\-]+/g, '');
+        for (const [k, v] of Object.entries(fieldMap)){
+          if (k.toLowerCase().replace(/[\s_\-]+/g, '') === norm) return v;
+        }
+        return undefined;
+      }
+
+      // Universal Anki Template Compiler supporting conditionals, spaces, filters & cleanups
+      function compileAnkiTemplate(templateStr, fieldMap, defaultFront = ''){
+        if (!templateStr) return '';
+        let out = templateStr;
+
+        // 1. Replace {{FrontSide}}
+        out = out.replace(/{{FrontSide}}/g, defaultFront);
+
+        // Helper to check if a field is populated (supports text or embedded media/images)
+        function isFieldPopulated(val){
+          if (val === undefined || val === null) return false;
+          const str = String(val).trim();
+          if (!str) return false;
+          if (/<img\b|<video\b|<audio\b|<iframe\b|<object\b/i.test(str)) return true;
+          return str.replace(/<[^>]+>/g, '').trim().length > 0;
+        }
+
+        // 2. Handle conditional blocks: {{#FieldName}}...{{/FieldName}}
+        let passes = 10;
+        while (passes-- > 0 && /{{#([^}]+)}}([\s\S]*?){{\/\1}}/g.test(out)){
+          out = out.replace(/{{#([^}]+)}}([\s\S]*?){{\/\1}}/g, (_, fieldName, inner) => {
+            const val = getFieldValue(fieldMap, fieldName);
+            return isFieldPopulated(val) ? inner : '';
+          });
+        }
+
+        // 3. Handle inverted conditional blocks: {{^FieldName}}...{{/FieldName}}
+        passes = 10;
+        while (passes-- > 0 && /{{\^([^}]+)}}([\s\S]*?){{\/\1}}/g.test(out)){
+          out = out.replace(/{{\^([^}]+)}}([\s\S]*?){{\/\1}}/g, (_, fieldName, inner) => {
+            const val = getFieldValue(fieldMap, fieldName);
+            return isFieldPopulated(val) ? '' : inner;
+          });
+        }
+
+        // 4. Handle field replacements: {{FieldName}} and filter prefixes {{prefix:FieldName}}
+        out = out.replace(/{{([^}]+)}}/g, (_, rawToken) => {
+          const token = rawToken.trim();
+          if (!token) return '';
+
+          const colonIdx = token.indexOf(':');
+          let filter = '';
+          let fn = token;
+          if (colonIdx !== -1){
+            filter = token.substring(0, colonIdx).trim().toLowerCase();
+            fn = token.substring(colonIdx + 1).trim();
+          }
+
+          let val = getFieldValue(fieldMap, fn);
+          if (val === undefined || val === null){
+            // Special Anki variables
+            const low = fn.toLowerCase();
+            if (low === 'deck') return fieldMap.__deckName || '';
+            if (low === 'subdeck') return fieldMap.__deckName || '';
+            if (low === 'card') return fieldMap.__cardName || '';
+            if (low === 'type') return fieldMap.__typeName || '';
+            if (low === 'tags') return fieldMap.__tags || '';
+            // Unknown or unmapped field token -> remove cleanly rather than leaving raw {{...}}
+            return '';
+          }
+
+          if (filter === 'text'){
+            return val.replace(/<[^>]+>/g, '');
+          } else if (filter === 'hint'){
+            return val.trim() ? `<details class="anki-hint-details"><summary class="anki-hint-btn">Show Hint (${escapeHtml(fn)})</summary><div class="anki-hint-content">${val}</div></details>` : '';
+          }
+
+          return val;
+        });
+
+        // 5. Final pass: remove any stray unparsed {{...}} tags
+        out = out.replace(/{{[^}]+}}/g, '');
+
+        return out;
+      }
+
       const cards = [];
       for (const cr of cardRows){
         const note = notesById[cr.nid];
         if (!note) continue;
         const model = models[note.mid];
-        if (!model) continue;
 
-        const fieldNames = model.flds.map(f => f.name);
         const fieldValues = note.flds.split('\x1f');
+        const fieldNames = model && model.flds ? model.flds.map(f => f.name) : ['Front', 'Back'];
         const fieldMap = {};
-        fieldNames.forEach((name, i) => { fieldMap[name] = fieldValues[i] || ''; });
+        fieldNames.forEach((name, i) => {
+          let val = fieldValues[i] || '';
+          // If a field is a bare image filename without <img> tags, auto-wrap it into <img>
+          if (/^[^<>\n\r\t]+\.(png|jpe?g|gif|webp|svg|bmp)$/i.test(val.trim())){
+            val = `<img src="${val.trim()}" class="clinical-diagram-img" alt="${escapeHtml(name)}" />`;
+          }
+          fieldMap[name] = val;
+          fieldMap[name.trim()] = val;
+        });
 
-        const tmpl = model.tmpls[cr.ord];
-        if (!tmpl) continue;
+        // Ensure positional fallbacks
+        if (!fieldMap['Front']) fieldMap['Front'] = fieldValues[0] || '';
+        if (!fieldMap['Back']) fieldMap['Back'] = fieldValues[1] || '';
 
-        let frontHtml = tmpl.qfmt.replace(/{{([a-zA-Z0-9_:]+)}}/g, (_, k) => fieldMap[k.split(':').pop()] || '');
-        let backHtml = tmpl.afmt.replace('{{FrontSide}}', frontHtml).replace(/{{([a-zA-Z0-9_:]+)}}/g, (_, k) => fieldMap[k.split(':').pop()] || '');
+        // Inject deck and card metadata
+        fieldMap.__deckName = deckTitle.textContent || 'Clinical Deck';
+        fieldMap.__cardName = model && model.tmpls && model.tmpls[cr.ord] ? model.tmpls[cr.ord].name : `Card ${cr.ord + 1}`;
+        fieldMap.__typeName = model ? model.name : 'Clinical Note';
+        fieldMap.__tags = note.tags || '';
 
-        // Media rewriting: embed data-filename so images persist & rehydrate across reloads
-        const rewrite = (str) => {
-          if (!str) return '';
-          return str
-            .replace(/(<img\b[^>]*?)\bsrc=(["'])([^"']+)\2([^>]*>)/gi, (full, before, q, fn, after) => {
-              const cleanFn = decodeURIComponent(fn);
-              const u = mediaUrlMap[cleanFn] || mediaUrlMap[fn];
-              const resolvedSrc = u || fn;
-              return `${before}src=${q}${resolvedSrc}${q} data-filename=${q}${cleanFn}${q}${after}`;
-            })
-            .replace(/\[sound:([^\]]+)\]/gi, (match, soundFn) => {
-              const cleanFn = decodeURIComponent(soundFn);
-              const u = mediaUrlMap[cleanFn] || mediaUrlMap[soundFn];
-              return u ? `<audio controls src="${u}"></audio>` : `<audio controls data-filename="${cleanFn}"></audio>`;
-            });
-        };
+        const tmpl = model && model.tmpls ? model.tmpls[cr.ord] : null;
+
+        let frontHtml = '';
+        let backHtml = '';
+
+        if (tmpl && tmpl.qfmt){
+          frontHtml = compileAnkiTemplate(tmpl.qfmt, fieldMap, '');
+        } else {
+          frontHtml = fieldMap['Front'] || fieldValues[0] || '';
+        }
+
+        if (tmpl && tmpl.afmt){
+          backHtml = compileAnkiTemplate(tmpl.afmt, fieldMap, frontHtml);
+        } else {
+          backHtml = `${frontHtml}<hr id=answer>${fieldMap['Back'] || fieldValues[1] || ''}`;
+        }
+
+        // Comprehensive reference image assurance:
+        // Check for dedicated reference/diagram fields that may contain rich images
+        const refFieldKeys = ['PDF Reference', 'PDF_Reference', 'PDFReference', 'Reference', 'Reference Image', 'Lecture Reference', 'Slide Reference', 'Diagram', 'Image'];
+        let refContent = '';
+        for (const rk of refFieldKeys){
+          const foundVal = getFieldValue(fieldMap, rk);
+          if (foundVal && foundVal.trim().length > 0){
+            refContent = foundVal.trim();
+            break;
+          }
+        }
+
+        // If card back does not already include the reference content and it exists, append it
+        if (refContent && !backHtml.includes(refContent)){
+          backHtml += `<div class="anki-reference-attachment" style="margin-top:16px; padding-top:12px; border-top:1px dashed var(--line-soft); text-align:center;">${refContent}</div>`;
+        }
+
+        // Apply media rewriting
+        const resolvedFront = rewriteMedia(frontHtml);
+        const resolvedBack = rewriteMedia(backHtml);
 
         cards.push({
           id: `card-${cr.id}`,
-          front: rewrite(frontHtml),
-          back: rewrite(backHtml),
+          front: resolvedFront,
+          back: resolvedBack,
           stability: 0,
           difficulty: 0,
           reps: 0
@@ -2422,69 +2730,106 @@
         });
       }
 
+      const deckUrl = getParam('deckUrl');
+      const deckTitleParam = getParam('deckTitle');
       const materialId = getParam('id');
       const isDemo = getParam('deck') === 'demo';
 
-      if (isDemo || (!materialId && !window.location.hash)){
-        // Load High-Yield Clinical Demo Deck immediately
-        deckTitle.textContent = 'High-Yield Clinical Physiology & Pharmacology';
+      // 1. Explicit Demo Deck request
+      if (isDemo || (!deckUrl && !materialId && !window.location.hash)){
+        deckTitle.textContent = deckTitleParam || 'High-Yield Clinical Physiology & Pharmacology';
         deckSub.textContent = '5 Sample FSRS-5 Vignettes · High-Yield Clinical Benchmark';
         deckCards = [...HIGH_YIELD_DEMO_DECK];
         renderCard();
         return;
       }
 
-      // Check Offline IndexedDB Cache First
-      if (materialId){
-        const cached = await loadDeckFromVault(materialId);
-        if (cached && cached.cards.length){
-          deckTitle.textContent = cached.meta.title || 'Clinical Flashcards';
-          deckSub.textContent = `${cached.cards.length} cards · Offline Synaptic Vault`;
-          offlineBadge.style.display = 'inline-flex';
-          deckCards = cached.cards;
-          renderCard();
-          return;
-        }
+      // 2. Stable Vault Key for Cloud / URL Decks
+      const vaultKey = materialId || ('url-' + encodeURIComponent(deckTitleParam || deckUrl || 'deck'));
+
+      // Check Offline IndexedDB Cache First (instant 0ms load)
+      const cached = await loadDeckFromVault(vaultKey);
+      const hasCorruptedTags = cached && cached.cards && cached.cards.some(c => (c.front && c.front.includes('{{')) || (c.back && c.back.includes('{{')));
+      if (cached && cached.cards && cached.cards.length && !hasCorruptedTags){
+        deckTitle.textContent = deckTitleParam || cached.meta.title || 'Clinical Flashcards';
+        deckSub.textContent = `${cached.cards.length} cards · Offline Synaptic Vault`;
+        offlineBadge.style.display = 'inline-flex';
+        deckCards = cached.cards;
+        renderCard();
+        return;
       }
 
-      // Fetch from Supabase
-      if (materialId && supabase){
-        try {
-          deckTitle.textContent = 'Downloading Deck…';
-          deckSub.textContent = 'Resolving media assets and collection SQLite…';
+      // 3. Resolve target download URL
+      let targetUrl = deckUrl;
+      let targetTitle = deckTitleParam || 'Clinical Deck';
+      let targetFileName = (deckTitleParam ? deckTitleParam.replace(/\.(apkg|zip)$/i, '') : 'deck') + '.apkg';
 
+      if (!targetUrl && materialId && supabase){
+        try {
           const { data: material, error } = await supabase
             .from('materials')
             .select('id, title, url, file_name, type')
             .eq('id', materialId)
             .single();
+          if (!error && material && material.url){
+            targetUrl = material.url;
+            if (material.title) targetTitle = material.title;
+            if (material.file_name) targetFileName = material.file_name;
+          }
+        } catch(e){
+          console.warn('Supabase material query skipped:', e);
+        }
+      }
 
-          if (error || !material) throw new Error('Material not found');
+      // 4. Download & Parse Target Deck
+      if (targetUrl){
+        try {
+          deckTitle.textContent = targetTitle;
+          deckSub.textContent = 'Downloading and parsing flashcard deck…';
 
-          deckFileName = material.file_name || 'deck.apkg';
-          const resp = await fetch(material.url);
-          if (!resp.ok) throw new Error('Fetch failed');
+          const resp = await fetch(targetUrl);
+          if (!resp.ok) throw new Error(`HTTP ${resp.status}: Could not download deck file from cloud storage.`);
 
           const arrayBuffer = await resp.arrayBuffer();
           deckFileBuffer = arrayBuffer.slice(0);
+          deckFileName = targetFileName;
 
           const { cards, mediaBlobMap } = await parseApkg(arrayBuffer);
           deckCards = cards;
-          deckTitle.textContent = material.title || 'Clinical Deck';
+          deckTitle.textContent = targetTitle;
           deckSub.textContent = `${cards.length} cards · FSRS-5 Calibrated`;
 
-          // Cache in IndexedDB for 100% offline study
-          await saveDeckToVault(materialId, { title: material.title, fileName: material.file_name }, cards, mediaBlobMap);
+          // Cache in IndexedDB for 100% offline study & instant next-load
+          await saveDeckToVault(vaultKey, { title: targetTitle, fileName: targetFileName, url: targetUrl }, cards, mediaBlobMap);
           offlineBadge.style.display = 'inline-flex';
 
           renderCard();
-        } catch(e){
-          console.error('Error loading deck:', e);
-          deckTitle.textContent = 'Offline Deck Fallback';
-          deckSub.textContent = 'Could not download cloud deck · Loaded Clinical Demo Deck';
-          deckCards = [...HIGH_YIELD_DEMO_DECK];
-          renderCard();
+        } catch(err){
+          console.error('Error loading cloud deck:', err);
+          frontContent.innerHTML = `
+            <div style="text-align:center; padding:32px 16px;">
+              <div style="font-size:2.8rem; margin-bottom:12px;">⚠️</div>
+              <h3 style="font-size:1.15rem; font-weight:800; margin-bottom:8px; color:var(--text);">Unable to Download Cloud Deck</h3>
+              <p style="font-size:0.84rem; color:var(--text-dim); max-width:440px; margin:0 auto 20px; line-height:1.45;">
+                ${escapeHtml(err.message || 'The flashcard package could not be downloaded or parsed.')}
+              </p>
+              <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
+                <button type="button" class="primary-btn" onclick="window.location.reload()">Retry Download</button>
+                <button type="button" class="secondary-btn" onclick="document.getElementById('localApkgInput').click()">Open Local .apkg File</button>
+                <button type="button" class="secondary-btn" onclick="window.location.search='?deck=demo'">Load Demo Deck</button>
+              </div>
+            </div>
+          `;
+          backContent.innerHTML = '';
+          deckTitle.textContent = targetTitle;
+          deckSub.textContent = 'Network or parsing error';
         }
+      } else {
+        // Fallback when no URL could be resolved
+        deckTitle.textContent = deckTitleParam || 'High-Yield Clinical Physiology & Pharmacology';
+        deckSub.textContent = 'No cloud file found · Loaded Clinical Benchmark Deck';
+        deckCards = [...HIGH_YIELD_DEMO_DECK];
+        renderCard();
       }
     }
 
