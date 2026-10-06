@@ -3922,8 +3922,10 @@
     return null;
   }
 
-  function flashcardsViewerUrl(materialId){
-    return `${window.location.origin}/flash.html?id=${encodeURIComponent(materialId)}`;
+  function flashcardsViewerUrl(materialId, title){
+    let url = `${window.location.origin}/flash.html?id=${encodeURIComponent(materialId)}`;
+    if (title) url += `&deckTitle=${encodeURIComponent(title)}`;
+    return url;
   }
 
   function buildDayHtml(date, subjects, isLoading){
@@ -4010,7 +4012,7 @@
             </td>
             <td class="anki-td anki-td-action">
               <div class="anki-action-group">
-                <a class="anki-study-btn" href="${flashcardsViewerUrl(m.id)}" data-flashcards-open="${m.id}" title="${currentLang==='ar'?'بدء المراجعة':'Study Now'}">
+                <a class="anki-study-btn" href="${flashcardsViewerUrl(m.id, m.title)}" data-flashcards-open="${m.id}" title="${currentLang==='ar'?'بدء المراجعة':'Study Now'}">
                   <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4"/></svg>
                   <span>${currentLang==='ar'?'مراجعة':'Study'}</span>
                 </a>

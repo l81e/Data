@@ -797,6 +797,296 @@
   .browser-card-content{flex:1; min-width:0;}
   .browser-card-q{font-weight:700; font-size:0.84rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
   .browser-card-a{font-size:0.78rem; color:var(--text-dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:2px;}
+
+  /* ---------- CLINICAL DECK LOADER (SKELETON & TELEMETRY SUITE) ---------- */
+  .clinical-deck-loader {
+    position: absolute;
+    inset: 0;
+    z-index: 50;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    padding: 20px 22px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 16px 40px -10px rgba(0, 0, 0, 0.45);
+    transition: opacity 0.28s cubic-bezier(0.16, 1, 0.3, 1), transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  @media(min-width:640px){
+    .clinical-deck-loader { padding: 26px 30px; }
+  }
+  .clinical-deck-loader.fade-out {
+    opacity: 0;
+    transform: scale(0.985) translateY(4px);
+    pointer-events: none;
+  }
+
+  /* Shimmer sweep animation */
+  @keyframes skeletonShimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+  }
+  .skeleton-shimmer {
+    position: relative;
+    overflow: hidden;
+    background: var(--panel-hi);
+    border-radius: 6px;
+  }
+  .skeleton-shimmer::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.07) 50%, transparent 100%);
+    transform: translateX(-100%);
+    animation: skeletonShimmer 1.8s infinite ease-in-out;
+  }
+  html[data-theme="light"] .skeleton-shimmer::after {
+    background: linear-gradient(90deg, transparent 0%, rgba(0,0,0,0.06) 50%, transparent 100%);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .skeleton-shimmer::after { animation: none; }
+  }
+
+  /* Loader Header */
+  .loader-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 12px;
+    margin-bottom: 16px;
+    border-bottom: 1px solid var(--line-soft);
+    flex-shrink: 0;
+  }
+  .loader-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 0.68rem;
+    font-weight: 800;
+    font-family: 'JetBrains Mono', monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--accent);
+    background: var(--accent-glow);
+    padding: 3px 10px;
+    border-radius: 12px;
+    border: 1px solid rgba(6,182,212,0.3);
+    max-width: 60%;
+    overflow: hidden;
+  }
+  .loader-badge span {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .loader-pulse-dot {
+    width: 6px;
+    height: 6px;
+    min-width: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 8px var(--accent);
+    animation: loaderPulse 1.4s ease-in-out infinite;
+  }
+  @keyframes loaderPulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(0.75); }
+  }
+  .loader-byte-counter {
+    font-size: 0.72rem;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--text-dim);
+    white-space: nowrap;
+  }
+
+  /* Shimmering Skeleton Body */
+  .loader-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+  }
+  .skeleton-title {
+    width: 68%;
+    height: 20px;
+    border-radius: 8px;
+    margin-bottom: 16px;
+    flex-shrink: 0;
+  }
+  .skeleton-line {
+    height: 12px;
+    border-radius: 6px;
+    margin-bottom: 10px;
+    flex-shrink: 0;
+  }
+  .skeleton-line.w-95 { width: 95%; }
+  .skeleton-line.w-85 { width: 85%; }
+  .skeleton-line.w-65 { width: 65%; }
+
+  .skeleton-diagram {
+    flex: 1;
+    min-height: 80px;
+    max-height: 140px;
+    border-radius: 12px;
+    margin: 10px 0 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px dashed var(--line);
+    background: rgba(255,255,255,0.015);
+  }
+  .skeleton-diagram-icon {
+    opacity: 0.22;
+    color: var(--text-dim);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Telemetry Progress Dock */
+  .loader-telemetry-dock {
+    margin-top: auto;
+    padding-top: 14px;
+    border-top: 1px solid var(--line-soft);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+  .loader-status-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.8rem;
+    gap: 12px;
+  }
+  .loader-status-text {
+    font-weight: 600;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .loader-percent-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--accent);
+    background: var(--accent-glow);
+    padding: 2px 7px;
+    border-radius: 6px;
+    border: 1px solid rgba(6,182,212,0.25);
+    flex-shrink: 0;
+  }
+
+  /* High-Precision Progress Track */
+  .loader-progress-track {
+    width: 100%;
+    height: 7px;
+    border-radius: 999px;
+    background: var(--panel-hi);
+    border: 1px solid var(--line);
+    overflow: hidden;
+    position: relative;
+  }
+  .loader-progress-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, var(--accent-dark), var(--accent));
+    box-shadow: 0 0 10px var(--accent);
+    border-radius: 999px;
+    transition: width 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+    position: relative;
+    overflow: hidden;
+  }
+  .loader-progress-fill::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.4) 50%, transparent 100%);
+    animation: skeletonShimmer 1.4s infinite linear;
+  }
+
+  /* 4 Phase Stepper Badges */
+  .loader-phases-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+    margin-top: 2px;
+  }
+  .loader-phase-item {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    padding: 5px 6px;
+    border-radius: 8px;
+    background: var(--panel-hi);
+    border: 1px solid var(--line);
+    font-size: 0.68rem;
+    color: var(--text-faint);
+    transition: all 0.2s ease;
+    user-select: none;
+    white-space: nowrap;
+  }
+  .loader-phase-item .phase-icon {
+    font-size: 0.72rem;
+    line-height: 1;
+  }
+  .loader-phase-item .phase-label {
+    font-weight: 600;
+  }
+  .loader-phase-item .phase-check {
+    display: none;
+    font-weight: 800;
+    font-size: 0.68rem;
+    color: var(--good);
+  }
+  .loader-phase-item.active {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--accent-glow);
+    box-shadow: 0 0 8px rgba(6,182,212,0.15);
+  }
+  .loader-phase-item.done {
+    border-color: var(--good-border);
+    color: var(--good);
+    background: var(--good-bg);
+  }
+  .loader-phase-item.done .phase-check {
+    display: inline-block;
+  }
+  .loader-phase-item.done .phase-icon {
+    display: none;
+  }
+
+  @media(max-width: 480px){
+    .loader-phases-grid {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 5px;
+    }
+    .skeleton-diagram {
+      min-height: 50px;
+      max-height: 75px;
+    }
+  }
+
+  /* Morph animation on flip-card */
+  @keyframes cardMorphReveal {
+    0% {
+      opacity: 0.2;
+      transform: translateY(8px) scale(0.99);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+  .flip-card.morph-reveal {
+    animation: cardMorphReveal 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
 </style>
 </head>
 <body>
@@ -952,6 +1242,61 @@
         <div class="gesture-cue cue-hard" id="cueHard">Hard (2) ↓</div>
         <div class="gesture-cue cue-reveal" id="cueReveal">Release to Reveal</div>
 
+        <!-- Clinical Deck Loading Suite Overlay -->
+        <div class="clinical-deck-loader" id="clinicalDeckLoader" role="status" aria-live="polite" aria-busy="true" style="display:none;">
+          <div class="loader-header">
+            <div class="loader-badge">
+              <span class="loader-pulse-dot"></span>
+              <span id="loaderDeckBadgeTitle">CLINICAL VIGNETTE</span>
+            </div>
+            <div class="loader-byte-counter" id="loaderByteCounter">Connecting…</div>
+          </div>
+
+          <div class="loader-body">
+            <div class="skeleton-shimmer skeleton-title"></div>
+            <div class="skeleton-shimmer skeleton-line w-95"></div>
+            <div class="skeleton-shimmer skeleton-line w-85"></div>
+            <div class="skeleton-shimmer skeleton-line w-65"></div>
+            <div class="skeleton-diagram">
+              <div class="skeleton-diagram-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="width:30px;height:30px;"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+              </div>
+            </div>
+          </div>
+
+          <div class="loader-telemetry-dock">
+            <div class="loader-status-row">
+              <span class="loader-status-text" id="loaderStatusMsg" data-en="Initializing clinical cards…" data-ar="جاري تهيئة الكروت الطبية…">Initializing clinical cards…</span>
+              <span class="loader-percent-badge" id="loaderPercentBadge">0%</span>
+            </div>
+            <div class="loader-progress-track">
+              <div class="loader-progress-fill" id="loaderProgressFill"></div>
+            </div>
+            <div class="loader-phases-grid">
+              <div class="loader-phase-item active" id="phaseDownload">
+                <span class="phase-icon">⬇️</span>
+                <span class="phase-label" data-en="Download" data-ar="تحميل">Download</span>
+                <span class="phase-check">✓</span>
+              </div>
+              <div class="loader-phase-item" id="phaseUnpack">
+                <span class="phase-icon">📦</span>
+                <span class="phase-label" data-en="Unpack" data-ar="فك الضغط">Unpack</span>
+                <span class="phase-check">✓</span>
+              </div>
+              <div class="loader-phase-item" id="phaseSqlite">
+                <span class="phase-icon">⚡</span>
+                <span class="phase-label" data-en="SQLite" data-ar="قاعدة SQLite">SQLite</span>
+                <span class="phase-check">✓</span>
+              </div>
+              <div class="loader-phase-item" id="phaseFsrs">
+                <span class="phase-icon">🧠</span>
+                <span class="phase-label" data-en="FSRS Ready" data-ar="جاهز للاستذكار">FSRS Ready</span>
+                <span class="phase-check">✓</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- 3D Flipping Card Container -->
         <div class="flip-card" id="flipCard">
           <div class="flip-card-inner" id="flipCardInner">
@@ -975,6 +1320,22 @@
           </div>
         </div>
       </div>
+      <script>
+        (function(){
+          try {
+            const p = new URLSearchParams(window.location.search);
+            if (p.get('deckUrl') || p.get('id')){
+              const ldr = document.getElementById('clinicalDeckLoader');
+              const fc = document.getElementById('flipCard');
+              const bTitle = document.getElementById('loaderDeckBadgeTitle');
+              const dt = p.get('deckTitle');
+              if (ldr) ldr.style.display = 'flex';
+              if (fc) fc.style.visibility = 'hidden';
+              if (bTitle && dt) bTitle.textContent = decodeURIComponent(dt).slice(0, 32);
+            }
+          } catch(e){}
+        })();
+      </script>
 
       <!-- Action Button Area -->
       <div class="action-container" id="actionContainer">
@@ -1661,6 +2022,86 @@
     }
 
     /* =========================================================================
+       7.5. CLINICAL DECK LOADING SUITE CONTROLLERS
+       ========================================================================= */
+    const clinicalDeckLoader = document.getElementById('clinicalDeckLoader');
+    const loaderProgressFill = document.getElementById('loaderProgressFill');
+    const loaderPercentBadge = document.getElementById('loaderPercentBadge');
+    const loaderStatusMsg = document.getElementById('loaderStatusMsg');
+    const loaderByteCounter = document.getElementById('loaderByteCounter');
+    const loaderDeckBadgeTitle = document.getElementById('loaderDeckBadgeTitle');
+
+    function showClinicalDeckLoader(title){
+      if (loaderDeckBadgeTitle && title) {
+        loaderDeckBadgeTitle.textContent = title.replace(/\.(apkg|zip)$/i, '').toUpperCase().slice(0, 32);
+      }
+      if (clinicalDeckLoader){
+        clinicalDeckLoader.classList.remove('fade-out');
+        clinicalDeckLoader.style.display = 'flex';
+      }
+      if (flipCard){
+        flipCard.style.visibility = 'hidden';
+      }
+      if (revealBtn){
+        revealBtn.disabled = true;
+        revealBtn.style.opacity = '0.5';
+        revealBtn.style.pointerEvents = 'none';
+      }
+      updateDeckLoaderProgress(0, currentLang === 'ar' ? 'الاتصال بالسحابة…' : 'Connecting to cloud storage…', 'download', '0.0 MB');
+    }
+
+    function updateDeckLoaderProgress(percent, statusText, activePhase, byteText){
+      const boundedPct = Math.max(0, Math.min(100, Math.round(percent)));
+      if (loaderProgressFill) loaderProgressFill.style.width = boundedPct + '%';
+      if (loaderPercentBadge) loaderPercentBadge.textContent = boundedPct + '%';
+      if (loaderStatusMsg && statusText) loaderStatusMsg.textContent = statusText;
+      if (loaderByteCounter && byteText) loaderByteCounter.textContent = byteText;
+
+      const phaseOrder = ['download', 'unpack', 'sqlite', 'fsrs'];
+      const curIdx = phaseOrder.indexOf(activePhase);
+
+      phaseOrder.forEach((p, idx) => {
+        const el = document.getElementById('phase' + p.charAt(0).toUpperCase() + p.slice(1));
+        if (!el) return;
+        if (idx < curIdx || (idx === curIdx && boundedPct >= 100)){
+          el.classList.remove('active');
+          el.classList.add('done');
+        } else if (idx === curIdx){
+          el.classList.add('active');
+          el.classList.remove('done');
+        } else {
+          el.classList.remove('active', 'done');
+        }
+      });
+    }
+
+    function hideClinicalDeckLoader(){
+      if (revealBtn){
+        revealBtn.disabled = false;
+        revealBtn.style.opacity = '';
+        revealBtn.style.pointerEvents = '';
+      }
+      if (clinicalDeckLoader){
+        clinicalDeckLoader.classList.add('fade-out');
+        setTimeout(() => {
+          clinicalDeckLoader.style.display = 'none';
+          clinicalDeckLoader.classList.remove('fade-out');
+        }, 280);
+      }
+      if (flipCard){
+        flipCard.style.visibility = 'visible';
+        flipCard.classList.add('morph-reveal');
+        setTimeout(() => {
+          flipCard.classList.remove('morph-reveal');
+        }, 320);
+      }
+    }
+
+    window.showClinicalDeckLoader = showClinicalDeckLoader;
+    window.updateDeckLoaderProgress = updateDeckLoaderProgress;
+    window.hideClinicalDeckLoader = hideClinicalDeckLoader;
+
+    /* =========================================================================
        8. CARD PRESENTATION & RENDERING
        ========================================================================= */
     function renderCard(){
@@ -2320,7 +2761,10 @@
       return sqlJsInstancePromise;
     }
 
-    async function parseApkg(arrayBuffer){
+    async function parseApkg(arrayBuffer, onProgress){
+      if (typeof onProgress === 'function') {
+        onProgress('unpack', 58, currentLang === 'ar' ? 'فك حزمة الملفات والوسائط…' : 'Unpacking package & media assets…');
+      }
       const zip = await JSZip.loadAsync(arrayBuffer);
       // Priority: collection.anki21b (Anki 2.1.50+ zstd compressed) -> collection.anki21 -> collection.anki2
       const anki21bFile = zip.file('collection.anki21b');
@@ -2399,6 +2843,10 @@
         }
       }));
 
+      if (typeof onProgress === 'function') {
+        onProgress('sqlite', 78, currentLang === 'ar' ? 'تهيئة محرك SQLite WASM…' : 'Initializing SQLite WASM…');
+      }
+
       let rawDbBytes = await dbFile.async('uint8array');
       let dbBytes = decompressZstdIfNeeded(rawDbBytes);
       const SQL = await getSqlJs();
@@ -2440,6 +2888,10 @@
 
       const cardsRes = db.exec("SELECT id, nid, ord FROM cards ORDER BY id ASC");
       const cardRows = (cardsRes.length ? cardsRes[0].values : []).map(r => ({ id: r[0], nid: r[1], ord: r[2] }));
+
+      if (typeof onProgress === 'function') {
+        onProgress('sqlite', 88, currentLang === 'ar' ? 'معالجة الكروت والقوالب الطبية…' : 'Compiling flashcard templates…');
+      }
 
       const notesById = {};
       notes.forEach(n => { notesById[n.id] = n; });
@@ -2569,6 +3021,10 @@
         return out;
       }
 
+      if (typeof onProgress === 'function') {
+        onProgress('fsrs', 95, currentLang === 'ar' ? 'معايرة خوارزمية FSRS-5…' : 'Calibrating FSRS-5 stability…');
+      }
+
       const cards = [];
       for (const cr of cardRows){
         const note = notesById[cr.nid];
@@ -2653,19 +3109,24 @@
 
     async function loadApkgFile(file){
       if (!file) return;
+      const deckBaseName = file.name.replace(/\.(apkg|zip)$/i, '');
+      showClinicalDeckLoader(deckBaseName);
       deckTitle.textContent = 'Extracting Deck Assets…';
       deckSub.textContent = `Parsing ${file.name} (media & SQLite collection)…`;
       deckFileName = file.name;
       try {
+        const mb = (file.size / (1024 * 1024)).toFixed(1);
+        updateDeckLoaderProgress(20, currentLang === 'ar' ? 'قراءة ملف الحزمة…' : 'Reading local file…', 'unpack', `${mb} MB`);
         const arrayBuffer = await file.arrayBuffer();
         deckFileBuffer = arrayBuffer.slice(0);
-        const { cards, mediaBlobMap } = await parseApkg(arrayBuffer);
+        const { cards, mediaBlobMap } = await parseApkg(arrayBuffer, (phase, pct, msg) => {
+          updateDeckLoaderProgress(pct, msg, phase);
+        });
         deckCards = cards;
         currentIndex = 0;
         reviewHistory = [];
         sessionStats = { again: 0, hard: 0, good: 0, easy: 0, startTime: Date.now() };
 
-        const deckBaseName = file.name.replace(/\.(apkg|zip)$/i, '');
         deckTitle.textContent = deckBaseName;
         deckSub.textContent = `${cards.length} cards · ${Object.keys(mediaBlobMap).length} media diagrams extracted`;
 
@@ -2674,8 +3135,12 @@
         await saveDeckToVault(vaultDeckId, { title: deckBaseName, fileName: file.name }, cards, mediaBlobMap);
         offlineBadge.style.display = 'inline-flex';
 
+        updateDeckLoaderProgress(100, currentLang === 'ar' ? 'اكتمل تجهيز الكروت بنجاح!' : 'All cards calibrated successfully!', 'fsrs', '100%');
+        await new Promise(r => setTimeout(r, 140));
+        hideClinicalDeckLoader();
         renderCard();
       } catch(err){
+        hideClinicalDeckLoader();
         console.error('Failed to parse local .apkg:', err);
         alert('Failed to parse .apkg file: ' + (err.message || 'Invalid format'));
         deckTitle.textContent = 'High-Yield Clinical Physiology & Pharmacology';
@@ -2777,6 +3242,7 @@
 
       // 1. Explicit Demo Deck request
       if (isDemo || (!deckUrl && !materialId && !window.location.hash)){
+        hideClinicalDeckLoader();
         deckTitle.textContent = deckTitleParam || 'High-Yield Clinical Physiology & Pharmacology';
         deckSub.textContent = '5 Sample FSRS-5 Vignettes · High-Yield Clinical Benchmark';
         deckCards = [...HIGH_YIELD_DEMO_DECK];
@@ -2795,6 +3261,7 @@
         (c.back && c.back.includes('Please update to the latest Anki version'))
       );
       if (cached && cached.cards && cached.cards.length && !hasCorruptedTags && !isDummyWarning){
+        hideClinicalDeckLoader();
         deckTitle.textContent = deckTitleParam || cached.meta.title || 'Clinical Flashcards';
         deckSub.textContent = `${cached.cards.length} cards · Offline Synaptic Vault`;
         offlineBadge.style.display = 'inline-flex';
@@ -2825,20 +3292,72 @@
         }
       }
 
-      // 4. Download & Parse Target Deck
+      // 4. Download & Parse Target Deck with Real-Time Telemetry
       if (targetUrl){
         try {
+          showClinicalDeckLoader(targetTitle);
           deckTitle.textContent = targetTitle;
-          deckSub.textContent = 'Downloading and parsing flashcard deck…';
+          deckSub.textContent = currentLang === 'ar' ? 'جاري تحميل وتجهيز الحزمة الطبية…' : 'Downloading and parsing flashcard deck…';
 
+          let arrayBuffer;
           const resp = await fetch(targetUrl);
           if (!resp.ok) throw new Error(`HTTP ${resp.status}: Could not download deck file from cloud storage.`);
 
-          const arrayBuffer = await resp.arrayBuffer();
+          const contentLength = resp.headers.get('content-length');
+          const totalBytes = contentLength ? parseInt(contentLength, 10) : 0;
+
+          if (resp.body && typeof resp.body.getReader === 'function'){
+            const reader = resp.body.getReader();
+            const chunks = [];
+            let loadedBytes = 0;
+
+            while (true){
+              const { done, value } = await reader.read();
+              if (done) break;
+              chunks.push(value);
+              loadedBytes += value.length;
+
+              if (totalBytes > 0){
+                const pct = Math.min(Math.round((loadedBytes / totalBytes) * 100), 100);
+                const dlProgress = Math.min(Math.round(pct * 0.55), 55);
+                const mbLoaded = (loadedBytes / (1024 * 1024)).toFixed(1);
+                const mbTotal = (totalBytes / (1024 * 1024)).toFixed(1);
+                updateDeckLoaderProgress(
+                  dlProgress,
+                  currentLang === 'ar' ? 'جاري تحميل حزمة الكروت…' : 'Downloading deck bundle…',
+                  'download',
+                  `${mbLoaded} MB / ${mbTotal} MB · ${pct}%`
+                );
+              } else {
+                const mbLoaded = (loadedBytes / (1024 * 1024)).toFixed(1);
+                const estProgress = Math.min(Math.round((loadedBytes / (1024 * 1024 * 2.5)) * 50), 50);
+                updateDeckLoaderProgress(
+                  estProgress,
+                  currentLang === 'ar' ? 'جاري استلام بيانات الحزمة…' : 'Streaming deck bundle…',
+                  'download',
+                  `${mbLoaded} MB`
+                );
+              }
+            }
+
+            const combined = new Uint8Array(loadedBytes);
+            let offset = 0;
+            for (const chunk of chunks){
+              combined.set(chunk, offset);
+              offset += chunk.length;
+            }
+            arrayBuffer = combined.buffer;
+          } else {
+            updateDeckLoaderProgress(35, currentLang === 'ar' ? 'جاري التحميل…' : 'Downloading deck…', 'download', 'Connecting…');
+            arrayBuffer = await resp.arrayBuffer();
+          }
+
           deckFileBuffer = arrayBuffer.slice(0);
           deckFileName = targetFileName;
 
-          const { cards, mediaBlobMap } = await parseApkg(arrayBuffer);
+          const { cards, mediaBlobMap } = await parseApkg(arrayBuffer, (phase, pct, msg) => {
+            updateDeckLoaderProgress(pct, msg, phase);
+          });
           deckCards = cards;
           deckTitle.textContent = targetTitle;
           deckSub.textContent = `${cards.length} cards · FSRS-5 Calibrated`;
@@ -2847,8 +3366,13 @@
           await saveDeckToVault(vaultKey, { title: targetTitle, fileName: targetFileName, url: targetUrl }, cards, mediaBlobMap);
           offlineBadge.style.display = 'inline-flex';
 
+          updateDeckLoaderProgress(100, currentLang === 'ar' ? 'اكتمل التجهيز — بداية المذاكرة!' : 'Deck ready — Beginning study session!', 'fsrs', '100%');
+          await new Promise(r => setTimeout(r, 140));
+
+          hideClinicalDeckLoader();
           renderCard();
         } catch(err){
+          hideClinicalDeckLoader();
           console.error('Error loading cloud deck:', err);
           frontContent.innerHTML = `
             <div style="text-align:center; padding:32px 16px;">
@@ -2870,6 +3394,7 @@
         }
       } else {
         // Fallback when no URL could be resolved
+        hideClinicalDeckLoader();
         deckTitle.textContent = deckTitleParam || 'High-Yield Clinical Physiology & Pharmacology';
         deckSub.textContent = 'No cloud file found · Loaded Clinical Benchmark Deck';
         deckCards = [...HIGH_YIELD_DEMO_DECK];

@@ -355,6 +355,38 @@ assert(fs.existsSync('fzstd.min.js'), 'fzstd.min.js is bundled locally for 100% 
   assert(adminActions.length === 6 && adminActions.includes('edit') && adminActions.includes('delete'), 'Authenticated admins receive all 6 management actions');
 }
 
+// 22. Clinical Deck Loading Suite & Telemetry Stepper Verification
+{
+  const flashHtml = fs.readFileSync('flash.html', 'utf-8');
+
+  // Verify clinical loader markup and ARIA accessibility
+  assert(flashHtml.includes('id="clinicalDeckLoader"') && flashHtml.includes('class="clinical-deck-loader"'), 'flash.html contains clinicalDeckLoader container in card stage');
+  assert(flashHtml.includes('role="status"') && flashHtml.includes('aria-live="polite"') && flashHtml.includes('aria-busy="true"'), 'clinicalDeckLoader includes complete WCAG 2.1 AA ARIA accessibility attributes');
+
+  // Verify shimmering skeleton layout
+  assert(flashHtml.includes('skeleton-shimmer') && flashHtml.includes('skeleton-title'), 'flash.html contains clinical skeleton title placeholder');
+  assert(flashHtml.includes('skeleton-line w-95') && flashHtml.includes('skeleton-line w-85'), 'flash.html contains clinical vignette text skeleton lines');
+  assert(flashHtml.includes('skeleton-diagram'), 'flash.html contains clinical diagram skeleton placeholder');
+
+  // Verify telemetry dock and progress bar
+  assert(flashHtml.includes('loader-progress-track') && flashHtml.includes('loader-progress-fill'), 'flash.html contains high-precision glowing progress track');
+  assert(flashHtml.includes('id="loaderPercentBadge"') && flashHtml.includes('id="loaderByteCounter"'), 'flash.html contains percentage badge and live byte counter');
+
+  // Verify 4-phase stepper indicators
+  assert(flashHtml.includes('id="phaseDownload"') && flashHtml.includes('id="phaseUnpack"') && flashHtml.includes('id="phaseSqlite"') && flashHtml.includes('id="phaseFsrs"'), 'flash.html contains all 4 phase stepper indicators (Download, Unpack, SQLite, FSRS Ready)');
+
+  // Verify streaming byte download and controller functions
+  assert(flashHtml.includes('reader.read()') && flashHtml.includes('getReader'), 'flash.html implements streaming byte download with ReadableStream');
+  assert(flashHtml.includes('showClinicalDeckLoader') && flashHtml.includes('updateDeckLoaderProgress') && flashHtml.includes('hideClinicalDeckLoader'), 'flash.html exports showClinicalDeckLoader, updateDeckLoaderProgress, and hideClinicalDeckLoader controllers');
+
+  // Verify morph fade reveal animation
+  assert(flashHtml.includes('cardMorphReveal') && flashHtml.includes('morph-reveal'), 'flash.html defines smooth medical morph fade transition into first card');
+
+  // Verify index.html passes deckTitle
+  const indexHtml = fs.readFileSync('index.html', 'utf-8');
+  assert(indexHtml.includes('flashcardsViewerUrl(m.id, m.title)'), 'index.html passes deckTitle to flashcardsViewerUrl for instant loader branding');
+}
+
 console.log('\n==================================================');
 if (failures === 0) {
   console.log(`🎉 ALL ${passed} VERIFICATION CHECKS PASSED PERFECTLY!`);
