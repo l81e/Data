@@ -2997,7 +2997,11 @@
     const compassToggleInput = document.getElementById('themeGestureCompassToggle');
     if (compassToggleInput){
       compassToggleInput.addEventListener('change', (e) => {
-        try { localStorage.setItem('mb_show_compass', e.target.checked ? 'true' : 'false'); } catch(err){}
+        try {
+          const val = e.target.checked ? 'true' : 'false';
+          localStorage.setItem('mb_show_compass', val);
+          localStorage.setItem('mb_enable_gestures', val);
+        } catch(err){}
       });
     }
   }

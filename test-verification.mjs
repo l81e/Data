@@ -511,6 +511,12 @@ assert(fs.existsSync('fzstd.min.js'), 'fzstd.min.js is bundled locally for 100% 
     assert(parsed['0'] === 'Screenshot_Anatomy_CVS_Heart.jpg', 'Protobuf decoder extracted entry 0: Screenshot_Anatomy_CVS_Heart.jpg');
     assert(parsed['1'] === 'Diagram_Mediastinum.png', 'Protobuf decoder extracted entry 1: Diagram_Mediastinum.png');
   }
+  assert(flashHtml.includes('function setSwipeGesturesActive'), 'flash.html defines setSwipeGesturesActive controller');
+  assert(flashHtml.includes('touch-action:pan-y') && flashHtml.includes('.card-stage.gestures-active') && flashHtml.includes('touch-action:none'), 'cardStage uses touch-action: pan-y by default and touch-action: none only when gestures-active');
+  assert(flashHtml.includes('cursor:default') && flashHtml.includes('.card-stage.gestures-active .flip-card') && flashHtml.includes('cursor:grab'), 'flipCard uses cursor: default by default and cursor: grab only when gestures-active');
+  assert(flashHtml.includes('if (!enableTouchGestures || !showGestureCompass) return;'), 'pointerdown is strictly prevented when gestures or HUD are disabled');
+  assert(flashHtml.includes('flipCard.addEventListener(\'click\''), 'flipCard supports tap-to-flip click listener without drag');
+  assert(indexHtml.includes("localStorage.setItem('mb_enable_gestures'"), 'index.html updates mb_enable_gestures when toggling gesture compass');
 }
 
 console.log('\n==================================================');

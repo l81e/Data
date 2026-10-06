@@ -452,6 +452,9 @@
     flex:1; min-height:0;
     display:flex; align-items:center; justify-content:center;
     margin-bottom:12px;
+    touch-action:pan-y;
+  }
+  .card-stage.gestures-active{
     touch-action:none;
   }
 
@@ -459,10 +462,13 @@
     position:relative;
     width:100%; height:100%;
     max-height:100%;
-    cursor:grab;
+    cursor:default;
     transition:box-shadow .2s ease, border-color .2s ease;
   }
-  .flip-card.grabbing{cursor:grabbing;}
+  .card-stage.gestures-active .flip-card{
+    cursor:grab;
+  }
+  .card-stage.gestures-active .flip-card.grabbing{cursor:grabbing;}
 
   .flip-card-inner{
     position:relative;
@@ -1159,9 +1165,9 @@
         <div class="settings-item" id="gestureToggleRow">
           <div class="row-label">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><path d="M12 18h.01"/></svg>
-            <span data-en="4-Way Swipe Gestures" data-ar="إيماءات السحب">4-Way Swipe Gestures</span>
+            <span data-en="Phone Swipe Motion" data-ar="حركة سحب الكروت بالهاتف">Phone Swipe Motion</span>
           </div>
-          <span id="gestureCheckmark">✓</span>
+          <span id="gestureCheckmark"></span>
         </div>
 
         <div class="settings-item" id="compassToggleRow">
@@ -1497,8 +1503,8 @@
 
     let currentTheme = 'dark';
     let currentLang = 'en';
-    let enableTouchGestures = true;
-    let showGestureCompass = true;
+    let enableTouchGestures = false;
+    let showGestureCompass = false;
 
     const htmlEl = document.documentElement;
 
@@ -2298,11 +2304,13 @@
 
     function initGestures(){
       const stage = document.getElementById('cardStage');
+      if (!stage) return;
 
       stage.addEventListener('pointerdown', (e) => {
-        if (!enableTouchGestures) return;
-        // Don't drag if clicking buttons, audio, or scrollable tables
-        if (e.target.closest('button, audio, a, input, select')) return;
+        // Strictly prevent any card motion if swipe gestures/HUD are disabled
+        if (!enableTouchGestures || !showGestureCompass) return;
+        // Don't drag if clicking buttons, audio, links, inputs, hints, or diagrams
+        if (e.target.closest('button, audio, a, input, select, summary, .anki-hint-details, .clinical-diagram-img')) return;
         dragStartX = e.clientX;
         dragStartY = e.clientY;
         currentDragX = 0;
@@ -2313,7 +2321,7 @@
       });
 
       window.addEventListener('pointermove', (e) => {
-        if (!isDragging) return;
+        if (!isDragging || !enableTouchGestures || !showGestureCompass) return;
         currentDragX = e.clientX - dragStartX;
         currentDragY = e.clientY - dragStartY;
 
@@ -2369,6 +2377,8 @@
         cueHard.style.opacity = 0;
         cueReveal.style.opacity = 0;
 
+        if (!enableTouchGestures || !showGestureCompass) return;
+
         const dist = Math.hypot(currentDragX, currentDragY);
         const absX = Math.abs(currentDragX);
         const absY = Math.abs(currentDragY);
@@ -2386,6 +2396,15 @@
               else handleRate(3); // Good
             }
           }
+        }
+      });
+
+      // Tap-to-flip support on front face when gestures are not dragging
+      flipCard.addEventListener('click', (e) => {
+        if (isDragging) return;
+        if (e.target.closest('button, audio, a, input, select, summary, .anki-hint-details, .clinical-diagram-img')) return;
+        if (!isFlipped){
+          revealAnswer();
         }
       });
     }
@@ -2775,17 +2794,35 @@
       document.getElementById('themeSwatchRow').classList.toggle('open');
     });
 
-    gestureToggleRow.addEventListener('click', () => {
-      enableTouchGestures = !enableTouchGestures;
+    function setSwipeGesturesActive(active){
+      showGestureCompass = !!active;
+      enableTouchGestures = !!active;
+      setStored(COMPASS_LS_KEY, showGestureCompass ? 'true' : 'false');
       setStored(GESTURES_LS_KEY, enableTouchGestures ? 'true' : 'false');
-      gestureCheckmark.textContent = enableTouchGestures ? '✓' : '';
+
+      if (compassCheckmark) compassCheckmark.textContent = showGestureCompass ? '✓' : '';
+      if (gestureCheckmark) gestureCheckmark.textContent = enableTouchGestures ? '✓' : '';
+      if (gestureCompassHud) gestureCompassHud.style.display = showGestureCompass ? 'flex' : 'none';
+
+      const stage = document.getElementById('cardStage');
+      if (stage){
+        if (showGestureCompass) stage.classList.add('gestures-active');
+        else stage.classList.remove('gestures-active');
+      }
+
+      if (flipCard){
+        flipCard.classList.remove('grabbing');
+        flipCard.style.transform = '';
+      }
+      isDragging = false;
+    }
+
+    gestureToggleRow.addEventListener('click', () => {
+      setSwipeGesturesActive(!showGestureCompass);
     });
 
     compassToggleRow.addEventListener('click', () => {
-      showGestureCompass = !showGestureCompass;
-      setStored(COMPASS_LS_KEY, showGestureCompass ? 'true' : 'false');
-      compassCheckmark.textContent = showGestureCompass ? '✓' : '';
-      gestureCompassHud.style.display = showGestureCompass ? 'flex' : 'none';
+      setSwipeGesturesActive(!showGestureCompass);
     });
 
     document.getElementById('downloadRow').addEventListener('click', () => {
@@ -3475,12 +3512,9 @@
       const savedLang = getStored(LANG_LS_KEY, 'en');
       setLang(savedLang);
 
-      enableTouchGestures = getStored(GESTURES_LS_KEY, 'true') !== 'false';
-      gestureCheckmark.textContent = enableTouchGestures ? '✓' : '';
-
-      showGestureCompass = getStored(COMPASS_LS_KEY, 'false') === 'true';
-      compassCheckmark.textContent = showGestureCompass ? '✓' : '';
-      gestureCompassHud.style.display = showGestureCompass ? 'flex' : 'none';
+      // Swipe motion & HUD default to FALSE (disabled by default, extra option)
+      const gesturesActive = getStored(COMPASS_LS_KEY, 'false') === 'true' && getStored(GESTURES_LS_KEY, 'false') === 'true';
+      setSwipeGesturesActive(gesturesActive);
 
       initGestures();
       initLightbox();
