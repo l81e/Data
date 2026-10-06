@@ -538,6 +538,28 @@ assert(fs.existsSync('fzstd.min.js'), 'fzstd.min.js is bundled locally for 100% 
   assert(indexHtml.includes('Architected & Developed by') && indexHtml.includes('تصميم وتطوير:'), 'Credits attribution uses agreed phrasing in English and Arabic');
 }
 
+// 31. Verify Complete Removal of Credits Modal & Edge-to-Edge Theme-Adaptive Footer
+{
+  assert(!indexHtml.includes('id="colophonModalOverlay"'), 'colophonModalOverlay pop-up is completely removed');
+  assert(!indexHtml.includes('openColophonModal'), 'openColophonModal function is completely removed');
+  assert(!indexHtml.includes('closeColophonModal'), 'closeColophonModal function is completely removed');
+  assert(!indexHtml.includes('themeAboutColophonBtn'), 'themeAboutColophonBtn is completely removed from theme menu');
+  assert(!indexHtml.includes('id="colophonCreditsTrigger"'), 'colophonCreditsTrigger ID is removed for static credits');
+  assert(indexHtml.indexOf('</main>') < indexHtml.indexOf('id="siteColophonFooter"'), 'siteColophonFooter is placed outside and after main element for true edge-to-edge bleed');
+  assert(indexHtml.includes('background: var(--panel-hi)'), 'siteColophonFooter uses theme-adaptive background var(--panel-hi)');
+  assert(indexHtml.includes('html[data-theme="light"] .mbi-footer-logo-img') && indexHtml.includes('html[data-theme="champagne"] .mbi-footer-logo-img'), 'mbi-footer-logo-img has theme-adaptive contrast inversion for light and champagne themes');
+}
+
+// 32. Verify Medical ECG Heartbeat & Shimmering Skeleton Loader
+{
+  assert(indexHtml.includes('curriculum-loader-hub') && indexHtml.includes('curriculum-ecg-svg'), 'index.html contains curriculum-loader-hub and curriculum-ecg-svg');
+  assert(indexHtml.includes('ecgDash') && indexHtml.includes('skeletonShimmer'), 'index.html defines ecgDash and skeletonShimmer keyframe animations');
+  assert(indexHtml.includes('curriculum-skeletons-wrap') && indexHtml.includes('curriculum-skeleton-card'), 'index.html includes curriculum-skeletons-wrap and skeleton cards');
+  assert(indexHtml.includes('getCurriculumSkeletonHTML'), 'index.html defines getCurriculumSkeletonHTML function');
+  assert(indexHtml.includes('container.innerHTML = getCurriculumSkeletonHTML()'), 'loadCurriculumExplorer activates getCurriculumSkeletonHTML during loading phase');
+  assert(indexHtml.includes('id="curriculumLoading"') && indexHtml.includes('role="status"') && indexHtml.includes('aria-live="polite"'), 'curriculum loader includes WCAG accessibility live status attributes');
+}
+
 console.log('\n==================================================');
 if (failures === 0) {
   console.log(`🎉 ALL ${passed} VERIFICATION CHECKS PASSED PERFECTLY!`);
