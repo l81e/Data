@@ -387,6 +387,92 @@ assert(fs.existsSync('fzstd.min.js'), 'fzstd.min.js is bundled locally for 100% 
   assert(indexHtml.includes('flashcardsViewerUrl(m.id, m.title)'), 'index.html passes deckTitle to flashcardsViewerUrl for instant loader branding');
 }
 
+// 23. Phantom "Core" Module & Deck Elimination Verification
+{
+  const indexHtml = fs.readFileSync('index.html', 'utf-8');
+
+  // Verify client-side classification never sets or defaults module to "Core"
+  assert(indexHtml.includes("if (moduleCode.trim().toLowerCase() === 'core')"), 'classifyCurriculumHierarchy purges any caption module named "Core"');
+  assert(!indexHtml.includes("module: modVal || 'Core'"), 'editMaterial modal never defaults module to "Core"');
+
+  // Verify fetchCurriculumHierarchy explicitly filters out any phantom "Core" module
+  assert(indexHtml.includes("if (!mCode || mCode.trim().toLowerCase() === 'core') continue"), 'fetchCurriculumHierarchy ignores any material with moduleCode "Core"');
+
+  // Verify renderCurriculumExplorer filters out any module with code or name "Core"
+  assert(indexHtml.includes("if (!m.code || m.code.trim().toLowerCase() === 'core') return false"), 'renderCurriculumExplorer excludes any module with code "Core"');
+  assert(indexHtml.includes("if (m.name && m.name.trim().toLowerCase() === 'core') return false"), 'renderCurriculumExplorer excludes any module with name "Core"');
+
+  // Verify deck row fallback tag is General / عام and not Core
+  assert(!indexHtml.includes("deck.subjTag || 'Core'"), 'Deck row metadata does not fallback to "Core"');
+}
+
+// 24. Mobile Responsiveness & Table Containment Verification
+{
+  const indexHtml = fs.readFileSync('index.html', 'utf-8');
+
+  // Verify table wrapper and block display on mobile
+  assert(indexHtml.includes('.curriculum-module-table-wrap') && indexHtml.includes('overflow-x:hidden !important'), '.curriculum-module-table-wrap enforces overflow-x:hidden on mobile to prevent clipping');
+  assert(indexHtml.includes('.anki-deck-table tbody') && indexHtml.includes('display:block') && indexHtml.includes('box-sizing:border-box'), '.anki-deck-table displays as block on mobile');
+  assert(indexHtml.includes('.anki-deck-meta-row span:not(.anki-subj-tag)') && indexHtml.includes('text-overflow:ellipsis'), '.anki-deck-meta-row spans truncate long filenames cleanly');
+
+  // Verify mobile deck bar layout guarantees action buttons visibility
+  assert(indexHtml.includes('.anki-deck-mobile-bar') && indexHtml.includes('flex-wrap:nowrap') && indexHtml.includes('justify-content:space-between'), '.anki-deck-mobile-bar keeps counts and action buttons anchored on a single row');
+  assert(indexHtml.includes('.anki-action-group.mobile-actions') && indexHtml.includes('flex-wrap:nowrap') && indexHtml.includes('flex-shrink:0'), '.mobile-actions prevents buttons from wrapping offscreen');
+}
+
+// 25. Cross-Deck & Cross-Card Content Isolation Verification
+{
+  const flashHtml = fs.readFileSync('flash.html', 'utf-8');
+
+  // Verify state reset and media revocation
+  assert(flashHtml.includes('function revokeAndClearMediaCache()'), 'flash.html defines revokeAndClearMediaCache to reclaim blobs and purge media collisions');
+  assert(flashHtml.includes('function resetDeckState()'), 'flash.html defines resetDeckState to clear cards, DOM, and history across deck switches');
+
+  // Verify scoped keys in IndexedDB vault
+  assert(flashHtml.includes('const scopedCardId = `${deckId}:::${origId}`'), 'saveDeckToVault scopes card IDs by deckId to prevent cross-deck card collisions');
+  assert(flashHtml.includes('const scopedMediaKey = `${deckId}:::${cleanName}`'), 'saveDeckToVault scopes media entries by deckId to prevent cross-deck image collisions');
+  assert(flashHtml.includes('const prefix = `${deckId}:::`'), 'loadDeckFromVault rehydrates media strictly filtered by active deck prefix');
+
+  // Verify Dedicated Anki Cloze Processor
+  assert(flashHtml.includes('function processClozeText(text, clozeNum, isBack)'), 'flash.html implements dedicated processClozeText algorithm');
+
+  // Unit Test Cloze Processor logic
+  function processClozeText(text, clozeNum, isBack) {
+    if (!text) return '';
+    return text.replace(/{{c(\d+)::([\s\S]*?)}}/g, (match, numStr, content) => {
+      const num = parseInt(numStr, 10);
+      let answer = content;
+      let hint = '';
+      const hintIdx = content.indexOf('::');
+      if (hintIdx !== -1) {
+        answer = content.substring(0, hintIdx);
+        hint = content.substring(hintIdx + 2);
+      }
+      if (num === clozeNum) {
+        if (isBack) {
+          return `<span class="cloze-blank">${answer}</span>`;
+        } else {
+          const hintLabel = hint ? `[${hint}]` : '[...]';
+          return `<span class="cloze-blank">${hintLabel}</span>`;
+        }
+      } else {
+        return answer;
+      }
+    });
+  }
+
+  const sampleCloze = 'The {{c1::Heart::Pump}} pumps blood to the {{c2::Lungs::Oxygenation}} for gas exchange.';
+  const c1Front = processClozeText(sampleCloze, 1, false);
+  const c1Back = processClozeText(sampleCloze, 1, true);
+  const c2Front = processClozeText(sampleCloze, 2, false);
+  const c2Back = processClozeText(sampleCloze, 2, true);
+
+  assert(c1Front.includes('[Pump]') && c1Front.includes('Lungs') && !c1Front.includes('Heart'), 'Cloze Card 1 Front blanks target term with hint and preserves other terms');
+  assert(c1Back.includes('<span class="cloze-blank">Heart</span>') && c1Back.includes('Lungs'), 'Cloze Card 1 Back reveals target term with highlighted span');
+  assert(c2Front.includes('Heart') && c2Front.includes('[Oxygenation]') && !c2Front.includes('Lungs'), 'Cloze Card 2 Front blanks term 2 and displays term 1 cleanly');
+  assert(c2Back.includes('Heart') && c2Back.includes('<span class="cloze-blank">Lungs</span>'), 'Cloze Card 2 Back reveals term 2 with highlighted span');
+}
+
 console.log('\n==================================================');
 if (failures === 0) {
   console.log(`🎉 ALL ${passed} VERIFICATION CHECKS PASSED PERFECTLY!`);

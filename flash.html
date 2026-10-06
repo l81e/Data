@@ -1654,6 +1654,30 @@
     const IDB_VERSION = 3;
     let idbPromise = null;
     const inMemoryMediaCache = new Map();
+    let currentActiveDeckId = '';
+
+    function revokeAndClearMediaCache(){
+      for (const [key, url] of inMemoryMediaCache.entries()){
+        if (typeof url === 'string' && url.startsWith('blob:')){
+          try { URL.revokeObjectURL(url); } catch(e){}
+        }
+      }
+      inMemoryMediaCache.clear();
+    }
+
+    function resetDeckState(){
+      revokeAndClearMediaCache();
+      deckCards = [];
+      currentIndex = 0;
+      reviewHistory = [];
+      sessionStats = { again: 0, hard: 0, good: 0, easy: 0, startTime: Date.now() };
+      isFlipped = false;
+      if (typeof flipCard !== 'undefined' && flipCard) flipCard.classList.remove('is-flipped');
+      if (typeof frontContent !== 'undefined' && frontContent) frontContent.innerHTML = '';
+      if (typeof backContent !== 'undefined' && backContent) backContent.innerHTML = '';
+      if (typeof unflippedActions !== 'undefined' && unflippedActions) unflippedActions.style.display = 'block';
+      if (typeof flippedActions !== 'undefined' && flippedActions) flippedActions.style.display = 'none';
+    }
 
     function openVault(){
       if (idbPromise) return idbPromise;
@@ -1686,28 +1710,37 @@
       if (!filename) return null;
       const clean = decodeURIComponent(filename);
       if (inMemoryMediaCache.has(clean)) return inMemoryMediaCache.get(clean);
+      if (inMemoryMediaCache.has(clean.toLowerCase())) return inMemoryMediaCache.get(clean.toLowerCase());
       if (inMemoryMediaCache.has(filename)) return inMemoryMediaCache.get(filename);
       try {
         const db = await openVault();
         const tx = db.transaction('media', 'readonly');
         const store = tx.objectStore('media');
-        const req = store.get(clean);
-        const res = await new Promise(r => { req.onsuccess = () => r(req.result); req.onerror = () => r(null); });
-        if (res && res.blob){
-          const url = URL.createObjectURL(res.blob);
-          inMemoryMediaCache.set(clean, url);
-          inMemoryMediaCache.set(filename, url);
-          return url;
-        }
-        if (clean !== filename){
-          const req2 = store.get(filename);
-          const res2 = await new Promise(r => { req2.onsuccess = () => r(req2.result); req2.onerror = () => r(null); });
-          if (res2 && res2.blob){
-            const url = URL.createObjectURL(res2.blob);
+
+        // 1. First attempt scoped key for current active deck
+        if (currentActiveDeckId){
+          const scopedKey = `${currentActiveDeckId}:::${clean}`;
+          const reqScoped = store.get(scopedKey);
+          const resScoped = await new Promise(r => { reqScoped.onsuccess = () => r(reqScoped.result); reqScoped.onerror = () => r(null); });
+          if (resScoped && resScoped.blob){
+            const url = URL.createObjectURL(resScoped.blob);
             inMemoryMediaCache.set(clean, url);
+            inMemoryMediaCache.set(clean.toLowerCase(), url);
             inMemoryMediaCache.set(filename, url);
+            inMemoryMediaCache.set(scopedKey, url);
             return url;
           }
+        }
+
+        // 2. Fallback to clean key with deck isolation verification
+        const req = store.get(clean);
+        const res = await new Promise(r => { req.onsuccess = () => r(req.result); req.onerror = () => r(null); });
+        if (res && res.blob && (!res.deckId || !currentActiveDeckId || res.deckId === currentActiveDeckId)){
+          const url = URL.createObjectURL(res.blob);
+          inMemoryMediaCache.set(clean, url);
+          inMemoryMediaCache.set(clean.toLowerCase(), url);
+          inMemoryMediaCache.set(filename, url);
+          return url;
         }
       } catch(e){}
       return null;
@@ -1758,17 +1791,26 @@
 
     async function saveDeckToVault(deckId, meta, cards, mediaMap){
       try {
+        currentActiveDeckId = deckId;
         const db = await openVault();
         const tx = db.transaction(['decks', 'cards', 'media'], 'readwrite');
         tx.objectStore('decks').put({ id: deckId, ...meta, timestamp: Date.now() });
         const cardStore = tx.objectStore('cards');
-        cards.forEach(c => cardStore.put({ ...c, deckId }));
+        cards.forEach(c => {
+          const origId = c.originalId || c.id;
+          const scopedCardId = `${deckId}:::${origId}`;
+          cardStore.put({ ...c, id: scopedCardId, originalId: origId, deckId });
+        });
         const mediaStore = tx.objectStore('media');
         for (const [name, blob] of Object.entries(mediaMap || {})){
-          mediaStore.put({ name, blob });
+          const cleanName = decodeURIComponent(name);
+          const scopedMediaKey = `${deckId}:::${cleanName}`;
+          mediaStore.put({ name: scopedMediaKey, blob, deckId, fileName: cleanName });
           const url = URL.createObjectURL(blob);
+          inMemoryMediaCache.set(cleanName, url);
+          inMemoryMediaCache.set(cleanName.toLowerCase(), url);
           inMemoryMediaCache.set(name, url);
-          inMemoryMediaCache.set(decodeURIComponent(name), url);
+          inMemoryMediaCache.set(scopedMediaKey, url);
         }
         await new Promise((res, rej) => { tx.oncomplete = res; tx.onerror = rej; });
       } catch(e){ console.warn('IndexedDB save skipped:', e); }
@@ -1776,6 +1818,7 @@
 
     async function loadDeckFromVault(deckId){
       try {
+        currentActiveDeckId = deckId;
         const db = await openVault();
         const tx = db.transaction(['decks', 'cards', 'media'], 'readonly');
         const deckReq = tx.objectStore('decks').get(deckId);
@@ -1788,18 +1831,27 @@
 
         if (!deckMeta) return null;
 
-        // Rehydrate in-memory media cache from IndexedDB
+        // Clear previous in-memory cache to guarantee zero cross-deck leakage
+        revokeAndClearMediaCache();
+
+        // Rehydrate in-memory media cache strictly for this deck
+        const prefix = `${deckId}:::`;
         for (const item of allMedia){
-          if (item.name && item.blob){
+          const isThisDeck = (item.deckId && item.deckId === deckId) || (item.name && item.name.startsWith(prefix));
+          if (isThisDeck && item.blob){
             try {
+              const pureName = item.fileName || (item.name.startsWith(prefix) ? item.name.slice(prefix.length) : item.name);
               const url = URL.createObjectURL(item.blob);
-              inMemoryMediaCache.set(item.name, url);
-              inMemoryMediaCache.set(decodeURIComponent(item.name), url);
+              inMemoryMediaCache.set(pureName, url);
+              inMemoryMediaCache.set(decodeURIComponent(pureName), url);
+              inMemoryMediaCache.set(pureName.toLowerCase(), url);
             } catch(err){}
           }
         }
 
-        const deckCards = allCards.filter(c => c.deckId === deckId);
+        const deckCards = allCards
+          .filter(c => c.deckId === deckId)
+          .map(c => ({ ...c, id: c.originalId || c.id }));
         return { meta: deckMeta, cards: deckCards };
       } catch(e){
         console.warn('loadDeckFromVault error:', e);
@@ -2945,8 +2997,33 @@
         return undefined;
       }
 
+      // Dedicated Anki Cloze Processor per card ordinal (clozeNum = ord + 1)
+      function processClozeText(text, clozeNum, isBack){
+        if (!text) return '';
+        return text.replace(/{{c(\d+)::([\s\S]*?)}}/g, (match, numStr, content) => {
+          const num = parseInt(numStr, 10);
+          let answer = content;
+          let hint = '';
+          const hintIdx = content.indexOf('::');
+          if (hintIdx !== -1){
+            answer = content.substring(0, hintIdx);
+            hint = content.substring(hintIdx + 2);
+          }
+          if (num === clozeNum){
+            if (isBack){
+              return `<span class="cloze-blank">${answer}</span>`;
+            } else {
+              const hintLabel = hint ? `[${hint}]` : '[...]';
+              return `<span class="cloze-blank">${hintLabel}</span>`;
+            }
+          } else {
+            return answer;
+          }
+        });
+      }
+
       // Universal Anki Template Compiler supporting conditionals, spaces, filters & cleanups
-      function compileAnkiTemplate(templateStr, fieldMap, defaultFront = ''){
+      function compileAnkiTemplate(templateStr, fieldMap, defaultFront = '', cardOrd = 0, isBack = false){
         if (!templateStr) return '';
         let out = templateStr;
 
@@ -2985,6 +3062,11 @@
           const token = rawToken.trim();
           if (!token) return '';
 
+          // Cloze token: {{c1::...}} should not be treated as a field replacement
+          if (/^c\d+::/i.test(token)){
+            return `{{${rawToken}}}`;
+          }
+
           const colonIdx = token.indexOf(':');
           let filter = '';
           let fn = token;
@@ -3006,7 +3088,9 @@
             return '';
           }
 
-          if (filter === 'text'){
+          if (filter === 'cloze'){
+            return processClozeText(val, cardOrd + 1, isBack);
+          } else if (filter === 'text'){
             return val.replace(/<[^>]+>/g, '');
           } else if (filter === 'hint'){
             return val.trim() ? `<details class="anki-hint-details"><summary class="anki-hint-btn">Show Hint (${escapeHtml(fn)})</summary><div class="anki-hint-content">${val}</div></details>` : '';
@@ -3015,8 +3099,13 @@
           return val;
         });
 
-        // 5. Final pass: remove any stray unparsed {{...}} tags
-        out = out.replace(/{{[^}]+}}/g, '');
+        // 5. If output still has cloze tokens {{cN::...}}, process them per card ord
+        if (out.includes('{{c') && out.includes('::')){
+          out = processClozeText(out, cardOrd + 1, isBack);
+        }
+
+        // 6. Final pass: remove any stray unparsed {{...}} tags that are not cloze markers
+        out = out.replace(/{{(?![c\d]+::)[^}]+}}/g, '');
 
         return out;
       }
@@ -3060,15 +3149,22 @@
         let backHtml = '';
 
         if (tmpl && tmpl.qfmt){
-          frontHtml = compileAnkiTemplate(tmpl.qfmt, fieldMap, '');
+          frontHtml = compileAnkiTemplate(tmpl.qfmt, fieldMap, '', cr.ord, false);
         } else {
           frontHtml = fieldMap['Front'] || fieldValues[0] || '';
+          if (frontHtml.includes('{{c') && frontHtml.includes('::')){
+            frontHtml = processClozeText(frontHtml, cr.ord + 1, false);
+          }
         }
 
         if (tmpl && tmpl.afmt){
-          backHtml = compileAnkiTemplate(tmpl.afmt, fieldMap, frontHtml);
+          backHtml = compileAnkiTemplate(tmpl.afmt, fieldMap, frontHtml, cr.ord, true);
         } else {
-          backHtml = `${frontHtml}<hr id=answer>${fieldMap['Back'] || fieldValues[1] || ''}`;
+          let backFieldVal = fieldMap['Back'] || fieldValues[1] || '';
+          if (backFieldVal.includes('{{c') && backFieldVal.includes('::')){
+            backFieldVal = processClozeText(backFieldVal, cr.ord + 1, true);
+          }
+          backHtml = `${frontHtml}<hr id=answer>${backFieldVal}`;
         }
 
         // Comprehensive reference image assurance:
@@ -3084,7 +3180,7 @@
         }
 
         // If card back does not already include the reference content and it exists, append it
-        if (refContent && !backHtml.includes(refContent)){
+        if (refContent && !backHtml.includes(refContent) && !frontHtml.includes(refContent)){
           backHtml += `<div class="anki-reference-attachment" style="margin-top:16px; padding-top:12px; border-top:1px dashed var(--line-soft); text-align:center;">${refContent}</div>`;
         }
 
@@ -3094,6 +3190,7 @@
 
         cards.push({
           id: `card-${cr.id}`,
+          originalId: `card-${cr.id}`,
           front: resolvedFront,
           back: resolvedBack,
           stability: 0,
@@ -3110,6 +3207,9 @@
     async function loadApkgFile(file){
       if (!file) return;
       const deckBaseName = file.name.replace(/\.(apkg|zip)$/i, '');
+      const vaultDeckId = 'local-' + deckBaseName.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+      resetDeckState();
+      currentActiveDeckId = vaultDeckId;
       showClinicalDeckLoader(deckBaseName);
       deckTitle.textContent = 'Extracting Deck Assets…';
       deckSub.textContent = `Parsing ${file.name} (media & SQLite collection)…`;
@@ -3131,7 +3231,6 @@
         deckSub.textContent = `${cards.length} cards · ${Object.keys(mediaBlobMap).length} media diagrams extracted`;
 
         // Save to IndexedDB vault
-        const vaultDeckId = 'local-' + deckBaseName.toLowerCase().replace(/[^a-z0-9]+/g, '-');
         await saveDeckToVault(vaultDeckId, { title: deckBaseName, fileName: file.name }, cards, mediaBlobMap);
         offlineBadge.style.display = 'inline-flex';
 
@@ -3242,6 +3341,8 @@
 
       // 1. Explicit Demo Deck request
       if (isDemo || (!deckUrl && !materialId && !window.location.hash)){
+        resetDeckState();
+        currentActiveDeckId = 'demo';
         hideClinicalDeckLoader();
         deckTitle.textContent = deckTitleParam || 'High-Yield Clinical Physiology & Pharmacology';
         deckSub.textContent = '5 Sample FSRS-5 Vignettes · High-Yield Clinical Benchmark';
@@ -3295,6 +3396,8 @@
       // 4. Download & Parse Target Deck with Real-Time Telemetry
       if (targetUrl){
         try {
+          resetDeckState();
+          currentActiveDeckId = vaultKey;
           showClinicalDeckLoader(targetTitle);
           deckTitle.textContent = targetTitle;
           deckSub.textContent = currentLang === 'ar' ? 'جاري تحميل وتجهيز الحزمة الطبية…' : 'Downloading and parsing flashcard deck…';

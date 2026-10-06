@@ -1062,12 +1062,16 @@
   }
   .anki-deck-meta-row{
     display:flex; align-items:center; gap:8px; font-size:0.72rem;
-    color:var(--text-faint); flex-wrap:wrap; margin-top:2px;
+    color:var(--text-faint); flex-wrap:wrap; margin-top:2px; min-width:0;
+  }
+  .anki-deck-meta-row span:not(.anki-subj-tag){
+    display:inline-block; max-width:260px; overflow:hidden;
+    text-overflow:ellipsis; white-space:nowrap; vertical-align:middle;
   }
   .anki-subj-tag{
     font-weight:700; padding:1px 7px; border-radius:4px;
     background:rgba(255,255,255,0.05); border:1px solid var(--line-soft);
-    color:var(--text-dim);
+    color:var(--text-dim); flex-shrink:0;
   }
   .anki-deck-caption{
     font-size:0.74rem; color:var(--text-dim); margin-top:4px;
@@ -1134,33 +1138,114 @@
   @media (max-width: 880px){
     .mobile-only{display:flex !important;}
     .desktop-only{display:none !important;}
+    .curriculum-module-table-wrap{
+      overflow-x:hidden !important;
+      width:100% !important;
+      max-width:100% !important;
+      box-sizing:border-box;
+    }
+    .anki-deck-table,
+    .anki-deck-table tbody{
+      display:block;
+      width:100% !important;
+      max-width:100% !important;
+      box-sizing:border-box;
+    }
     .anki-deck-table thead{display:none;}
-    .anki-deck-row{display:block; padding:12px 14px;}
-    .anki-td{display:block; padding:0; width:100%;}
+    .anki-deck-row{
+      display:block;
+      width:100% !important;
+      max-width:100% !important;
+      box-sizing:border-box;
+      padding:12px 14px;
+      overflow:hidden;
+    }
+    .anki-td,
+    .anki-td-name{
+      display:block;
+      padding:0;
+      width:100% !important;
+      max-width:100% !important;
+      min-width:0 !important;
+      box-sizing:border-box;
+    }
+    .anki-deck-info-flex{
+      width:100% !important;
+      max-width:100% !important;
+      min-width:0 !important;
+      box-sizing:border-box;
+    }
+    .anki-deck-name-col{
+      width:100% !important;
+      max-width:100% !important;
+      min-width:0 !important;
+      box-sizing:border-box;
+    }
+    .anki-deck-title{
+      word-break:break-word;
+      overflow-wrap:anywhere;
+      min-width:0;
+    }
+    .anki-deck-meta-row{
+      width:100% !important;
+      max-width:100% !important;
+      min-width:0 !important;
+      box-sizing:border-box;
+    }
+    .anki-deck-meta-row span:not(.anki-subj-tag){
+      max-width:170px;
+    }
     .anki-deck-mobile-bar{
       display:flex !important;
       align-items:center;
       justify-content:space-between;
-      flex-wrap:wrap;
+      flex-wrap:nowrap;
       gap:8px;
       margin-top:10px;
       padding-top:10px;
       border-top:1px dashed var(--line-soft);
-      width:100%;
+      width:100% !important;
+      max-width:100% !important;
+      min-width:0 !important;
+      box-sizing:border-box;
     }
     .anki-deck-mobile-counts{
-      display:flex;
+      display:inline-flex;
       align-items:center;
       gap:6px;
       flex-shrink:0;
     }
     .anki-action-group.mobile-actions{
-      display:flex;
+      display:inline-flex;
       align-items:center;
-      flex-wrap:wrap;
+      flex-wrap:nowrap;
       gap:6px;
       justify-content:flex-end;
-      flex:1;
+      flex-shrink:0;
+    }
+    .anki-study-btn{
+      padding:6px 12px;
+      font-size:0.74rem;
+      white-space:nowrap;
+      flex-shrink:0;
+    }
+  }
+
+  @media (max-width: 480px){
+    .anki-deck-row{
+      padding:10px 10px;
+    }
+    .anki-deck-meta-row span:not(.anki-subj-tag){
+      max-width:130px;
+    }
+    .anki-study-btn{
+      padding:5px 9px;
+      font-size:0.72rem;
+    }
+    .anki-admin-btn{
+      width:28px;
+      height:28px;
+      min-width:28px;
     }
   }
 
@@ -5221,8 +5306,8 @@
 
       // Serialize structured metadata
       const structuredCaption = JSON.stringify({
-        module: modVal || 'Core',
-        subject: subjVal || 'Clinical',
+        module: modVal || '',
+        subject: subjVal || '',
         semester: semVal,
         lecture: newTitle,
         note: newCaption
@@ -6175,6 +6260,9 @@
 
     // Module
     let moduleCode = captionMeta.module || '';
+    if (moduleCode.trim().toLowerCase() === 'core'){
+      moduleCode = '';
+    }
     let moduleName = '';
     if (!moduleCode){
       if (/\b(cvs|cardio|heart|vascular|cardiovascular|دوري|قلب)\b/i.test(searchStr)){
@@ -6217,6 +6305,9 @@
 
     // Subject
     let subjectName = captionMeta.subject || '';
+    if (subjectName.trim().toLowerCase() === 'clinical core' || subjectName.trim().toLowerCase() === 'core'){
+      subjectName = '';
+    }
     if (!subjectName){
       if (/\b(physio|physiology|وظائف)\b/i.test(searchStr)){
         subjectName = 'Physiology';
@@ -6243,7 +6334,7 @@
       } else if (/\b(gyn|obgyn|obstetrics|نساء)\b/i.test(searchStr)){
         subjectName = 'Obstetrics & Gynecology';
       } else {
-        subjectName = 'Clinical Core';
+        subjectName = currentLang === 'ar' ? 'عام' : 'General';
       }
     }
 
@@ -6377,6 +6468,9 @@
             const classified = classifyCurriculumHierarchy(lec, mat);
             const mCode = classified.moduleCode;
 
+            // Strictly filter out any phantom "Core" module
+            if (!mCode || mCode.trim().toLowerCase() === 'core') continue;
+
             // Skip if module was deleted by admin
             if (deletedMods.includes(mCode)) continue;
 
@@ -6482,8 +6576,10 @@
       }
     });
 
-    // Filter modules by semester
+    // Filter modules by semester & strictly eliminate any phantom Core module
     const filteredModules = modules.filter(m => {
+      if (!m.code || m.code.trim().toLowerCase() === 'core') return false;
+      if (m.name && m.name.trim().toLowerCase() === 'core') return false;
       if (activeCurriculumSemester !== 'all' && String(m.semester) !== String(activeCurriculumSemester)){
         return false;
       }
@@ -6655,7 +6751,7 @@
                               <div class="anki-deck-name-col">
                                 <span class="anki-deck-title">${escapeHtml(deck.title)}</span>
                                 <div class="anki-deck-meta-row">
-                                  <span class="anki-subj-tag">${escapeHtml(deck.subjTag || 'Core')}</span>
+                                  <span class="anki-subj-tag">${escapeHtml(deck.subjTag || (currentLang === 'ar' ? 'عام' : 'General'))}</span>
                                   ${deck.fileName ? `<span>${escapeHtml(deck.fileName)}</span>` : ''}
                                 </div>
                                 ${humanCaption ? `<div class="anki-deck-caption">${escapeHtml(humanCaption)}</div>` : ''}
