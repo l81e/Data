@@ -473,6 +473,46 @@ assert(fs.existsSync('fzstd.min.js'), 'fzstd.min.js is bundled locally for 100% 
   assert(c2Back.includes('Heart') && c2Back.includes('<span class="cloze-blank">Lungs</span>'), 'Cloze Card 2 Back reveals term 2 with highlighted span');
 }
 
+// 29. Verify Protobuf Media Manifest, Modern Anki Schema, and Swipe Direction HUD Toggle
+{
+  assert(flashHtml.includes('function parseMediaManifest'), 'flash.html defines universal parseMediaManifest engine');
+  assert(flashHtml.includes('MediaEntries') || flashHtml.includes('fieldNum === 1 && wireType === 2'), 'flash.html decodes binary Protobuf MediaEntries');
+  assert(flashHtml.includes('parseTemplateConfig'), 'flash.html parses Protobuf template config (qfmt and afmt)');
+  assert(flashHtml.includes('SELECT ntid, ord, name FROM fields'), 'flash.html queries modern fields table');
+  assert(flashHtml.includes('SELECT ntid, ord, name, config FROM templates'), 'flash.html queries modern templates table');
+  assert(flashHtml.includes('hasUnresolvedImages') && flashHtml.includes('hasStaleEmptyImages'), 'flash.html invalidates stale cache with missing/unresolved images');
+  assert(flashHtml.includes('.gesture-compass-hud{\n    display:none') || flashHtml.includes('gestureCompassHud" style="display:none;"'), 'gestureCompassHud is hidden/disabled by default in flash.html');
+  assert(flashHtml.includes("getStored(COMPASS_LS_KEY, 'false') === 'true'"), 'COMPASS_LS_KEY defaults to false (extra option, not standard)');
+  assert(indexHtml.includes('themeGestureCompassToggle'), 'index.html contains Swipe Direction Cues toggle in Theme Menu');
+  assert(indexHtml.includes('mb_show_compass'), 'index.html persists mb_show_compass preference');
+
+  // Test parseMediaManifest on synthetic binary Protobuf data
+  function buildSyntheticProtoMedia(fileNames) {
+    const chunks = [];
+    for (const fn of fileNames) {
+      const nameBytes = Buffer.from(fn, 'utf-8');
+      // Sub message: tag = (1 << 3) | 2 = 10, len, bytes
+      const sub = Buffer.concat([Buffer.from([10, nameBytes.length]), nameBytes]);
+      // Entry message: tag = (1 << 3) | 2 = 10, len, sub
+      const entry = Buffer.concat([Buffer.from([10, sub.length]), sub]);
+      chunks.push(entry);
+    }
+    return Buffer.concat(chunks);
+  }
+
+  const protoBytes = buildSyntheticProtoMedia(['Screenshot_Anatomy_CVS_Heart.jpg', 'Diagram_Mediastinum.png']);
+  const regexManifest = /function parseMediaManifest\(decompMedia\)\{([\s\S]*?)\n      \}/;
+  const matchManifest = flashHtml.match(regexManifest);
+  assert(matchManifest !== null, 'Extracted parseMediaManifest function body from flash.html');
+
+  if (matchManifest) {
+    const parseFn = new Function('decompMedia', matchManifest[1]);
+    const parsed = parseFn(protoBytes);
+    assert(parsed['0'] === 'Screenshot_Anatomy_CVS_Heart.jpg', 'Protobuf decoder extracted entry 0: Screenshot_Anatomy_CVS_Heart.jpg');
+    assert(parsed['1'] === 'Diagram_Mediastinum.png', 'Protobuf decoder extracted entry 1: Diagram_Mediastinum.png');
+  }
+}
+
 console.log('\n==================================================');
 if (failures === 0) {
   console.log(`🎉 ALL ${passed} VERIFICATION CHECKS PASSED PERFECTLY!`);

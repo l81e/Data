@@ -568,9 +568,9 @@
   .cue-hard{bottom:16px; left:50%; transform:translateX(-50%) scale(0.9); background:var(--hard); color:#000;}
   .cue-reveal{top:50%; left:50%; transform:translate(-50%,-50%) scale(0.9); background:var(--accent); color:#000; font-weight:900;}
 
-  /* Floating HUD Compass Pill */
+  /* Floating HUD Compass Pill (optional setting, disabled by default) */
   .gesture-compass-hud{
-    display:flex; align-items:center; justify-content:center; gap:12px;
+    display:none; align-items:center; justify-content:center; gap:12px;
     padding:4px 14px; border-radius:20px;
     background:var(--panel); border:1px solid var(--line-soft);
     font-size:0.68rem; color:var(--text-faint); font-family:'JetBrains Mono',monospace;
@@ -1167,9 +1167,9 @@
         <div class="settings-item" id="compassToggleRow">
           <div class="row-label">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>
-            <span data-en="HUD Compass Overlay" data-ar="مؤشر الاتجاهات">HUD Compass Overlay</span>
+            <span data-en="Swipe Direction Cues (HUD)" data-ar="إرشادات اتجاهات السحب (HUD)">Swipe Direction Cues (HUD)</span>
           </div>
-          <span id="compassCheckmark">✓</span>
+          <span id="compassCheckmark"></span>
         </div>
 
         <div class="settings-divider"></div>
@@ -1222,15 +1222,15 @@
   <!-- ── Main Study Viewport ── -->
   <main id="mainEl">
     <div class="study-view">
-      <!-- Floating HUD Compass Overlay (toggleable) -->
-      <div class="gesture-compass-hud" id="gestureCompassHud">
-        <span class="compass-item"><span class="compass-dot-again">←</span> Again</span>
+      <!-- Floating HUD Compass Overlay (toggleable, disabled by default) -->
+      <div class="gesture-compass-hud" id="gestureCompassHud" style="display:none;">
+        <span class="compass-item"><span class="compass-dot-again">←</span> <span data-en="Again" data-ar="مجدداً">Again</span></span>
         <span>·</span>
-        <span class="compass-item"><span class="compass-dot-hard">↓</span> Hard</span>
+        <span class="compass-item"><span class="compass-dot-hard">↓</span> <span data-en="Hard" data-ar="صعب">Hard</span></span>
         <span>·</span>
-        <span class="compass-item"><span class="compass-dot-good">Good</span> →</span>
+        <span class="compass-item"><span data-en="Good" data-ar="جيد">Good</span> <span class="compass-dot-good">→</span></span>
         <span>·</span>
-        <span class="compass-item"><span class="compass-dot-easy">↑</span> Easy</span>
+        <span class="compass-item"><span class="compass-dot-easy">↑</span> <span data-en="Easy" data-ar="سهل">Easy</span></span>
       </div>
 
       <!-- 3D Perspective Card Stage -->
@@ -2841,16 +2841,101 @@
         return bytes;
       }
 
+      // Universal media manifest parser supporting both legacy JSON and modern Anki 2.1.50+ Protobuf binary
+      function parseMediaManifest(decompMedia){
+        let mediaMap = {};
+        if (!decompMedia || !decompMedia.length) return mediaMap;
+
+        // 1. Try legacy/standard JSON manifest first
+        try {
+          const mediaStr = new TextDecoder().decode(decompMedia);
+          if (mediaStr && mediaStr.trim().startsWith('{')){
+            const parsed = JSON.parse(mediaStr);
+            if (parsed && typeof parsed === 'object') return parsed;
+          }
+        } catch(e){}
+
+        // 2. Anki 2.1.50+ Protobuf binary MediaEntries message parser
+        // Protobuf schema: message MediaEntries { repeated MediaEntry entries = 1; }
+        // message MediaEntry { string name = 1; bytes checksum = 2; }
+        try {
+          let offset = 0;
+          let index = 0;
+          while (offset < decompMedia.length){
+            const tag = decompMedia[offset++];
+            const fieldNum = tag >> 3;
+            const wireType = tag & 7;
+
+            if (fieldNum === 1 && wireType === 2){ // Repeated MediaEntry
+              let len = 0, shift = 0;
+              while (offset < decompMedia.length){
+                const b = decompMedia[offset++];
+                len |= (b & 0x7f) << shift;
+                if (!(b & 0x80)) break;
+                shift += 7;
+              }
+              const entryEnd = offset + len;
+              let entryName = '';
+              while (offset < entryEnd){
+                const subTag = decompMedia[offset++];
+                const subField = subTag >> 3;
+                const subWire = subTag & 7;
+                if (subWire === 2){ // string or bytes
+                  let subLen = 0, subShift = 0;
+                  while (offset < entryEnd){
+                    const b = decompMedia[offset++];
+                    subLen |= (b & 0x7f) << subShift;
+                    if (!(b & 0x80)) break;
+                    subShift += 7;
+                  }
+                  const bytes = decompMedia.slice(offset, offset + subLen);
+                  offset += subLen;
+                  if (subField === 1){
+                    entryName = new TextDecoder().decode(bytes);
+                  }
+                } else if (subWire === 0){ // varint
+                  while (offset < entryEnd && (decompMedia[offset++] & 0x80)){}
+                } else if (subWire === 1){ // 64-bit
+                  offset += 8;
+                } else if (subWire === 5){ // 32-bit
+                  offset += 4;
+                }
+              }
+              offset = entryEnd;
+              if (entryName){
+                mediaMap[String(index++)] = entryName;
+              }
+            } else if (wireType === 0){
+              while (offset < decompMedia.length && (decompMedia[offset++] & 0x80)){}
+            } else if (wireType === 1){
+              offset += 8;
+            } else if (wireType === 2){
+              let skipLen = 0, skipShift = 0;
+              while (offset < decompMedia.length){
+                const b = decompMedia[offset++];
+                skipLen |= (b & 0x7f) << skipShift;
+                if (!(b & 0x80)) break;
+                skipShift += 7;
+              }
+              offset += skipLen;
+            } else if (wireType === 5){
+              offset += 4;
+            }
+          }
+        } catch(protoErr){
+          console.warn('Protobuf media manifest parser encountered an error:', protoErr);
+        }
+
+        return mediaMap;
+      }
+
       let mediaMap = {};
       const mediaFile = zip.file('media');
       if (mediaFile){
         try {
           const rawMedia = await mediaFile.async('uint8array');
           const decompMedia = decompressZstdIfNeeded(rawMedia);
-          const mediaStr = new TextDecoder().decode(decompMedia);
-          if (mediaStr && mediaStr.trim()){
-            mediaMap = JSON.parse(mediaStr);
-          }
+          mediaMap = parseMediaManifest(decompMedia);
         } catch(e){
           console.warn('Failed to parse media manifest:', e);
         }
@@ -2866,13 +2951,17 @@
           const blob = await f.async('blob');
           mediaBlobMap[realName] = blob;
           const url = URL.createObjectURL(blob);
+          const cleanName = decodeURIComponent(realName);
           mediaUrlMap[realName] = url;
-          mediaUrlMap[decodeURIComponent(realName)] = url;
-          inMemoryMediaCache.set(realName, url);
-          inMemoryMediaCache.set(decodeURIComponent(realName), url);
-          // Case-insensitive mapping
+          mediaUrlMap[cleanName] = url;
           mediaUrlMap[realName.toLowerCase()] = url;
+          mediaUrlMap[cleanName.toLowerCase()] = url;
+          mediaUrlMap[encodeURI(realName)] = url;
+          mediaUrlMap[encodeURIComponent(realName)] = url;
+          inMemoryMediaCache.set(realName, url);
+          inMemoryMediaCache.set(cleanName, url);
           inMemoryMediaCache.set(realName.toLowerCase(), url);
+          inMemoryMediaCache.set(cleanName.toLowerCase(), url);
         } catch(err){}
       }));
 
@@ -2904,30 +2993,120 @@
       const SQL = await getSqlJs();
       const db = new SQL.Database(dbBytes);
 
-      // Support models from col.models (legacy) and notetypes table (modern Anki 2.1 schemas)
+      // Support models from col.models (legacy) and notetypes + fields + templates tables (modern Anki 2.1 schemas)
       let models = {};
       try {
         const colRes = db.exec("SELECT models FROM col LIMIT 1");
-        if (colRes && colRes.length && colRes[0].values.length){
-          models = JSON.parse(colRes[0].values[0][0]);
+        if (colRes && colRes.length && colRes[0].values.length && colRes[0].values[0][0]){
+          const raw = colRes[0].values[0][0];
+          if (typeof raw === 'string' && raw.trim().startsWith('{')){
+            models = JSON.parse(raw);
+          }
         }
       } catch(e){}
 
+      // Fallback 1: Modern Anki SQLite schema with separate fields and templates tables
       if (!models || !Object.keys(models).length){
         try {
-          const ntRes = db.exec("SELECT id, name, flds, tmpls FROM notetypes");
-          if (ntRes && ntRes.length && ntRes[0].values.length){
-            for (const r of ntRes[0].values){
-              const mid = String(r[0]);
-              models[mid] = {
-                id: r[0],
-                name: r[1],
-                flds: typeof r[2] === 'string' ? JSON.parse(r[2]) : r[2],
-                tmpls: typeof r[3] === 'string' ? JSON.parse(r[3]) : r[3]
-              };
-            }
+          const ntRes = db.exec("SELECT id, name FROM notetypes");
+          const fldRes = db.exec("SELECT ntid, ord, name FROM fields ORDER BY ntid, ord ASC");
+          let tmplRes = [];
+          try {
+            tmplRes = db.exec("SELECT ntid, ord, name, config FROM templates ORDER BY ntid, ord ASC");
+          } catch(te){
+            tmplRes = db.exec("SELECT ntid, ord, name FROM templates ORDER BY ntid, ord ASC");
           }
-        } catch(e){}
+
+          const fldsByNtid = {};
+          if (fldRes && fldRes.length){
+            fldRes[0].values.forEach(([ntid, ord, name]) => {
+              const k = String(ntid);
+              if (!fldsByNtid[k]) fldsByNtid[k] = [];
+              fldsByNtid[k].push({ ord, name });
+            });
+          }
+
+          function parseTemplateConfig(cfgBytes){
+            if (!cfgBytes || !(cfgBytes instanceof Uint8Array || Array.isArray(cfgBytes))) return { qfmt: '', afmt: '' };
+            let qfmt = '';
+            let afmt = '';
+            let offset = 0;
+            while (offset < cfgBytes.length){
+              const tag = cfgBytes[offset++];
+              const fieldNum = tag >> 3;
+              const wireType = tag & 7;
+              if (wireType === 2){
+                let len = 0, shift = 0;
+                while (offset < cfgBytes.length){
+                  const b = cfgBytes[offset++];
+                  len |= (b & 0x7f) << shift;
+                  if (!(b & 0x80)) break;
+                  shift += 7;
+                }
+                const bytes = cfgBytes.slice(offset, offset + len);
+                offset += len;
+                const text = new TextDecoder().decode(bytes);
+                if (fieldNum === 1) qfmt = text;
+                else if (fieldNum === 2) afmt = text;
+              } else if (wireType === 0){
+                while (offset < cfgBytes.length && (cfgBytes[offset++] & 0x80)){}
+              } else if (wireType === 1){
+                offset += 8;
+              } else if (wireType === 5){
+                offset += 4;
+              }
+            }
+            return { qfmt, afmt };
+          }
+
+          const tmplsByNtid = {};
+          if (tmplRes && tmplRes.length){
+            tmplRes[0].values.forEach(row => {
+              const ntid = row[0];
+              const ord = row[1];
+              const name = row[2];
+              const cfg = row[3];
+              const k = String(ntid);
+              if (!tmplsByNtid[k]) tmplsByNtid[k] = [];
+              let qfmt = '{{Front}}';
+              let afmt = '{{FrontSide}}\n\n<hr id=answer>\n\n{{Back}}';
+              if (cfg){
+                const parsedCfg = parseTemplateConfig(cfg);
+                if (parsedCfg.qfmt) qfmt = parsedCfg.qfmt;
+                if (parsedCfg.afmt) afmt = parsedCfg.afmt;
+              }
+              tmplsByNtid[k].push({ ord, name, qfmt, afmt });
+            });
+          }
+
+          if (ntRes && ntRes.length){
+            ntRes[0].values.forEach(([id, name]) => {
+              const k = String(id);
+              models[k] = {
+                id,
+                name,
+                flds: fldsByNtid[k] || [{ ord: 0, name: 'Front' }, { ord: 1, name: 'Back' }],
+                tmpls: tmplsByNtid[k] || [{ ord: 0, name: 'Card 1', qfmt: '{{Front}}', afmt: '{{FrontSide}}\n\n<hr id=answer>\n\n{{Back}}' }]
+              };
+            });
+          }
+        } catch(modernErr){
+          // Fallback 2: Intermediate schema where notetypes has flds and tmpls columns
+          try {
+            const ntRes = db.exec("SELECT id, name, flds, tmpls FROM notetypes");
+            if (ntRes && ntRes.length && ntRes[0].values.length){
+              for (const r of ntRes[0].values){
+                const mid = String(r[0]);
+                models[mid] = {
+                  id: r[0],
+                  name: r[1],
+                  flds: typeof r[2] === 'string' ? JSON.parse(r[2]) : r[2],
+                  tmpls: typeof r[3] === 'string' ? JSON.parse(r[3]) : r[3]
+                };
+              }
+            }
+          } catch(e){}
+        }
       }
 
       const notesRes = db.exec("SELECT id, mid, flds, tags FROM notes");
@@ -2960,8 +3139,20 @@
         if (mediaUrlMap[clean]) return mediaUrlMap[clean];
         if (mediaUrlMap[fn]) return mediaUrlMap[fn];
         if (mediaUrlMap[clean.toLowerCase()]) return mediaUrlMap[clean.toLowerCase()];
+        if (mediaUrlMap[encodeURI(clean)]) return mediaUrlMap[encodeURI(clean)];
+        if (mediaUrlMap[encodeURIComponent(clean)]) return mediaUrlMap[encodeURIComponent(clean)];
         if (inMemoryMediaCache.has(clean)) return inMemoryMediaCache.get(clean);
         if (inMemoryMediaCache.has(clean.toLowerCase())) return inMemoryMediaCache.get(clean.toLowerCase());
+        if (inMemoryMediaCache.has(fn)) return inMemoryMediaCache.get(fn);
+
+        // Normalized matching (spaces, %20, underscores)
+        const normTarget = clean.toLowerCase().replace(/%20/g, ' ').replace(/[\s_\-]+/g, '');
+        for (const [k, url] of Object.entries(mediaUrlMap)){
+          if (k.toLowerCase().replace(/%20/g, ' ').replace(/[\s_\-]+/g, '') === normTarget) return url;
+        }
+        for (const [k, url] of inMemoryMediaCache.entries()){
+          if (k.toLowerCase().replace(/%20/g, ' ').replace(/[\s_\-]+/g, '') === normTarget) return url;
+        }
         return fn;
       }
 
@@ -3026,6 +3217,10 @@
       function compileAnkiTemplate(templateStr, fieldMap, defaultFront = '', cardOrd = 0, isBack = false){
         if (!templateStr) return '';
         let out = templateStr;
+
+        // Strip embedded script tags and error blocks from Anki templates (e.g. image occlusion)
+        out = out.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '');
+        out = out.replace(/<div id="err"[^>]*>[\s\S]*?<\/div>/gi, '');
 
         // 1. Replace {{FrontSide}}
         out = out.replace(/{{FrontSide}}/g, defaultFront);
@@ -3131,6 +3326,18 @@
           }
           fieldMap[name] = val;
           fieldMap[name.trim()] = val;
+        });
+
+        // Also preserve any extra fields present in note
+        fieldValues.forEach((val, i) => {
+          const fn = fieldNames[i] || `Field_${i + 1}`;
+          if (fieldMap[fn] === undefined){
+            let cleanVal = val || '';
+            if (/^[^<>\n\r\t]+\.(png|jpe?g|gif|webp|svg|bmp)$/i.test(cleanVal.trim())){
+              cleanVal = `<img src="${cleanVal.trim()}" class="clinical-diagram-img" alt="${escapeHtml(fn)}" />`;
+            }
+            fieldMap[fn] = cleanVal;
+          }
         });
 
         // Ensure positional fallbacks
@@ -3271,7 +3478,7 @@
       enableTouchGestures = getStored(GESTURES_LS_KEY, 'true') !== 'false';
       gestureCheckmark.textContent = enableTouchGestures ? '✓' : '';
 
-      showGestureCompass = getStored(COMPASS_LS_KEY, 'true') !== 'false';
+      showGestureCompass = getStored(COMPASS_LS_KEY, 'false') === 'true';
       compassCheckmark.textContent = showGestureCompass ? '✓' : '';
       gestureCompassHud.style.display = showGestureCompass ? 'flex' : 'none';
 
@@ -3361,7 +3568,15 @@
         (c.front && c.front.includes('Please update to the latest Anki version')) || 
         (c.back && c.back.includes('Please update to the latest Anki version'))
       );
-      if (cached && cached.cards && cached.cards.length && !hasCorruptedTags && !isDummyWarning){
+      // Check for unresolved local image references from legacy buggy parses (e.g. src="Screenshot_...jpg")
+      const hasUnresolvedImages = cached && cached.cards && cached.cards.some(c => {
+        const full = (c.front || '') + (c.back || '');
+        return /<img\b[^>]*?\bsrc=["'](?!data:|http|https|blob:)[^"']+["']/i.test(full);
+      });
+      // Check if cache was generated by old schema parser where Memo+ lost PDF Reference
+      const hasStaleEmptyImages = cached && cached.cards && cached.cards.length > 50 && !cached.cards.some(c => ((c.front || '') + (c.back || '')).includes('<img'));
+
+      if (cached && cached.cards && cached.cards.length && !hasCorruptedTags && !isDummyWarning && !hasUnresolvedImages && !hasStaleEmptyImages){
         hideClinicalDeckLoader();
         deckTitle.textContent = deckTitleParam || cached.meta.title || 'Clinical Flashcards';
         deckSub.textContent = `${cached.cards.length} cards · Offline Synaptic Vault`;

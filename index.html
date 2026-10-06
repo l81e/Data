@@ -2947,6 +2947,11 @@
     const scrubberActive = isFloatingScrubberEnabled();
     const scrubberLabel = currentLang === 'ar' ? 'المزلاج العائم' : 'Floating Slider';
 
+    const compassActive = (function(){
+      try { return localStorage.getItem('mb_show_compass') === 'true'; } catch(e){ return false; }
+    })();
+    const compassLabel = currentLang === 'ar' ? 'إرشادات اتجاهات السحب' : 'Swipe Direction Cues';
+
     row.innerHTML = `
       <div class="theme-swatch-grid" id="themeSwatchGrid">
         ${VALID_THEMES.map(key => {
@@ -2961,6 +2966,13 @@
         <label class="theme-toggle-label" for="floatingScrubberToggle" title="${scrubberLabel}">
           <span class="theme-toggle-text" data-en="Floating Slider" data-ar="المزلاج العائم">${scrubberLabel}</span>
           <input type="checkbox" id="floatingScrubberToggle" class="theme-toggle-input" ${scrubberActive ? 'checked' : ''} />
+          <span class="theme-toggle-slider"></span>
+        </label>
+      </div>
+      <div class="theme-popup-option">
+        <label class="theme-toggle-label" for="themeGestureCompassToggle" title="${compassLabel}">
+          <span class="theme-toggle-text" data-en="Swipe Direction Cues" data-ar="إرشادات اتجاهات السحب">${compassLabel}</span>
+          <input type="checkbox" id="themeGestureCompassToggle" class="theme-toggle-input" ${compassActive ? 'checked' : ''} />
           <span class="theme-toggle-slider"></span>
         </label>
       </div>
@@ -2979,6 +2991,13 @@
       toggleInput.addEventListener('change', (e) => {
         setFloatingScrubberEnabled(e.target.checked);
         if (typeof updatePageSliderUI === 'function') updatePageSliderUI();
+      });
+    }
+
+    const compassToggleInput = document.getElementById('themeGestureCompassToggle');
+    if (compassToggleInput){
+      compassToggleInput.addEventListener('change', (e) => {
+        try { localStorage.setItem('mb_show_compass', e.target.checked ? 'true' : 'false'); } catch(err){}
       });
     }
   }
