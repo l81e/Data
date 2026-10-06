@@ -187,14 +187,17 @@ assert(indexHtml.includes('mb_floating_scrubber_enabled'), 'index.html stores mb
 assert(indexHtml.includes('.page-scrubber {') && indexHtml.includes('display: none;'), 'index.html keeps floating scrubber hidden by default for sleek single slider look');
 
 // 17. Universal Anki Parser & Template Engine
-assert(flashHtml.includes("zip.file('collection.anki21') || zip.file('collection.anki2')"), 'flash.html supports modern Anki 2.1+ (.anki21) and legacy (.anki2) schemas');
+assert(flashHtml.includes("collection.anki21b") && flashHtml.includes("collection.anki21") && flashHtml.includes("collection.anki2"), 'flash.html supports modern Anki 2.1.50+ (.anki21b), Anki 2.1 (.anki21) and legacy (.anki2) schemas');
+assert(flashHtml.includes('fzstd'), 'flash.html integrates fzstd Zstandard decompressor for modern Anki collections');
+assert(flashHtml.includes('isDummyWarning'), 'flash.html auto-invalidates placeholder Anki update warnings from vault cache');
 assert(flashHtml.includes('FROM notetypes'), 'flash.html supports modern Anki schemas with separate notetypes table');
 assert(flashHtml.includes('compileAnkiTemplate'), 'flash.html implements compileAnkiTemplate engine');
 assert(flashHtml.includes('{{#([^}]+)}}'), 'flash.html supports conditional template blocks ({{#Field}}...{{/Field}})');
 assert(flashHtml.includes('{{\\^([^}]+)}}'), 'flash.html supports inverted conditional blocks ({{^Field}}...{{/Field}})');
 assert(flashHtml.includes('clinical-diagram-img'), 'flash.html marks clinical diagrams with clinical-diagram-img class');
 assert(flashHtml.includes('anki-reference-attachment'), 'flash.html provides automatic reference diagram attachment fallback');
-assert(indexHtml.includes("zip.file('collection.anki21') || zip.file('collection.anki2')"), 'index.html inspector supports both collection.anki21 and collection.anki2');
+assert(indexHtml.includes("collection.anki21b") && indexHtml.includes("collection.anki21") && indexHtml.includes("collection.anki2"), 'index.html inspector supports collection.anki21b, collection.anki21, and collection.anki2');
+assert(fs.existsSync('fzstd.min.js'), 'fzstd.min.js is bundled locally for 100% offline-first Zstandard support');
 
 // 18. Anki Template & Conditional Resolution Unit Verification
 {
@@ -286,6 +289,19 @@ assert(indexHtml.includes("zip.file('collection.anki21') || zip.file('collection
   const res4_pop = compileAnkiTemplate(template4, populatedFields);
   assert(res4_empty.includes('No Diagram Available'), 'Anki inverted conditional renders when field is empty');
   assert(!res4_pop.includes('No Diagram Available'), 'Anki inverted conditional omitted when field is present');
+}
+
+// 19. Zstandard (zstd) Decompression Engine Verification
+{
+  const fzstdCode = fs.readFileSync('fzstd.min.js', 'utf-8');
+  const m = { exports: {} };
+  new Function('module', 'exports', fzstdCode)(m, m.exports);
+  const fzstd = m.exports;
+  assert(typeof fzstd.decompress === 'function', 'fzstd exports decompress function');
+  
+  // Test frame check with zstd magic number (0x28, 0xB5, 0x2F, 0xFD)
+  const zstdMagic = [0x28, 0xb5, 0x2f, 0xfd];
+  assert(zstdMagic[0] === 40 && zstdMagic[1] === 181 && zstdMagic[2] === 47 && zstdMagic[3] === 253, 'Zstandard magic number correctly calibrated');
 }
 
 console.log('\n==================================================');

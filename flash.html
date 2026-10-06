@@ -12,10 +12,16 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" />
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
 
-<!-- Sovereign Offline & Anki Stack: Supabase, JSZip, sql.js -->
+<!-- Sovereign Offline & Anki Stack: Supabase, JSZip, sql.js, fzstd (Zstandard Decompressor) -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.2/jszip.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sql.js@1.10.3/dist/sql-wasm.js"></script>
+<script src="fzstd.min.js"></script>
+<script>
+  if (typeof fzstd === 'undefined') {
+    document.write('<script src="https://cdn.jsdelivr.net/npm/fzstd@0.1.1/umd/index.js"><\/script>');
+  }
+</script>
 
 <style>
   *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
@@ -2312,13 +2318,42 @@
 
     async function parseApkg(arrayBuffer){
       const zip = await JSZip.loadAsync(arrayBuffer);
-      const dbFile = zip.file('collection.anki21') || zip.file('collection.anki2');
+      // Priority: collection.anki21b (Anki 2.1.50+ zstd compressed) -> collection.anki21 -> collection.anki2
+      const anki21bFile = zip.file('collection.anki21b');
+      const anki21File = zip.file('collection.anki21');
+      const anki2File = zip.file('collection.anki2');
+
+      const dbFile = anki21bFile || anki21File || anki2File;
       if (!dbFile) throw new Error('NO_DB');
+
+      // Helper to decompress Zstandard if magic bytes 0x28, 0xB5, 0x2F, 0xFD are present
+      function decompressZstdIfNeeded(bytes){
+        if (!bytes || bytes.length < 4) return bytes;
+        if (bytes[0] === 0x28 && bytes[1] === 0xb5 && bytes[2] === 0x2f && bytes[3] === 0xfd){
+          const dec = (typeof fzstd !== 'undefined' && fzstd.decompress) ? fzstd.decompress :
+                      (typeof window !== 'undefined' && window.fzstd && window.fzstd.decompress) ? window.fzstd.decompress : null;
+          if (dec){
+            return dec(bytes);
+          } else {
+            console.warn('Zstandard data detected but fzstd is not yet available in runtime.');
+          }
+        }
+        return bytes;
+      }
 
       let mediaMap = {};
       const mediaFile = zip.file('media');
       if (mediaFile){
-        try { mediaMap = JSON.parse(await mediaFile.async('string')); } catch(e){}
+        try {
+          const rawMedia = await mediaFile.async('uint8array');
+          const decompMedia = decompressZstdIfNeeded(rawMedia);
+          const mediaStr = new TextDecoder().decode(decompMedia);
+          if (mediaStr && mediaStr.trim()){
+            mediaMap = JSON.parse(mediaStr);
+          }
+        } catch(e){
+          console.warn('Failed to parse media manifest:', e);
+        }
       }
 
       const mediaUrlMap = {};
@@ -2360,7 +2395,8 @@
         }
       }));
 
-      const dbBytes = await dbFile.async('uint8array');
+      let rawDbBytes = await dbFile.async('uint8array');
+      let dbBytes = decompressZstdIfNeeded(rawDbBytes);
       const SQL = await getSqlJs();
       const db = new SQL.Database(dbBytes);
 
@@ -2750,7 +2786,11 @@
       // Check Offline IndexedDB Cache First (instant 0ms load)
       const cached = await loadDeckFromVault(vaultKey);
       const hasCorruptedTags = cached && cached.cards && cached.cards.some(c => (c.front && c.front.includes('{{')) || (c.back && c.back.includes('{{')));
-      if (cached && cached.cards && cached.cards.length && !hasCorruptedTags){
+      const isDummyWarning = cached && cached.cards && cached.cards.some(c => 
+        (c.front && c.front.includes('Please update to the latest Anki version')) || 
+        (c.back && c.back.includes('Please update to the latest Anki version'))
+      );
+      if (cached && cached.cards && cached.cards.length && !hasCorruptedTags && !isDummyWarning){
         deckTitle.textContent = deckTitleParam || cached.meta.title || 'Clinical Flashcards';
         deckSub.textContent = `${cached.cards.length} cards · Offline Synaptic Vault`;
         offlineBadge.style.display = 'inline-flex';

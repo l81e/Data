@@ -10,6 +10,12 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.2/jszip.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sql.js@1.10.3/dist/sql-wasm.js"></script>
+<script src="fzstd.min.js"></script>
+<script>
+  if (typeof fzstd === 'undefined') {
+    document.write('<script src="https://cdn.jsdelivr.net/npm/fzstd@0.1.1/umd/index.js"><\/script>');
+  }
+</script>
 <style>
   *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 
@@ -5419,11 +5425,24 @@
       const res = await fetch(targetMat.url);
       if (!res.ok) throw new Error('Fetch failed with status ' + res.status);
       const blob = await res.blob();
-      const zip = await JSZip.loadAsync(blob);
-      const dbFile = zip.file('collection.anki21') || zip.file('collection.anki2');
-      if (!dbFile) throw new Error('collection.anki21 or collection.anki2 not found in archive');
+      const anki21bFile = zip.file('collection.anki21b');
+      const anki21File = zip.file('collection.anki21');
+      const anki2File = zip.file('collection.anki2');
+      const dbFile = anki21bFile || anki21File || anki2File;
+      if (!dbFile) throw new Error('collection database not found in archive');
 
-      const dbBytes = await dbFile.async('uint8array');
+      function decompressZstdIfNeeded(bytes){
+        if (!bytes || bytes.length < 4) return bytes;
+        if (bytes[0] === 0x28 && bytes[1] === 0xb5 && bytes[2] === 0x2f && bytes[3] === 0xfd){
+          const dec = (typeof fzstd !== 'undefined' && fzstd.decompress) ? fzstd.decompress :
+                      (typeof window !== 'undefined' && window.fzstd && window.fzstd.decompress) ? window.fzstd.decompress : null;
+          if (dec) return dec(bytes);
+        }
+        return bytes;
+      }
+
+      let rawDbBytes = await dbFile.async('uint8array');
+      const dbBytes = decompressZstdIfNeeded(rawDbBytes);
       const SQL = await getSqlJs();
       const db = new SQL.Database(dbBytes);
 
