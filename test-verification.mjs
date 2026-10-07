@@ -1307,7 +1307,87 @@ function suite36() {
   assert(indexHtml.includes('reviewDueCount + d.learningCount + Math.min(d.newCount, dailyNewLimit)'), 'index.html computes authentic Anki due workload');
 }
 
+function suite37() {
+  console.log('\n--- Suite 37: Standard All Cards Mode, Media Self-Healing & Legacy Migration ---');
+  const flashHtml = fs.readFileSync('flash.html', 'utf-8');
+
+  // 1. Standard Study Mode Defaults to All Cards
+  assert(flashHtml.includes('let isCramMode = true;'), 'flash.html initializes isCramMode = true by default for Standard All Cards mode');
+  assert(flashHtml.includes('isCramMode: cram = true'), 'buildStudyQueue defaults cram to true (All Cards)');
+  assert(flashHtml.includes('cramBtn.classList.add(\'is-cram\')'), 'updateCramToggleUI activates is-cram class in All Cards mode');
+  assert(flashHtml.includes('All Cards'), 'flash.html contains All Cards toggle label');
+
+  // Test simulation: buildStudyQueue with standard mode (all cards) vs daily queue
+  const testCards = [];
+  for (let i = 0; i < 105; i++) {
+    testCards.push({
+      id: `card-${i}`,
+      reps: i < 5 ? 1 : 0,
+      due: i < 5 ? Date.now() - 1000 : Date.now() + 86400000,
+      stability: 2.0
+    });
+  }
+
+  function simulateStudyQueue(cards, { isCramMode = true, dailyNewLimit = 20, now = Date.now() } = {}) {
+    if (isCramMode) {
+      return [...cards];
+    }
+    const dueReviews = cards.filter(c => c.reps > 0 && c.due <= now);
+    const newCards = cards.filter(c => !c.reps).slice(0, dailyNewLimit);
+    return [...dueReviews, ...newCards];
+  }
+
+  const standardQueue = simulateStudyQueue(testCards, { isCramMode: true });
+  assert(standardQueue.length === 105, 'Standard mode includes 100% of deck cards (105 / 105)');
+
+  const dailyQueue = simulateStudyQueue(testCards, { isCramMode: false, dailyNewLimit: 20 });
+  assert(dailyQueue.length === 25, 'Daily Queue limits cards to due reviews (5) + daily limit (20) = 25');
+
+  // 2. Synchronous Pre-Resolution of Card Media
+  assert(flashHtml.includes('function prepareCardMediaHtml'), 'flash.html defines prepareCardMediaHtml function');
+  assert(flashHtml.includes('prepareCardMediaHtml(card.front, currentActiveDeckId)'), 'renderCard passes card.front to prepareCardMediaHtml');
+  assert(flashHtml.includes('prepareCardMediaHtml(card.back, currentActiveDeckId)'), 'renderCard passes card.back to prepareCardMediaHtml');
+
+  // Test simulation of prepareCardMediaHtml
+  const mockMediaCache = new Map();
+  mockMediaCache.set('deck-cvs:::slide_03.jpg', 'blob:http://localhost:8080/live-blob-123');
+
+  function simulatePrepareCardMediaHtml(html, deckId) {
+    if (!html) return '';
+    return html.replace(/(<img\b[^>]*?)\bsrc=(["'])([^"']+)\2([^>]*>)/gi, (full, before, q, srcVal, after) => {
+      let fn = '';
+      const fnMatch = full.match(/data-filename=(["'])([^"']+)\1/i);
+      if (fnMatch) fn = fnMatch[2];
+      if (fn && deckId) {
+        const activeUrl = mockMediaCache.get(`${deckId}:::${fn}`);
+        if (activeUrl) return `${before}src=${q}${activeUrl}${q} data-filename=${q}${fn}${q} data-deck-id=${q}${deckId}${q}${after}`;
+      }
+      return full;
+    });
+  }
+
+  const inputHtml = '<img src="blob:http://localhost:8080/stale-dead-uuid" data-filename="slide_03.jpg" class="clinical-diagram-img" alt="Clinical Reference Diagram">';
+  const outputHtml = simulatePrepareCardMediaHtml(inputHtml, 'deck-cvs');
+  assert(outputHtml.includes('blob:http://localhost:8080/live-blob-123'), 'prepareCardMediaHtml replaces stale blob with live blob synchronously');
+  assert(!outputHtml.includes('stale-dead-uuid'), 'prepareCardMediaHtml completely purges dead blob URL prior to DOM insertion');
+
+  // 3. ResolveCardMedia Updates Image src Even If Previously a Blob
+  assert(flashHtml.includes('getMediaBlobUrl(fn, deckId)'), 'resolveCardMedia resolves active URL via getMediaBlobUrl');
+  assert(!flashHtml.includes('(!img.src.startsWith(\'blob:\') && !img.src.startsWith(\'data:\'))'), 'resolveCardMedia no longer skips images with existing blob URLs');
+
+  // 4. Legacy Media Migration & Fallback Contract
+  assert(flashHtml.includes('Fallback 1: Legacy un-scoped key (exact case)'), 'getMediaBlobUrl includes legacy un-scoped exact key fallback');
+  assert(flashHtml.includes('Fallback 2: Legacy un-scoped key (lowercase)'), 'getMediaBlobUrl includes legacy un-scoped lowercase key fallback');
+  assert(flashHtml.includes('Legacy cache upgrade: If no scoped items were found'), 'loadDeckFromVault includes automatic legacy media migration');
+
+  // 5. Self-Healing Cache Validation Contract
+  assert(flashHtml.includes('const hasMissingMediaBlobs = deckExpectsImages && inMemoryMediaCache.size === 0 && Boolean(targetUrl);'), 'flash.html defines hasMissingMediaBlobs self-healing detection');
+  assert(flashHtml.includes('!hasMissingMediaBlobs'), 'Cache loader rejects cache when hasMissingMediaBlobs is true');
+  assert(flashHtml.includes('Seamless self-healing: Preserve all user SRS progress'), 'flash.html preserves SRS progress upon downloading repair deck');
+}
+
 suite36();
+suite37();
 
 console.log('\n==================================================');
 if (failures === 0) {

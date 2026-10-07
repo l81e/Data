@@ -1233,10 +1233,10 @@
     </div>
 
     <div class="header-right">
-      <!-- Cram All / Daily Queue Instant Toggle -->
-      <button type="button" class="cram-toggle-btn" id="cramToggleBtn" title="Toggle between Daily Queue and Cram All mode">
+      <!-- All Cards / Daily Queue Instant Toggle -->
+      <button type="button" class="cram-toggle-btn is-cram" id="cramToggleBtn" title="Standard Mode: Studying all cards in deck. Click to switch to Daily Queue">
         <span id="cramToggleIcon">⚡</span>
-        <span id="cramToggleText" data-en="Cram All" data-ar="مذاكرة شاملة">Cram All</span>
+        <span id="cramToggleText" data-en="All Cards" data-ar="جميع الكروت">All Cards</span>
       </button>
 
       <!-- Stop Sign / Bookmark Session Button -->
@@ -2192,8 +2192,63 @@
           inMemoryMediaCache.set(scopedKeyLower, url);
           return url;
         }
+
+        // Fallback 1: Legacy un-scoped key (exact case)
+        const reqLegacy = store.get(clean);
+        const resLegacy = await new Promise(r => { reqLegacy.onsuccess = () => r(reqLegacy.result); reqLegacy.onerror = () => r(null); });
+        if (resLegacy && resLegacy.blob){
+          const url = URL.createObjectURL(resLegacy.blob);
+          inMemoryMediaCache.set(scopedKey, url);
+          inMemoryMediaCache.set(scopedKeyLower, url);
+          // Auto-upgrade in DB to scoped key
+          try {
+            const upTx = db.transaction('media', 'readwrite');
+            upTx.objectStore('media').put({ name: scopedKey, blob: resLegacy.blob, deckId: targetDeckId, fileName: clean });
+          } catch(ue){}
+          return url;
+        }
+
+        // Fallback 2: Legacy un-scoped key (lowercase)
+        const reqLegacyLower = store.get(clean.toLowerCase());
+        const resLegacyLower = await new Promise(r => { reqLegacyLower.onsuccess = () => r(reqLegacyLower.result); reqLegacyLower.onerror = () => r(null); });
+        if (resLegacyLower && resLegacyLower.blob){
+          const url = URL.createObjectURL(resLegacyLower.blob);
+          inMemoryMediaCache.set(scopedKey, url);
+          inMemoryMediaCache.set(scopedKeyLower, url);
+          try {
+            const upTx = db.transaction('media', 'readwrite');
+            upTx.objectStore('media').put({ name: scopedKey, blob: resLegacyLower.blob, deckId: targetDeckId, fileName: clean });
+          } catch(ue){}
+          return url;
+        }
       } catch(e){}
       return null;
+    }
+
+    // Synchronously substitutes active blob URLs into card HTML before DOM insertion
+    function prepareCardMediaHtml(html, deckId){
+      if (!html) return '';
+      const targetDeckId = deckId || currentActiveDeckId;
+      return html.replace(/(<img\b[^>]*?)\bsrc=(["'])([^"']+)\2([^>]*>)/gi, (full, before, q, srcVal, after) => {
+        let fn = '';
+        const fnMatch = full.match(/data-filename=(["'])([^"']+)\1/i);
+        if (fnMatch) fn = fnMatch[2];
+        else if (!srcVal.startsWith('data:')){
+          fn = extractCleanFilename(srcVal);
+        }
+        if (fn && targetDeckId){
+          let clean = fn;
+          try { clean = decodeURIComponent(fn); } catch(e){}
+          clean = clean.trim().replace(/^.*[\\\/]/, '');
+          const scopedKey = `${targetDeckId}:::${clean}`;
+          const scopedKeyLower = `${targetDeckId}:::${clean.toLowerCase()}`;
+          const activeUrl = inMemoryMediaCache.get(scopedKey) || inMemoryMediaCache.get(scopedKeyLower);
+          if (activeUrl){
+            return `${before}src=${q}${activeUrl}${q} data-filename=${q}${clean}${q} data-deck-id=${q}${targetDeckId}${q}${after}`;
+          }
+        }
+        return full;
+      });
     }
 
     async function resolveCardMedia(container){
@@ -2209,14 +2264,16 @@
         const deckId = img.dataset.deckId || currentActiveDeckId;
         if (!fn){
           const rawSrc = img.getAttribute('src') || '';
-          if (!rawSrc.startsWith('data:') && !rawSrc.startsWith('blob:')){
+          if (!rawSrc.startsWith('data:')){
             fn = extractCleanFilename(rawSrc);
-            img.dataset.filename = fn;
-            if (deckId) img.dataset.deckId = deckId;
+            if (fn){
+              img.dataset.filename = fn;
+              if (deckId) img.dataset.deckId = deckId;
+            }
           }
         }
         
-        if (fn && (!img.src || (!img.src.startsWith('blob:') && !img.src.startsWith('data:')))){
+        if (fn){
           const activeUrl = await getMediaBlobUrl(fn, deckId);
           if (activeUrl && img.src !== activeUrl){
             img.src = activeUrl;
@@ -2224,10 +2281,11 @@
         }
 
         img.onerror = () => {
-          if (img.dataset.filename && !img.dataset.retried){
+          const fallbackFn = img.dataset.filename || extractCleanFilename(img.getAttribute('src') || '');
+          if (fallbackFn && !img.dataset.retried){
             img.dataset.retried = '1';
-            getMediaBlobUrl(img.dataset.filename, img.dataset.deckId || currentActiveDeckId).then(u => {
-              if (u) img.src = u;
+            getMediaBlobUrl(fallbackFn, img.dataset.deckId || currentActiveDeckId).then(u => {
+              if (u && img.src !== u) img.src = u;
             });
           }
         };
@@ -2240,13 +2298,15 @@
         const deckId = audio.dataset.deckId || currentActiveDeckId;
         if (!fn){
           const rawSrc = audio.getAttribute('src') || '';
-          if (!rawSrc.startsWith('data:') && !rawSrc.startsWith('blob:')){
+          if (!rawSrc.startsWith('data:')){
             fn = extractCleanFilename(rawSrc);
-            audio.dataset.filename = fn;
-            if (deckId) audio.dataset.deckId = deckId;
+            if (fn){
+              audio.dataset.filename = fn;
+              if (deckId) audio.dataset.deckId = deckId;
+            }
           }
         }
-        if (fn && (!audio.src || (!audio.src.startsWith('blob:') && !audio.src.startsWith('data:')))){
+        if (fn){
           const activeUrl = await getMediaBlobUrl(fn, deckId);
           if (activeUrl && audio.src !== activeUrl){
             audio.src = activeUrl;
@@ -2317,6 +2377,32 @@
               inMemoryMediaCache.set(`${deckId}:::${cleanPure}`, url);
               inMemoryMediaCache.set(`${deckId}:::${cleanPure.toLowerCase()}`, url);
             } catch(err){}
+          }
+        }
+
+        // Legacy cache upgrade: If no scoped items were found for this deck, but un-scoped legacy items match card images
+        if (inMemoryMediaCache.size === 0 && allCards.some(c => c.deckId === deckId)){
+          const deckImageNames = new Set();
+          allCards.filter(c => c.deckId === deckId).forEach(c => {
+            const matches = ((c.front || '') + (c.back || '')).matchAll(/data-filename=["']([^"']+)["']/gi);
+            for (const m of matches) deckImageNames.add(m[1].toLowerCase());
+          });
+          for (const item of allMedia){
+            if (!item.deckId && item.name && !item.name.includes(':::') && item.blob){
+              const cleanPure = decodeURIComponent(item.fileName || item.name).trim().replace(/^.*[\\\/]/, '');
+              if (deckImageNames.has(cleanPure.toLowerCase())){
+                try {
+                  const url = URL.createObjectURL(item.blob);
+                  inMemoryMediaCache.set(`${deckId}:::${cleanPure}`, url);
+                  inMemoryMediaCache.set(`${deckId}:::${cleanPure.toLowerCase()}`, url);
+                  // Auto-upgrade in DB to scoped key
+                  try {
+                    const upTx = db.transaction('media', 'readwrite');
+                    upTx.objectStore('media').put({ name: `${deckId}:::${cleanPure}`, blob: item.blob, deckId, fileName: cleanPure });
+                  } catch(e){}
+                } catch(err){}
+              }
+            }
           }
         }
 
@@ -2534,8 +2620,8 @@
     let reviewHistory = [];
     let sessionStats = { again: 0, hard: 0, good: 0, easy: 0, startTime: Date.now() };
 
-    // Daily Study Queue & Spaced Repetition Settings
-    let isCramMode = false;
+    // Daily Study Queue & Spaced Repetition Settings (Standard Mode = All Cards by default)
+    let isCramMode = true;
     let dailyNewLimit = 20;
     let burySiblingsEnabled = true;
     try {
@@ -2544,10 +2630,10 @@
       const savedBury = localStorage.getItem('mb_bury_siblings');
       if (savedBury !== null) burySiblingsEnabled = savedBury !== 'false';
       const savedCram = localStorage.getItem('mb_cram_mode');
-      if (savedCram === 'true') isCramMode = true;
+      if (savedCram !== null) isCramMode = savedCram === 'true';
     } catch(e){}
 
-    function buildStudyQueue(cards, { isCramMode: cram = false, dailyNewLimit: limit = 20, now = Date.now() } = {}){
+    function buildStudyQueue(cards, { isCramMode: cram = true, dailyNewLimit: limit = 20, now = Date.now() } = {}){
       if (!cards || !Array.isArray(cards)){
         const empty = [];
         empty.queue = empty;
@@ -2791,7 +2877,7 @@
               <h3 style="font-size:1.15rem; font-weight:800; margin-bottom:8px; color:var(--text);">All Caught Up for Today!</h3>
               <p style="font-size:0.86rem; color:var(--text-dim); margin-bottom:20px; line-height:1.5;">You've reviewed all currently due cards and completed your daily new allocation.</p>
               <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
-                <button type="button" class="primary-btn" id="finishCramBtn">⚡ Study All Cards (Cram All)</button>
+                <button type="button" class="primary-btn" id="finishCramBtn">⚡ Study All Cards</button>
               </div>
             </div>
           `;
@@ -2843,10 +2929,10 @@
       }
       backSrsInfo.textContent = `Target Retention: ${Math.round(TARGET_RETENTION * 100)}%`;
 
-      frontContent.innerHTML = renderMathInHtml(card.front);
-      backContent.innerHTML = renderMathInHtml(card.back);
+      frontContent.innerHTML = renderMathInHtml(prepareCardMediaHtml(card.front, currentActiveDeckId));
+      backContent.innerHTML = renderMathInHtml(prepareCardMediaHtml(card.back, currentActiveDeckId));
 
-      // Dynamically resolve card media images and SVGs
+      // Dynamically resolve card media images and SVGs (asynchronous assurance & lightbox wiring)
       resolveCardMedia(frontContent);
       resolveCardMedia(backContent);
 
@@ -3554,14 +3640,16 @@
         cramBtn.classList.add('is-cram');
         if (cramIcon) cramIcon.textContent = '⚡';
         if (cramText){
-          cramText.textContent = currentLang === 'ar' ? 'مذاكرة شاملة' : 'Cram All';
+          cramText.textContent = currentLang === 'ar' ? 'جميع الكروت' : 'All Cards';
         }
+        cramBtn.title = currentLang === 'ar' ? 'الوضع الافتراضي: مذاكرة جميع كروت الحزمة. اضغط للتحويل إلى الجدول اليومي' : 'Standard Mode: Studying all cards in deck. Click to switch to Daily Queue';
       } else {
         cramBtn.classList.remove('is-cram');
         if (cramIcon) cramIcon.textContent = '📅';
         if (cramText){
           cramText.textContent = currentLang === 'ar' ? 'الجدول اليومي' : 'Daily Queue';
         }
+        cramBtn.title = currentLang === 'ar' ? 'الجدول اليومي: مذاكرة المستحقة والجديدة فقط. اضغط لمذاكرة كل الكروت' : 'Daily Queue: Studying due + daily quota cards. Click to study all cards';
       }
     }
 
@@ -4798,37 +4886,7 @@
         return;
       }
 
-      // 2. Stable Vault Key for Cloud / URL Decks
-      const vaultKey = materialId || ('url-' + encodeURIComponent(deckTitleParam || deckUrl || 'deck'));
-
-      // Check Offline IndexedDB Cache First (instant 0ms load)
-      const cached = await loadDeckFromVault(vaultKey);
-      const hasCorruptedTags = cached && cached.cards && cached.cards.some(c => (c.front && c.front.includes('{{')) || (c.back && c.back.includes('{{')));
-      const isDummyWarning = cached && cached.cards && cached.cards.some(c => 
-        (c.front && c.front.includes('Please update to the latest Anki version')) || 
-        (c.back && c.back.includes('Please update to the latest Anki version'))
-      );
-      // Check for unresolved local image references from legacy buggy parses (e.g. src="Screenshot_...jpg")
-      const hasUnresolvedImages = cached && cached.cards && cached.cards.some(c => {
-        const full = (c.front || '') + (c.back || '');
-        return /<img\b[^>]*?\bsrc=["'](?!data:|http|https|blob:)[^"']+["']/i.test(full);
-      });
-      // Check if cache was generated by old schema parser where Memo+ lost PDF Reference
-      const hasStaleEmptyImages = cached && cached.cards && cached.cards.length > 50 && !cached.cards.some(c => ((c.front || '') + (c.back || '')).includes('<img'));
-
-      if (cached && cached.cards && cached.cards.length && !hasCorruptedTags && !isDummyWarning && !hasUnresolvedImages && !hasStaleEmptyImages){
-        hideClinicalDeckLoader();
-        deckTitle.textContent = deckTitleParam || cached.meta.title || 'Clinical Flashcards';
-        deckSub.textContent = `${cached.cards.length} cards · Offline Synaptic Vault`;
-        offlineBadge.style.display = 'inline-flex';
-        allDeckCards = cached.cards;
-        deckCards = buildStudyQueue(allDeckCards, { isCramMode, dailyNewLimit });
-        renderCard();
-        checkResumeBookmark();
-        return;
-      }
-
-      // 3. Resolve target download URL
+      // 2. Resolve target download URL
       let targetUrl = deckUrl;
       let targetTitle = deckTitleParam || 'Clinical Deck';
       let targetFileName = (deckTitleParam ? deckTitleParam.replace(/\.(apkg|zip)$/i, '') : 'deck') + '.apkg';
@@ -4848,6 +4906,39 @@
         } catch(e){
           console.warn('Supabase material query skipped:', e);
         }
+      }
+
+      // 3. Stable Vault Key for Cloud / URL Decks
+      const vaultKey = materialId || ('url-' + encodeURIComponent(deckTitleParam || deckUrl || 'deck'));
+
+      // Check Offline IndexedDB Cache First (instant 0ms load)
+      const cached = await loadDeckFromVault(vaultKey);
+      const hasCorruptedTags = cached && cached.cards && cached.cards.some(c => (c.front && c.front.includes('{{')) || (c.back && c.back.includes('{{')));
+      const isDummyWarning = cached && cached.cards && cached.cards.some(c => 
+        (c.front && c.front.includes('Please update to the latest Anki version')) || 
+        (c.back && c.back.includes('Please update to the latest Anki version'))
+      );
+      // Check for unresolved local image references from legacy buggy parses (e.g. src="Screenshot_...jpg")
+      const hasUnresolvedImages = cached && cached.cards && cached.cards.some(c => {
+        const full = (c.front || '') + (c.back || '');
+        return /<img\b[^>]*?\bsrc=["'](?!data:|http|https|blob:)[^"']+["']/i.test(full);
+      });
+      // Check if cache was generated by old schema parser where Memo+ lost PDF Reference
+      const hasStaleEmptyImages = cached && cached.cards && cached.cards.length > 50 && !cached.cards.some(c => ((c.front || '') + (c.back || '')).includes('<img'));
+      // Self-healing check: does the cached deck expect images but has ZERO live media blobs in vault?
+      const deckExpectsImages = cached && cached.cards && cached.cards.some(c => ((c.front || '') + (c.back || '')).includes('<img'));
+      const hasMissingMediaBlobs = deckExpectsImages && inMemoryMediaCache.size === 0 && Boolean(targetUrl);
+
+      if (cached && cached.cards && cached.cards.length && !hasCorruptedTags && !isDummyWarning && !hasUnresolvedImages && !hasStaleEmptyImages && !hasMissingMediaBlobs){
+        hideClinicalDeckLoader();
+        deckTitle.textContent = deckTitleParam || cached.meta.title || targetTitle || 'Clinical Flashcards';
+        deckSub.textContent = `${cached.cards.length} cards · Offline Synaptic Vault`;
+        offlineBadge.style.display = 'inline-flex';
+        allDeckCards = cached.cards;
+        deckCards = buildStudyQueue(allDeckCards, { isCramMode, dailyNewLimit });
+        renderCard();
+        checkResumeBookmark();
+        return;
       }
 
       // 4. Download & Parse Target Deck with Real-Time Telemetry
@@ -4918,6 +5009,29 @@
           const { cards, mediaBlobMap } = await parseApkg(arrayBuffer, (phase, pct, msg) => {
             updateDeckLoaderProgress(pct, msg, phase);
           });
+
+          // Seamless self-healing: Preserve all user SRS progress from existing cached cards
+          if (cached && cached.cards && cached.cards.length > 0){
+            const srsMap = new Map();
+            cached.cards.forEach(c => {
+              const k = c.originalId || c.id;
+              srsMap.set(k, {
+                reps: c.reps || 0,
+                stability: c.stability || 0,
+                difficulty: c.difficulty || 0,
+                due: c.due || 0,
+                lapses: c.lapses || 0,
+                lastReview: c.lastReview || 0
+              });
+            });
+            cards.forEach(c => {
+              const k = c.originalId || c.id;
+              if (srsMap.has(k)){
+                Object.assign(c, srsMap.get(k));
+              }
+            });
+          }
+
           allDeckCards = cards;
           deckCards = buildStudyQueue(allDeckCards, { isCramMode, dailyNewLimit });
           deckTitle.textContent = targetTitle;
