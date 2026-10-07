@@ -1242,9 +1242,7 @@
     }
     .anki-deck-mobile-bar{
       display:flex !important;
-      align-items:center;
-      justify-content:space-between;
-      flex-wrap:nowrap;
+      flex-direction:column;
       gap:8px;
       margin-top:10px;
       padding-top:10px;
@@ -1254,25 +1252,55 @@
       min-width:0 !important;
       box-sizing:border-box;
     }
+    .anki-deck-mobile-header-row{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      width:100%;
+      min-width:0;
+      box-sizing:border-box;
+    }
     .anki-deck-mobile-counts{
       display:inline-flex;
       align-items:center;
       gap:6px;
       flex-shrink:0;
     }
-    .anki-action-group.mobile-actions{
+    .anki-deck-mobile-quick-actions{
       display:inline-flex;
       align-items:center;
-      flex-wrap:nowrap;
       gap:6px;
-      justify-content:flex-end;
       flex-shrink:0;
     }
-    .anki-study-btn{
-      padding:6px 12px;
-      font-size:0.74rem;
+    .anki-action-group.mobile-actions{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      width:100%;
+      min-width:0;
+      box-sizing:border-box;
+    }
+    .anki-action-group.mobile-actions .anki-resume-btn{
+      flex:1;
+      min-width:0;
+      justify-content:center;
+      height:36px;
+      padding:6px 8px;
+      font-size:0.75rem;
       white-space:nowrap;
-      flex-shrink:0;
+      text-overflow:ellipsis;
+      overflow:hidden;
+      box-sizing:border-box;
+    }
+    .anki-action-group.mobile-actions .anki-study-btn{
+      flex:1;
+      min-width:0;
+      justify-content:center;
+      height:36px;
+      padding:6px 12px;
+      font-size:0.75rem;
+      white-space:nowrap;
+      box-sizing:border-box;
     }
   }
 
@@ -7805,12 +7833,48 @@
                                 ${humanCaption ? `<div class="anki-deck-caption">${escapeHtml(humanCaption)}</div>` : ''}
                               </div>
                             </div>
-                            <div class="anki-deck-mobile-bar mobile-only">
-                              <div class="anki-deck-mobile-counts">
-                                <span class="anki-pill anki-pill-due">${deck.dueCount || 0} ${currentLang === 'ar' ? 'مستحق' : 'Due'}</span>
-                                <span class="anki-pill anki-pill-new">${deck.newCount || 0} ${currentLang === 'ar' ? 'جديد' : 'New'}</span>
+                            <div class="anki-deck-mobile-bar mobile-only ${hasBookmark ? 'has-bookmark' : ''}">
+                              <div class="anki-deck-mobile-header-row">
+                                <div class="anki-deck-mobile-counts">
+                                  <span class="anki-pill anki-pill-due">${deck.dueCount || 0} ${currentLang === 'ar' ? 'مستحق' : 'Due'}</span>
+                                  <span class="anki-pill anki-pill-new">${deck.newCount || 0} ${currentLang === 'ar' ? 'جديد' : 'New'}</span>
+                                </div>
+                                <div class="anki-deck-mobile-quick-actions">
+                                  ${deck.url && deck.url !== '#' ? `
+                                    <a href="${escapeHtml(deck.url)}" download class="anki-admin-btn" title="${currentLang === 'ar' ? 'تحميل ملف .apkg' : 'Download .apkg file'}">
+                                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+                                    </a>
+                                  ` : ''}
+                                  ${isAuth ? `
+                                    <button type="button" class="anki-admin-btn edit" data-curriculum-edit="${escapeHtml(deck.id)}" title="${currentLang === 'ar' ? 'تعديل الحزمة' : 'Edit Deck'}">
+                                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                                    </button>
+                                    <button type="button" class="anki-admin-btn move" data-curriculum-move="${escapeHtml(deck.id)}" title="${currentLang === 'ar' ? 'نقل الحزمة' : 'Move Deck'}">
+                                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="5 9 2 12 5 15"/><polyline points="9 5 12 2 15 5"/><polyline points="15 19 12 22 9 19"/><polyline points="19 9 22 12 19 15"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="12" y1="2" x2="12" y2="22"/></svg>
+                                    </button>
+                                    <button type="button" class="anki-admin-btn del" data-curriculum-del="${escapeHtml(deck.id)}" title="${currentLang === 'ar' ? 'حذف الحزمة' : 'Delete Deck'}">
+                                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                                    </button>
+                                    ${deck.url && deck.url !== '#' ? `
+                                      <button type="button" class="anki-admin-btn inspect" data-curriculum-inspect="${escapeHtml(deck.id)}" title="${currentLang === 'ar' ? 'فحص وتعديل الكروت (SQLite WASM)' : 'Inspect & Edit Cards (SQLite WASM)'}">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="15" height="12" rx="2"/><path d="M7 2h15v12"/></svg>
+                                      </button>
+                                    ` : ''}
+                                  ` : ''}
+                                </div>
                               </div>
-                              ${renderActionButtons(true)}
+                              <div class="anki-action-group mobile-actions ${hasBookmark ? 'has-bookmark' : ''}">
+                                ${hasBookmark ? `
+                                  <a href="${resumeUrl}" target="_blank" class="anki-resume-btn" title="${currentLang === 'ar' ? 'استئناف من علامة التوقف' : 'Resume session from stop sign'}">
+                                    <span>🛑</span>
+                                    <span>${currentLang === 'ar' ? 'استئناف' : 'Resume'} (${bookmark.index + 1}/${bookmark.total || deck.totalCount})</span>
+                                  </a>
+                                ` : ''}
+                                <a href="${studyUrl}" target="_blank" class="anki-study-btn" title="Study with FSRS-5 Workstation">
+                                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                                  <span>${currentLang === 'ar' ? 'مذاكرة' : 'Study'}</span>
+                                </a>
+                              </div>
                             </div>
                           </td>
                           <td class="anki-td anki-td-due desktop-only"><span class="anki-pill anki-pill-due">${deck.dueCount || 0}</span></td>

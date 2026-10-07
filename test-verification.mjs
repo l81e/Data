@@ -1386,8 +1386,35 @@ function suite37() {
   assert(flashHtml.includes('Seamless self-healing: Preserve all user SRS progress'), 'flash.html preserves SRS progress upon downloading repair deck');
 }
 
+// --- Suite 38: Mobile Viewport Responsiveness, Two-Tier Header & Non-Clipping Deck Action Bar ---
+function suite38() {
+  console.log('\n--- Suite 38: Mobile Viewport Responsiveness & Action Bar Contracts ---');
+  const flashHtml = fs.readFileSync('flash.html', 'utf-8');
+  const indexHtml = fs.readFileSync('index.html', 'utf-8');
+
+  // 1. flash.html Two-Tier Header Contract
+  assert(flashHtml.includes('class="header-study-bar"'), 'flash.html defines dedicated header-study-bar container');
+  assert(flashHtml.includes('class="header-tools"'), 'flash.html defines dedicated header-tools container');
+  assert(flashHtml.includes('.header-study-bar .cram-toggle-btn'), 'flash.html styles cram-toggle-btn inside header-study-bar');
+  assert(flashHtml.includes('.header-study-bar .stop-sign-btn'), 'flash.html styles stop-sign-btn inside header-study-bar');
+  assert(flashHtml.includes('@media(max-width:639px)'), 'flash.html defines mobile breakpoint @media(max-width:639px)');
+  assert(flashHtml.includes('order:3') && flashHtml.includes('header-study-bar'), 'flash.html places header-study-bar as full-width Tier 2 on mobile');
+  assert(flashHtml.includes('display:contents') && flashHtml.includes('.header-right'), 'flash.html uses display:contents on header-right for clean 2-tier wrapping');
+  assert(flashHtml.includes('@media(max-width:390px)'), 'flash.html defines ultra-compact mobile rules for <= 390px');
+
+  // 2. index.html Mobile Deck Bar Non-Clipping Architecture
+  assert(indexHtml.includes('.anki-deck-mobile-bar') && indexHtml.includes('flex-direction:column'), 'index.html sets .anki-deck-mobile-bar to flex-direction: column');
+  assert(indexHtml.includes('.anki-deck-mobile-header-row'), 'index.html defines .anki-deck-mobile-header-row for counts and quick tools');
+  assert(indexHtml.includes('.anki-deck-mobile-quick-actions'), 'index.html defines .anki-deck-mobile-quick-actions for download and admin tools');
+  assert(indexHtml.includes('.anki-action-group.mobile-actions'), 'index.html defines .anki-action-group.mobile-actions for dedicated study row');
+  assert(indexHtml.includes('.anki-action-group.mobile-actions .anki-resume-btn') && indexHtml.includes('flex:1'), 'index.html gives .anki-resume-btn flex: 1 for equal 50/50 distribution');
+  assert(indexHtml.includes('.anki-action-group.mobile-actions .anki-study-btn') && indexHtml.includes('flex:1'), 'index.html gives .anki-study-btn flex: 1 for equal distribution');
+  assert(indexHtml.includes('anki-deck-mobile-header-row'), 'index.html template renders anki-deck-mobile-header-row in markup');
+}
+
 suite36();
 suite37();
+suite38();
 
 console.log('\n==================================================');
 if (failures === 0) {
