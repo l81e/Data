@@ -1026,7 +1026,7 @@
 
   /* Deck Table */
   .anki-deck-table{
-    width:100%; border-collapse:collapse; text-align:left;
+    width:100%; border-collapse:separate; border-spacing:0 8px; text-align:left;
   }
   html[dir="rtl"] .anki-deck-table{text-align:right;}
   .anki-th-row{
@@ -1044,11 +1044,38 @@
   html[dir="rtl"] .anki-th-action{text-align:left;}
 
   .anki-deck-row{
-    border-bottom:1px solid var(--line-soft);
-    transition:background .15s;
+    background:var(--panel);
+    border:1px solid var(--line-soft);
+    border-radius:12px;
+    box-shadow:0 2px 8px rgba(0,0,0,0.15);
+    transition:background .15s, border-color .15s, transform .15s, box-shadow .15s;
   }
-  .anki-deck-row:hover{background:var(--panel-hi);}
-  .anki-deck-row:last-child{border-bottom:none;}
+  .anki-deck-row:hover{
+    background:var(--panel-hi);
+    border-color:var(--accent);
+    transform:translateY(-1px);
+    box-shadow:0 4px 14px rgba(0,0,0,0.22);
+  }
+  .anki-deck-row td:first-child{
+    border-top-left-radius:12px;
+    border-bottom-left-radius:12px;
+  }
+  .anki-deck-row td:last-child{
+    border-top-right-radius:12px;
+    border-bottom-right-radius:12px;
+  }
+  html[dir="rtl"] .anki-deck-row td:first-child{
+    border-top-left-radius:0;
+    border-bottom-left-radius:0;
+    border-top-right-radius:12px;
+    border-bottom-right-radius:12px;
+  }
+  html[dir="rtl"] .anki-deck-row td:last-child{
+    border-top-right-radius:0;
+    border-bottom-right-radius:0;
+    border-top-left-radius:12px;
+    border-bottom-left-radius:12px;
+  }
   .anki-td{padding:13px 16px; vertical-align:middle;}
   .anki-td-name{min-width:180px; width:100%;}
   .anki-deck-info-flex{display:flex; align-items:flex-start; gap:10px; min-width:0;}
@@ -1091,6 +1118,24 @@
   }
   .anki-pill-total{
     color:var(--text-dim); background:transparent; font-weight:600; font-size:0.75rem;
+  }
+  .anki-pill-bookmark{
+    display:inline-flex; align-items:center; gap:4px;
+    font-weight:800; font-size:0.72rem; padding:2px 8px; border-radius:6px;
+    color:#f59e0b; background:rgba(245,158,11,0.12); border:1px solid rgba(245,158,11,0.32);
+    white-space:nowrap;
+  }
+  .anki-resume-btn{
+    display:inline-flex; align-items:center; gap:5px;
+    padding:6px 12px; border-radius:6px;
+    background:rgba(245,158,11,0.15); border:1px solid rgba(245,158,11,0.4);
+    color:#f59e0b; font-size:0.76rem; font-weight:800;
+    cursor:pointer; transition:all .15s; text-decoration:none;
+    white-space:nowrap; flex-shrink:0;
+  }
+  .anki-resume-btn:hover{
+    background:#f59e0b; color:#18181b; border-color:#f59e0b;
+    box-shadow:0 0 12px rgba(245,158,11,0.3);
   }
 
   .anki-td-action{text-align:right; white-space:nowrap; width:290px; min-width:290px;}
@@ -1635,15 +1680,25 @@
   }
   .curriculum-module-card.collapsed .curriculum-module-body{display:none;}
 
-  /* Module Body & Subject Tabs */
+  /* Module Body & Subbar & Sorting Toolbar */
   .curriculum-module-body{
     border-top:1px solid var(--line-soft);
     background:rgba(0,0,0,0.06);
   }
+  .curriculum-module-subbar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    border-bottom:1px solid var(--line-soft);
+    padding:8px 16px;
+    gap:12px;
+    background:rgba(0,0,0,0.03);
+  }
   .curriculum-subject-tabs{
     display:flex; align-items:center; gap:6px;
-    padding:10px 18px; border-bottom:1px solid var(--line-soft);
+    padding:2px 0; border-bottom:none;
     overflow-x:auto; scrollbar-width:none; -ms-overflow-style:none;
+    flex:1 1 auto; min-width:0;
   }
   .curriculum-subject-tabs::-webkit-scrollbar{
     display:none; width:0; height:0;
@@ -1663,6 +1718,63 @@
   .curriculum-subject-count{
     font-size:0.68rem; font-weight:800; padding:1px 5px;
     border-radius:10px; background:rgba(255,255,255,0.08);
+  }
+  .curriculum-sort-toolbar{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    flex-shrink:0;
+    user-select:none;
+  }
+  .curriculum-sort-btn-group{
+    display:inline-flex;
+    align-items:center;
+    gap:3px;
+    background:var(--panel);
+    border:1px solid var(--line-soft);
+    border-radius:8px;
+    padding:2px;
+  }
+  .curriculum-sort-btn{
+    display:inline-flex;
+    align-items:center;
+    gap:4px;
+    padding:4px 9px;
+    border-radius:6px;
+    border:none;
+    background:transparent;
+    color:var(--text-dim);
+    font-size:0.72rem;
+    font-weight:700;
+    cursor:pointer;
+    transition:all 0.15s ease;
+    font-family:inherit;
+    line-height:1.2;
+  }
+  .curriculum-sort-btn:hover{
+    color:var(--text);
+    background:var(--panel-hi);
+  }
+  .curriculum-sort-btn.active{
+    background:var(--panel-hi);
+    color:var(--accent);
+    box-shadow:0 1px 3px rgba(0,0,0,0.15);
+  }
+  .sort-direction-badge{
+    font-size:0.65rem;
+    font-weight:800;
+    opacity:0.85;
+  }
+  @media(max-width:640px){
+    .curriculum-module-subbar{
+      flex-direction:column;
+      align-items:stretch;
+      gap:8px;
+      padding:8px 12px;
+    }
+    .curriculum-sort-toolbar{
+      justify-content:flex-end;
+    }
   }
   .curriculum-module-table-wrap{
     overflow-x:auto;
@@ -4980,7 +5092,13 @@
     try {
       if (!window.indexedDB) return;
       const db = await new Promise((res) => {
-        const req = indexedDB.open('mb_synaptic_vault', 2);
+        const req = indexedDB.open('mb_synaptic_vault', 3);
+        req.onupgradeneeded = (e) => {
+          const db = e.target.result;
+          if (!db.objectStoreNames.contains('decks')) db.createObjectStore('decks', { keyPath: 'id' });
+          if (!db.objectStoreNames.contains('cards')) db.createObjectStore('cards', { keyPath: 'id' });
+          if (!db.objectStoreNames.contains('media')) db.createObjectStore('media', { keyPath: 'name' });
+        };
         req.onsuccess = () => res(req.result);
         req.onerror = () => res(null);
       });
@@ -4994,14 +5112,14 @@
       subjects.forEach(subj => {
         (subj.materials || []).forEach(m => {
           if (m.type === 'flashcards'){
-            const deckCards = allCards.filter(c => c.did === m.id || c.did === String(m.id));
+            const deckCards = allCards.filter(c => c.deckId === m.id || c.deckId === String(m.id) || c.did === m.id || c.did === String(m.id));
             const dueEl = containerEl.querySelector(`#ankiDue_${m.id}`);
             const newEl = containerEl.querySelector(`#ankiNew_${m.id}`);
             const totalEl = containerEl.querySelector(`#ankiTotal_${m.id}`);
 
             if (deckCards.length > 0){
-              const due = deckCards.filter(c => c.due && c.due <= now).length;
               const fresh = deckCards.filter(c => !c.reps || c.reps === 0).length;
+              const due = deckCards.filter(c => (c.reps > 0 && c.due && c.due <= now) || (!c.reps)).length;
               if (dueEl) dueEl.textContent = due;
               if (newEl) newEl.textContent = fresh;
               if (totalEl) totalEl.textContent = `${deckCards.length} cards`;
@@ -6840,6 +6958,71 @@
   let curriculumSearchQuery = '';
   let activeModuleSubjects = {}; // moduleCode -> 'all' | subjectName
   let collapsedCurriculumModules = {}; // moduleCode -> boolean
+  let moduleSortState = {}; // moduleCode -> { key: 'title'|'count'|'date', dir: 'asc'|'desc' }
+  try {
+    const savedModuleSort = localStorage.getItem('mb_module_sort_state');
+    if (savedModuleSort) moduleSortState = JSON.parse(savedModuleSort);
+  } catch(e){}
+
+  function getModuleSort(modCode){
+    return moduleSortState[modCode] || { key: 'title', dir: 'asc' };
+  }
+
+  function setModuleSort(modCode, sortKey){
+    const cur = getModuleSort(modCode);
+    let newDir;
+    if (cur.key === sortKey){
+      newDir = cur.dir === 'asc' ? 'desc' : 'asc';
+    } else {
+      newDir = sortKey === 'title' ? 'asc' : 'desc';
+    }
+    moduleSortState[modCode] = { key: sortKey, dir: newDir };
+    try {
+      localStorage.setItem('mb_module_sort_state', JSON.stringify(moduleSortState));
+    } catch(e){}
+    return moduleSortState[modCode];
+  }
+
+  function sortCurriculumDecks(decks, { key = 'title', dir = 'asc' } = {}){
+    if (!Array.isArray(decks)) return [];
+    const copy = [...decks];
+
+    copy.sort((a, b) => {
+      // 1. Alphabetical Title Sorting
+      if (key === 'title'){
+        const res = (a.title || '').localeCompare(b.title || '', undefined, { numeric: true, sensitivity: 'base' });
+        return dir === 'desc' ? -res : res;
+      }
+
+      // 2. Card Count Sorting (with title tie-breaker)
+      if (key === 'count'){
+        const countA = Number(a.totalCount != null ? a.totalCount : ((Number(a.dueCount) || 0) + (Number(a.newCount) || 0))) || 0;
+        const countB = Number(b.totalCount != null ? b.totalCount : ((Number(b.dueCount) || 0) + (Number(b.newCount) || 0))) || 0;
+        const diff = countB - countA; // default high to low
+        if (diff !== 0) return dir === 'asc' ? -diff : diff;
+        return (a.title || '').localeCompare(b.title || '', undefined, { numeric: true });
+      }
+
+      // 3. Upload / Import Date Sorting (with title tie-breaker)
+      if (key === 'date'){
+        const getTime = (d) => {
+          const val = d.createdAt || d.date || '';
+          if (!val) return 0;
+          const t = new Date(val).getTime();
+          return isNaN(t) ? 0 : t;
+        };
+        const timeA = getTime(a);
+        const timeB = getTime(b);
+        const diff = timeB - timeA; // default newest first
+        if (diff !== 0) return dir === 'asc' ? -diff : diff;
+        return (a.title || '').localeCompare(b.title || '', undefined, { numeric: true });
+      }
+
+      return 0;
+    });
+
+    return copy;
+  }
 
   function extractHumanCaption(rawCaption){
     if (!rawCaption) return '';
@@ -7028,6 +7211,12 @@
       if (typeof indexedDB === 'undefined') return;
       const db = await new Promise((resolve, reject) => {
         const req = indexedDB.open('mb_synaptic_vault', 3);
+        req.onupgradeneeded = (e) => {
+          const db = e.target.result;
+          if (!db.objectStoreNames.contains('decks')) db.createObjectStore('decks', { keyPath: 'id' });
+          if (!db.objectStoreNames.contains('cards')) db.createObjectStore('cards', { keyPath: 'id' });
+          if (!db.objectStoreNames.contains('media')) db.createObjectStore('media', { keyPath: 'name' });
+        };
         req.onsuccess = () => resolve(req.result);
         req.onerror = () => reject(req.error);
       });
@@ -7041,19 +7230,48 @@
       const allCards = await new Promise(r => { req.onsuccess = () => r(req.result || []); req.onerror = () => r([]); });
       db.close();
 
+      let dailyNewLimit = 20;
+      try {
+        const ankiSet = JSON.parse(localStorage.getItem('mb_anki_settings') || '{}');
+        if (ankiSet && typeof ankiSet.dailyNewLimit === 'number') dailyNewLimit = ankiSet.dailyNewLimit;
+        else {
+          const savedLimit = localStorage.getItem('mb_daily_new_limit');
+          if (savedLimit !== null) dailyNewLimit = parseInt(savedLimit, 10) || 20;
+        }
+      } catch(e){}
+
       const byDeck = {};
       const now = Date.now();
+      const todayEnd = new Date(now).setHours(23, 59, 59, 999);
+
       allCards.forEach(c => {
         if (!c.deckId) return;
-        if (!byDeck[c.deckId]) byDeck[c.deckId] = { total: 0, due: 0, newCount: 0 };
-        byDeck[c.deckId].total++;
+        if (!byDeck[c.deckId]){
+          byDeck[c.deckId] = { total: 0, reviewDueCount: 0, learningCount: 0, newCount: 0, due: 0 };
+        }
+        const d = byDeck[c.deckId];
+        d.total++;
+
         if (!c.reps || c.reps === 0){
-          byDeck[c.deckId].newCount++;
+          d.newCount++;
         } else {
-          const dueTime = (c.lastReview || 0) + ((c.stability || 1) * 86400000);
-          if (now >= dueTime) byDeck[c.deckId].due++;
+          const dueTimestamp = c.due || ((c.lastReview || 0) + ((c.stability || 1) * 86400000));
+          if (dueTimestamp <= todayEnd){
+            if (c.stability && c.stability < 1){
+              d.learningCount++;
+            } else {
+              d.reviewDueCount++;
+            }
+          }
         }
       });
+
+      // Authentic Anki Due Workload = Due Reviews + Learning in progress + Daily New allocation
+      for (const deckId in byDeck){
+        const d = byDeck[deckId];
+        d.due = d.reviewDueCount + d.learningCount + Math.min(d.newCount, dailyNewLimit);
+      }
+
       vaultStatsCache = byDeck;
     } catch(e){}
   }
@@ -7149,8 +7367,17 @@
 
             const localStats = vaultStatsCache[matId] || vaultStatsCache[mat.id] || null;
             const totalCards = localStats ? localStats.total : parsedCardCount;
-            const dueCards = localStats ? localStats.due : 0;
             const newCards = localStats ? localStats.newCount : totalCards;
+            let dailyLimit = 20;
+            try {
+              const ankiSet = JSON.parse(localStorage.getItem('mb_anki_settings') || '{}');
+              if (ankiSet && typeof ankiSet.dailyNewLimit === 'number') dailyLimit = ankiSet.dailyNewLimit;
+              else {
+                const sl = localStorage.getItem('mb_daily_new_limit');
+                if (sl !== null) dailyLimit = parseInt(sl, 10) || 20;
+              }
+            } catch(e){}
+            const dueCards = localStats ? localStats.due : (totalCards > 0 ? Math.min(totalCards, dailyLimit) : 0);
 
             const deckObj = {
               id: mat.id || lec.id,
@@ -7165,6 +7392,7 @@
               lectureName: lec.name,
               color: lec.color,
               date: lec.date,
+              createdAt: mat.created_at || lec.created_at || lec.date || '',
               year: year,
               moduleCode: mCode,
               subjectName: sName,
@@ -7397,6 +7625,10 @@
         });
       }
 
+      // Apply real-time sorting to moduleDecks
+      const currentSort = getModuleSort(mod.code);
+      moduleDecks = sortCurriculumDecks(moduleDecks, currentSort);
+
       // Hide empty modules with zero decks unless explicitly searched or custom created
       const totalDecksInMod = Object.values(mod.subjects || {}).reduce((acc, arr) => acc + (arr ? arr.length : 0), 0);
       if (totalDecksInMod === 0 && !curriculumSearchQuery && !mod.isCustom) return;
@@ -7450,19 +7682,37 @@
             </div>
           </div>
           <div class="curriculum-module-body">
-            <div class="curriculum-subject-tabs">
-              <button type="button" class="curriculum-subject-tab ${activeSubj === 'all' ? 'active' : ''}" data-mod="${escapeHtml(mod.code)}" data-subj="all">
-                <span>${currentLang === 'ar' ? 'جميع المواد' : 'All Subjects'}</span>
-              </button>
-              ${subjectNames.map(sn => {
-                const count = (mod.subjects[sn] || []).length;
-                return `
-                  <button type="button" class="curriculum-subject-tab ${activeSubj === sn ? 'active' : ''}" data-mod="${escapeHtml(mod.code)}" data-subj="${escapeHtml(sn)}">
-                    <span>${escapeHtml(sn)}</span>
-                    <span class="curriculum-subject-count">${count}</span>
+            <div class="curriculum-module-subbar">
+              <div class="curriculum-subject-tabs">
+                <button type="button" class="curriculum-subject-tab ${activeSubj === 'all' ? 'active' : ''}" data-mod="${escapeHtml(mod.code)}" data-subj="all">
+                  <span>${currentLang === 'ar' ? 'جميع المواد' : 'All Subjects'}</span>
+                </button>
+                ${subjectNames.map(sn => {
+                  const count = (mod.subjects[sn] || []).length;
+                  return `
+                    <button type="button" class="curriculum-subject-tab ${activeSubj === sn ? 'active' : ''}" data-mod="${escapeHtml(mod.code)}" data-subj="${escapeHtml(sn)}">
+                      <span>${escapeHtml(sn)}</span>
+                      <span class="curriculum-subject-count">${count}</span>
+                    </button>
+                  `;
+                }).join('')}
+              </div>
+              <div class="curriculum-sort-toolbar" role="toolbar" aria-label="Deck sorting controls">
+                <div class="curriculum-sort-btn-group">
+                  <button type="button" class="curriculum-sort-btn ${currentSort.key === 'title' ? 'active' : ''}" data-sort-mod="${escapeHtml(mod.code)}" data-sort-key="title" data-sort-dir="${currentSort.key === 'title' ? currentSort.dir : 'asc'}" title="${currentLang === 'ar' ? 'ترتيب أبجدي' : 'Sort alphabetically'}">
+                    <span>${currentLang === 'ar' ? 'أبجدي' : 'A–Z'}</span>
+                    <span class="sort-direction-badge">${currentSort.key === 'title' ? (currentSort.dir === 'asc' ? '↑' : '↓') : ''}</span>
                   </button>
-                `;
-              }).join('')}
+                  <button type="button" class="curriculum-sort-btn ${currentSort.key === 'count' ? 'active' : ''}" data-sort-mod="${escapeHtml(mod.code)}" data-sort-key="count" data-sort-dir="${currentSort.key === 'count' ? currentSort.dir : 'desc'}" title="${currentLang === 'ar' ? 'ترتيب بعدد الكروت' : 'Sort by card count'}">
+                    <span>${currentLang === 'ar' ? 'الكروت' : 'Cards'}</span>
+                    <span class="sort-direction-badge">${currentSort.key === 'count' ? (currentSort.dir === 'desc' ? '↓' : '↑') : ''}</span>
+                  </button>
+                  <button type="button" class="curriculum-sort-btn ${currentSort.key === 'date' ? 'active' : ''}" data-sort-mod="${escapeHtml(mod.code)}" data-sort-key="date" data-sort-dir="${currentSort.key === 'date' ? currentSort.dir : 'desc'}" title="${currentLang === 'ar' ? 'ترتيب بتاريخ الإضافة' : 'Sort by upload date'}">
+                    <span>${currentLang === 'ar' ? 'التاريخ' : 'Date'}</span>
+                    <span class="sort-direction-badge">${currentSort.key === 'date' ? (currentSort.dir === 'desc' ? '↓' : '↑') : ''}</span>
+                  </button>
+                </div>
+              </div>
             </div>
             <div class="curriculum-module-table-wrap">
               ${moduleDecks.length === 0 ? `
@@ -7488,8 +7738,26 @@
                       const isAuth = isAdminAuthenticated();
                       const humanCaption = extractHumanCaption(deck.caption);
 
+                      const deckKey = deck.materialId || deck.id;
+                      let bookmark = null;
+                      try {
+                        const bRaw = localStorage.getItem('mb_bookmark_' + deckKey) || 
+                                     localStorage.getItem('mb_bookmark_url-' + encodeURIComponent(deck.title || deck.url || 'deck')) ||
+                                     localStorage.getItem('mb_bookmark_url-' + encodeURIComponent(deck.url || 'deck'));
+                        if (bRaw) bookmark = JSON.parse(bRaw);
+                      } catch(e){}
+
+                      const hasBookmark = bookmark && typeof bookmark.index === 'number' && (bookmark.total || 0) > 1 && bookmark.index > 0;
+                      const resumeUrl = `${studyUrl}&resume=1`;
+
                       const renderActionButtons = (isMobile = false) => `
                         <div class="anki-action-group ${isMobile ? 'mobile-actions' : ''}">
+                          ${hasBookmark ? `
+                            <a href="${resumeUrl}" target="_blank" class="anki-resume-btn" title="${currentLang === 'ar' ? 'استئناف من علامة التوقف' : 'Resume session from stop sign'}">
+                              <span>🛑</span>
+                              <span>${currentLang === 'ar' ? 'استئناف' : 'Resume'} (${bookmark.index + 1}/${bookmark.total || deck.totalCount})</span>
+                            </a>
+                          ` : ''}
                           <a href="${studyUrl}" target="_blank" class="anki-study-btn" title="Study with FSRS-5 Workstation">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
                             <span>${currentLang === 'ar' ? 'مذاكرة' : 'Study'}</span>
@@ -7528,6 +7796,11 @@
                                 <div class="anki-deck-meta-row">
                                   <span class="anki-subj-tag">${escapeHtml(deck.subjTag || (currentLang === 'ar' ? 'عام' : 'General'))}</span>
                                   ${deck.fileName ? `<span>${escapeHtml(deck.fileName)}</span>` : ''}
+                                  ${hasBookmark ? `
+                                    <span class="anki-pill-bookmark" title="${currentLang === 'ar' ? 'علامة توقف محفوظة' : 'Saved stop sign bookmark'}">
+                                      🛑 ${currentLang === 'ar' ? 'متوقف عند' : 'Card'} ${bookmark.index + 1}/${bookmark.total || deck.totalCount}
+                                    </span>
+                                  ` : ''}
                                 </div>
                                 ${humanCaption ? `<div class="anki-deck-caption">${escapeHtml(humanCaption)}</div>` : ''}
                               </div>
@@ -7611,6 +7884,17 @@
         const modCode = tab.dataset.mod;
         const subj = tab.dataset.subj;
         activeModuleSubjects[modCode] = subj;
+        renderCurriculumExplorer();
+      });
+    });
+
+    // Bind Sort Buttons
+    container.querySelectorAll('.curriculum-sort-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const modCode = btn.dataset.sortMod;
+        const sortKey = btn.dataset.sortKey;
+        setModuleSort(modCode, sortKey);
         renderCurriculumExplorer();
       });
     });
@@ -8200,6 +8484,31 @@
         if (e.target === moveOverlay) closeMoveDeckModal();
       });
     }
+
+    // Live Cross-Tab Synchronization with Flashcard Workstation
+    try {
+      if (typeof BroadcastChannel !== 'undefined'){
+        const bc = new BroadcastChannel('mb_vault_channel');
+        bc.onmessage = (ev) => {
+          if (ev.data && (ev.data.type === 'CARD_RATED' || ev.data.type === 'BOOKMARK_SAVED' || ev.data.type === 'SETTINGS_SAVED')){
+            loadVaultStatsCache().then(() => renderCurriculumExplorer());
+          }
+        };
+      }
+      window.addEventListener('storage', (e) => {
+        if (e.key && (e.key.startsWith('mb_vault_') || e.key.startsWith('mb_bookmark_') || e.key === 'mb_anki_settings')){
+          loadVaultStatsCache().then(() => renderCurriculumExplorer());
+        }
+      });
+      window.addEventListener('focus', () => {
+        loadVaultStatsCache().then(() => renderCurriculumExplorer());
+      });
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible'){
+          loadVaultStatsCache().then(() => renderCurriculumExplorer());
+        }
+      });
+    } catch(e){}
   }
 
   /* ---------------- custom page slider & scrubber ---------------- */

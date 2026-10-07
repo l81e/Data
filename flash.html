@@ -332,6 +332,21 @@
     border-radius:50%; background:var(--accent);
   }
 
+  /* Cram All / Free Study Toggle Button */
+  .cram-toggle-btn{
+    display:inline-flex; align-items:center; gap:6px;
+    height:34px; padding:0 12px; border-radius:999px;
+    background:var(--panel-hi); border:1px solid var(--line);
+    color:var(--text-dim); font-size:0.75rem; font-weight:700;
+    cursor:pointer; transition:all .18s cubic-bezier(0.16,1,0.3,1);
+    user-select:none; white-space:nowrap; flex-shrink:0;
+  }
+  .cram-toggle-btn:hover{border-color:var(--accent); color:var(--accent);}
+  .cram-toggle-btn.is-cram{
+    background:var(--accent-glow); border-color:var(--accent);
+    color:var(--accent); box-shadow:0 0 12px rgba(6,182,212,0.25);
+  }
+
   /* Settings Dropdown Panel */
   .settings-panel{
     position:absolute;
@@ -443,12 +458,17 @@
   /* ---------- STUDY STAGE ---------- */
   .study-view{
     flex:1; display:flex; flex-direction:column;
+    align-items:center;
     min-height:0; position:relative;
+    width:100%; max-width:720px;
+    margin:0 auto;
   }
 
   .card-stage{
     position:relative;
     perspective:1600px;
+    width:100%; max-width:720px;
+    height:clamp(360px, 58vh, 520px);
     flex:1; min-height:0;
     display:flex; align-items:center; justify-content:center;
     margin-bottom:12px;
@@ -590,13 +610,14 @@
 
   /* ---------- ACTION BARS ---------- */
   .action-container{
-    width:100%; flex-shrink:0;
+    width:100%; max-width:720px; flex-shrink:0;
     display:flex; flex-direction:column; gap:8px;
+    margin:0 auto;
   }
 
   /* Reveal Button (Unflipped state) */
   .reveal-btn{
-    width:100%; height:50px; border-radius:14px;
+    width:100%; height:56px; border-radius:14px;
     background:linear-gradient(135deg, var(--accent), #38bdf8);
     color:#000; border:none; cursor:pointer;
     font-size:0.92rem; font-weight:800;
@@ -635,6 +656,96 @@
   }
   .rate-ivl{
     font-size:0.68rem; font-family:'JetBrains Mono',monospace; opacity:0.85; margin-top:1px;
+  }
+
+  /* Responsive Mobile Adaptations (Pixel-perfect on all screen sizes) */
+  @media(max-width:480px){
+    main{padding:4px 8px 12px;}
+    .study-view{max-width:100%;}
+    .card-stage{max-width:100%; height:clamp(320px, 54vh, 480px); margin-bottom:8px;}
+    .action-container{max-width:100%;}
+    .flip-face{padding:16px 14px; border-radius:14px;}
+    .rating-grid{gap:6px;}
+    .rate-btn{height:52px; border-radius:11px; padding:2px 4px;}
+    .rate-label{font-size:0.72rem; gap:2px;}
+    .rate-label small{display:none;}
+    .rate-ivl{font-size:0.68rem;}
+  }
+
+  /* Stop Sign Chip Button */
+  .stop-sign-btn{
+    display:inline-flex; align-items:center; gap:6px;
+    height:34px; padding:0 12px; border-radius:999px;
+    background:var(--panel-hi); border:1px solid var(--line);
+    color:var(--text-dim); font-size:0.75rem; font-weight:700;
+    cursor:pointer; transition:all .18s cubic-bezier(0.16,1,0.3,1);
+    user-select:none; white-space:nowrap; flex-shrink:0;
+  }
+  .stop-sign-btn:hover{
+    border-color:#ef4444; color:#ef4444; background:rgba(239,68,68,0.1);
+  }
+  .stop-sign-btn.active{
+    border-color:#ef4444; color:#ef4444; background:rgba(239,68,68,0.18);
+    box-shadow:0 0 10px rgba(239,68,68,0.25);
+  }
+
+  /* Resume Session Stop Sign Banner */
+  .resume-session-banner{
+    width:100%; max-width:720px; margin:0 auto 10px;
+    background:linear-gradient(135deg, rgba(239,68,68,0.12), rgba(249,115,22,0.12));
+    border:1px solid rgba(239,68,68,0.35); border-radius:14px;
+    padding:10px 14px; display:flex; align-items:center; justify-content:space-between;
+    gap:12px; animation:bannerSlideDown .25s ease-out; box-sizing:border-box;
+  }
+  @keyframes bannerSlideDown{from{opacity:0; transform:translateY(-8px);} to{opacity:1; transform:translateY(0);}}
+  .resume-banner-left{display:flex; align-items:center; gap:10px; min-width:0; flex:1;}
+  .resume-banner-icon{font-size:1.35rem; flex-shrink:0;}
+  .resume-banner-text{font-size:0.82rem; font-weight:800; color:var(--text); line-height:1.3;}
+  .resume-banner-sub{font-size:0.7rem; color:var(--text-faint); font-family:'JetBrains Mono',monospace; margin-top:1px;}
+  .resume-banner-actions{display:flex; align-items:center; gap:6px; flex-shrink:0;}
+  .resume-btn-jump{
+    padding:6px 12px; border-radius:8px; font-size:0.75rem; font-weight:800;
+    background:#ef4444; color:#fff; border:none; cursor:pointer;
+    transition:transform .12s, filter .15s;
+  }
+  .resume-btn-jump:hover{filter:brightness(1.1); transform:scale(1.02);}
+  .resume-btn-dismiss{
+    padding:6px 8px; border-radius:8px; font-size:0.75rem; font-weight:700;
+    background:var(--panel-hi); color:var(--text-dim); border:1px solid var(--line);
+    cursor:pointer;
+  }
+  .resume-btn-dismiss:hover{color:var(--text); background:var(--panel);}
+
+  /* Anki Options Modal Form */
+  .anki-settings-group{
+    margin-bottom:18px; padding-bottom:14px; border-bottom:1px solid var(--line-soft);
+  }
+  .anki-settings-group:last-child{margin-bottom:0; padding-bottom:0; border-bottom:none;}
+  .anki-settings-title{
+    font-size:0.86rem; font-weight:800; color:var(--text); margin-bottom:4px;
+    display:flex; align-items:center; gap:8px;
+  }
+  .anki-settings-desc{
+    font-size:0.73rem; color:var(--text-faint); margin-bottom:10px; line-height:1.45;
+  }
+  .anki-settings-row{
+    display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:10px;
+  }
+  .anki-settings-label{
+    font-size:0.78rem; font-weight:700; color:var(--text-dim);
+  }
+  .anki-select, .anki-input{
+    padding:6px 10px; border-radius:8px; background:var(--bg); border:1px solid var(--line);
+    color:var(--text); font-size:0.78rem; font-family:inherit; min-width:140px;
+  }
+  .anki-range-wrap{
+    display:flex; align-items:center; gap:10px; flex:1; max-width:200px;
+  }
+  .anki-range-slider{
+    flex:1; accent-color:var(--accent); cursor:pointer;
+  }
+  .anki-range-val{
+    font-family:'JetBrains Mono',monospace; font-size:0.76rem; font-weight:800; min-width:36px; text-align:right; color:var(--accent);
   }
 
   /* Auxiliary Footer Utility Controls */
@@ -1122,10 +1233,27 @@
     </div>
 
     <div class="header-right">
+      <!-- Cram All / Daily Queue Instant Toggle -->
+      <button type="button" class="cram-toggle-btn" id="cramToggleBtn" title="Toggle between Daily Queue and Cram All mode">
+        <span id="cramToggleIcon">⚡</span>
+        <span id="cramToggleText" data-en="Cram All" data-ar="مذاكرة شاملة">Cram All</span>
+      </button>
+
+      <!-- Stop Sign / Bookmark Session Button -->
+      <button type="button" class="stop-sign-btn" id="stopSignBtn" title="Set Stop Sign / Bookmark Current Progress">
+        <span id="stopSignIcon">🛑</span>
+        <span id="stopSignText" data-en="Stop Sign" data-ar="علامة توقف">Stop Sign</span>
+      </button>
+
       <!-- Pacing Stopwatch / USMLE 60s Countdown Timer -->
       <button type="button" class="timer-chip" id="sessionTimerBtn" title="Clinical Exam Pace Timer (Click to toggle modes)">
         <span id="timerModeIcon">⏱️</span>
         <span id="timerDisplay">0:00</span>
+      </button>
+
+      <!-- Anki Deck Options & FSRS Timings Modal Trigger -->
+      <button type="button" class="icon-btn" id="ankiSettingsBtn" title="Anki Deck Study Options & FSRS Timings" aria-label="Deck study options">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
       </button>
 
       <!-- Open Local .apkg Trigger -->
@@ -1145,6 +1273,24 @@
 
       <!-- Settings Dropdown Panel -->
       <div class="settings-panel" id="settingsPanel">
+        <div class="settings-item" id="ankiDeckOptionsRow">
+          <div class="row-label">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2"/></svg>
+            <span data-en="Anki Options & Timings" data-ar="خيارات أنكي وفواصل التكرار">Anki Options & Timings</span>
+          </div>
+          <span style="font-size:0.75rem;color:var(--accent);font-weight:800;">⚙️</span>
+        </div>
+
+        <div class="settings-item" id="stopSignMenuRow">
+          <div class="row-label">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><rect x="9" y="9" width="6" height="6"/></svg>
+            <span data-en="Stop Sign / Bookmark" data-ar="علامة توقف / حفظ التقدم">Stop Sign / Bookmark</span>
+          </div>
+          <span id="stopSignMenuStatus" style="font-size:0.7rem;color:var(--text-faint);font-family:'JetBrains Mono',monospace;">None</span>
+        </div>
+
+        <div class="settings-divider"></div>
+
         <div class="settings-item" id="langToggleRow">
           <div class="row-label">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
@@ -1176,6 +1322,23 @@
             <span data-en="Swipe Direction Cues (HUD)" data-ar="إرشادات اتجاهات السحب (HUD)">Swipe Direction Cues (HUD)</span>
           </div>
           <span id="compassCheckmark"></span>
+        </div>
+
+        <div class="settings-divider"></div>
+
+        <div class="settings-item" id="dailyLimitRow">
+          <div class="row-label">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            <span id="dailyLimitLabel">Daily New Cards: 20</span>
+          </div>
+        </div>
+
+        <div class="settings-item" id="burySiblingsRow">
+          <div class="row-label">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+            <span id="burySiblingsLabel">Bury Sibling Cards</span>
+          </div>
+          <span id="burySiblingsCheckmark">✓</span>
         </div>
 
         <div class="settings-divider"></div>
@@ -1237,6 +1400,21 @@
         <span class="compass-item"><span data-en="Good" data-ar="جيد">Good</span> <span class="compass-dot-good">→</span></span>
         <span>·</span>
         <span class="compass-item"><span class="compass-dot-easy">↑</span> <span data-en="Easy" data-ar="سهل">Easy</span></span>
+      </div>
+
+      <!-- Resume Session Stop Sign Banner -->
+      <div class="resume-session-banner" id="resumeSessionBanner" style="display:none;">
+        <div class="resume-banner-left">
+          <span class="resume-banner-icon">🛑</span>
+          <div>
+            <div class="resume-banner-text" id="resumeBannerText" data-en="Session Bookmark: You stopped at Card 1" data-ar="علامة توقف: توقفت عند البطاقة 1">Session Bookmark: You stopped at Card 1</div>
+            <div class="resume-banner-sub" id="resumeBannerSub" data-en="Paused earlier · Continue where you left off" data-ar="تم التوقف سابقاً · استكمل من حيث توقفت">Paused earlier · Continue where you left off</div>
+          </div>
+        </div>
+        <div class="resume-banner-actions">
+          <button type="button" class="resume-btn-jump" id="resumeJumpBtn" data-en="Resume" data-ar="استكمال">Resume</button>
+          <button type="button" class="resume-btn-dismiss" id="resumeDismissBtn" title="Dismiss" aria-label="Dismiss">✕</button>
+        </div>
       </div>
 
       <!-- 3D Perspective Card Stage -->
@@ -1479,6 +1657,161 @@
     </div>
   </div>
 
+  <!-- ── Anki FSRS Deck Options & Timings Modal ── -->
+  <div class="modal-overlay" id="ankiSettingsModal" role="dialog" aria-modal="true">
+    <div class="modal-box">
+      <div class="modal-head">
+        <div class="modal-title" style="display:flex;align-items:center;gap:8px;">
+          <span>🧠</span>
+          <span data-en="Anki FSRS Deck Options & Timings" data-ar="خيارات أنكي وفواصل التكرار">Anki FSRS Deck Options & Timings</span>
+        </div>
+        <button type="button" class="modal-close-btn" id="closeAnkiSettingsBtn" title="Close">✕</button>
+      </div>
+      <div class="modal-body">
+        <!-- Section 1: Learning Steps & Interval Timings -->
+        <div class="anki-settings-group">
+          <div class="anki-settings-title">
+            <span>⏱️</span>
+            <span data-en="Learning Steps & Interval Timings" data-ar="خطوات التعلم وفواصل التكرار">Learning Steps & Interval Timings</span>
+          </div>
+          <div class="anki-settings-desc" data-en="Controls delays when rating Again or learning new cards. Steps define repeated review before graduation." data-ar="تحدد الفترة الزمنية لإعادة ظهور الكارت عند الضغط على 'مجدداً' أو أثناء التعلم الأولي.">
+            Controls delays when rating Again or learning new cards.
+          </div>
+          <div class="anki-settings-row">
+            <label class="anki-settings-label" for="settingLearningSteps" data-en="Learning Steps:" data-ar="خطوات التعلم:">Learning Steps:</label>
+            <select class="anki-select" id="settingLearningSteps">
+              <option value="10m">10m (Anki Single Step - Default)</option>
+              <option value="1m 10m">1m, 10m (Standard Anki Two-Step)</option>
+              <option value="1m 5m 15m">1m, 5m, 15m (Intensive Drill)</option>
+              <option value="5m 20m">5m, 20m (Medical Moderate)</option>
+              <option value="custom">Custom Steps…</option>
+            </select>
+          </div>
+          <div class="anki-settings-row" id="customStepsRow" style="display:none;">
+            <label class="anki-settings-label" for="settingCustomSteps" data-en="Custom Steps (minutes):" data-ar="فترات مخصصة (دقائق):">Custom Steps:</label>
+            <input type="text" class="anki-input" id="settingCustomSteps" placeholder="e.g. 1m 10m" value="10m" />
+          </div>
+          <div class="anki-settings-row">
+            <label class="anki-settings-label" for="settingGraduatingIvl" data-en="Graduating Interval (Good):" data-ar="فاصل التخرج (جيد):">Graduating Interval:</label>
+            <select class="anki-select" id="settingGraduatingIvl">
+              <option value="1" selected>1 day (Standard)</option>
+              <option value="2">2 days</option>
+              <option value="3">3 days</option>
+            </select>
+          </div>
+          <div class="anki-settings-row">
+            <label class="anki-settings-label" for="settingEasyIvl" data-en="Easy Interval:" data-ar="فاصل الكارت السهل:">Easy Interval:</label>
+            <select class="anki-select" id="settingEasyIvl">
+              <option value="4" selected>4 days (Standard)</option>
+              <option value="7">7 days</option>
+              <option value="14">14 days</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Section 2: FSRS-5 Target Retention -->
+        <div class="anki-settings-group">
+          <div class="anki-settings-title">
+            <span>🎯</span>
+            <span data-en="FSRS-5 Target Retention" data-ar="نسبة الاستذكار المستهدفة">FSRS-5 Target Retention</span>
+          </div>
+          <div class="anki-settings-desc" data-en="Desired probability of recalling a card upon review (Standard: 90%). Higher values yield shorter intervals." data-ar="النسبة المئوية المرغوبة لتذكر المعلومة عند المراجعة (الافتراضي: 90%).">
+            Desired probability of recalling a card upon review.
+          </div>
+          <div class="anki-settings-row">
+            <label class="anki-settings-label" for="settingTargetRetention" data-en="Target Retention:" data-ar="النسبة المستهدفة:">Target Retention:</label>
+            <div class="anki-range-wrap">
+              <input type="range" class="anki-range-slider" id="settingTargetRetention" min="70" max="97" step="1" value="90" />
+              <span class="anki-range-val" id="targetRetentionVal">90%</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 3: Daily Limits -->
+        <div class="anki-settings-group">
+          <div class="anki-settings-title">
+            <span>📅</span>
+            <span data-en="Daily Workload Limits" data-ar="الحدود اليومية للمذاكرة">Daily Workload Limits</span>
+          </div>
+          <div class="anki-settings-desc" data-en="Maximum number of new cards to introduce and reviews to schedule each day." data-ar="الحد الأقصى لعدد الكروت الجديدة والمراجعات المجدولة يومياً.">
+            Maximum number of new cards and reviews per day.
+          </div>
+          <div class="anki-settings-row">
+            <label class="anki-settings-label" for="settingDailyNew" data-en="Max New Cards / Day:" data-ar="كروت جديدة / يوم:">Max New Cards / Day:</label>
+            <select class="anki-select" id="settingDailyNew">
+              <option value="10">10 cards</option>
+              <option value="20" selected>20 cards (Default)</option>
+              <option value="30">30 cards</option>
+              <option value="50">50 cards</option>
+              <option value="100">100 cards</option>
+              <option value="99999">Unlimited (All)</option>
+            </select>
+          </div>
+          <div class="anki-settings-row">
+            <label class="anki-settings-label" for="settingDailyReviews" data-en="Max Reviews / Day:" data-ar="أقصى مراجعات / يوم:">Max Reviews / Day:</label>
+            <select class="anki-select" id="settingDailyReviews">
+              <option value="50">50 cards</option>
+              <option value="100">100 cards</option>
+              <option value="200" selected>200 cards (Default)</option>
+              <option value="500">500 cards</option>
+              <option value="99999">Unlimited</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Section 4: Cram Mode & Custom Study Quota -->
+        <div class="anki-settings-group">
+          <div class="anki-settings-title">
+            <span>⚡</span>
+            <span data-en="Cram Mode & Card Quota" data-ar="المذاكرة الشاملة وعدد الكروت">Cram Mode & Card Quota</span>
+          </div>
+          <div class="anki-settings-desc" data-en="Review cards anytime regardless of due dates. Choose how many cards to study." data-ar="مذاكرة الكروت في أي وقت بدون قيود التواريخ. حدد عدد الكروت المرغوبة.">
+            Review cards anytime regardless of due dates.
+          </div>
+          <div class="anki-settings-row">
+            <label class="anki-settings-label" for="settingCramActive" data-en="Cram Mode Active:" data-ar="تفعيل المذاكرة الشاملة:">Cram Mode Active:</label>
+            <input type="checkbox" id="settingCramActive" style="width:18px;height:18px;accent-color:var(--accent);cursor:pointer;" />
+          </div>
+          <div class="anki-settings-row">
+            <label class="anki-settings-label" for="settingCramQuota" data-en="Cram Card Limit:" data-ar="حد كروت الجلسة:">Cram Card Limit:</label>
+            <select class="anki-select" id="settingCramQuota">
+              <option value="0" selected>All Cards in Deck (Full Deck)</option>
+              <option value="10">10 Cards (Quick Drill)</option>
+              <option value="25">25 Cards</option>
+              <option value="50">50 Cards</option>
+              <option value="100">100 Cards</option>
+              <option value="custom">Custom Quota…</option>
+            </select>
+          </div>
+          <div class="anki-settings-row" id="customCramRow" style="display:none;">
+            <label class="anki-settings-label" for="settingCustomCram" data-en="Custom Number of Cards:" data-ar="عدد الكروت المخصص:">Custom Cards:</label>
+            <input type="number" class="anki-input" id="settingCustomCram" min="1" max="1000" placeholder="e.g. 15" value="20" />
+          </div>
+        </div>
+
+        <!-- Section 5: Stop Sign & Session Bookmark -->
+        <div class="anki-settings-group">
+          <div class="anki-settings-title">
+            <span>🛑</span>
+            <span data-en="Stop Sign & Session Bookmark" data-ar="علامة التوقف وحفظ التقدم">Stop Sign & Session Bookmark</span>
+          </div>
+          <div class="anki-settings-desc" id="settingBookmarkDesc" data-en="Remember where you stopped in this deck to continue seamlessly next time." data-ar="تذكر أين توقفت في هذه الحزمة للمتابعة بسهولة في الجلسة القادمة.">
+            Remember where you stopped in this deck.
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;">
+            <button type="button" class="secondary-btn" id="setBookmarkCurrentBtn">🛑 Place Stop Sign Here</button>
+            <button type="button" class="secondary-btn" id="jumpToBookmarkBtn">📍 Jump to Bookmark</button>
+            <button type="button" class="secondary-btn" id="clearBookmarkBtn" style="color:var(--err);">✕ Clear Bookmark</button>
+          </div>
+        </div>
+
+        <div style="margin-top:16px;display:flex;justify-content:flex-end;gap:8px;">
+          <button type="button" class="primary-btn" id="saveAnkiSettingsBtn" style="width:100%;justify-content:center;">Save & Apply Settings</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script>
   (function(){
     'use strict';
@@ -1572,6 +1905,9 @@
         langLabel.textContent = lang === 'ar' ? 'اللغة: عربي' : 'Language: English';
       }
       renderThemeMenu();
+      if (typeof updateCramToggleUI === 'function') updateCramToggleUI();
+      if (typeof updateDailyLimitUI === 'function') updateDailyLimitUI();
+      if (typeof updateBurySiblingsUI === 'function') updateBurySiblingsUI();
     }
 
     /* =========================================================================
@@ -1582,7 +1918,55 @@
       0.1192, 1.0192, 1.9395, 0.11, 0.296, 0.227, 0.2595, 2.9466, 0.5, 0.6391
     ];
     const FSRS_FACTOR = 19 / 81; // ~0.2345679
-    const TARGET_RETENTION = 0.90;
+    let TARGET_RETENTION = 0.90;
+
+    // ── Persistent Anki Deck Options & FSRS-5 Timings State ──
+    const ANKI_SETTINGS_LS_KEY = 'mb_anki_settings';
+    let ankiSettings = {
+      learningSteps: '10m', // default single step (e.g. 10m, or 1m 10m, or custom)
+      graduatingInterval: 1, // days (default 1d)
+      easyInterval: 4, // days (default 4d)
+      targetRetention: 0.90, // 0.70 - 0.97
+      dailyNewLimit: 20,
+      dailyReviewLimit: 200,
+      cramBatchSize: 0, // 0 = all cards
+      cramActive: false,
+      cramFilter: 'all'
+    };
+
+    function parseLearningSteps(str){
+      if (!str || typeof str !== 'string') return [10 / 1440];
+      const parts = str.trim().split(/\s+/);
+      const daysArr = [];
+      for (const p of parts){
+        const m = p.match(/^(\d+(?:\.\d+)?)(m|h|d)?$/i);
+        if (m){
+          const val = parseFloat(m[1]);
+          const unit = (m[2] || 'm').toLowerCase();
+          if (unit === 'm') daysArr.push(val / 1440);
+          else if (unit === 'h') daysArr.push((val * 60) / 1440);
+          else if (unit === 'd') daysArr.push(val);
+        }
+      }
+      return daysArr.length ? daysArr : [10 / 1440];
+    }
+
+    function loadAnkiSettings(){
+      try {
+        const raw = localStorage.getItem(ANKI_SETTINGS_LS_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          ankiSettings = { ...ankiSettings, ...parsed };
+        }
+        const sLimit = localStorage.getItem('mb_daily_new_limit') || localStorage.getItem('mb_daily_limit');
+        if (sLimit) ankiSettings.dailyNewLimit = parseInt(sLimit, 10) || ankiSettings.dailyNewLimit;
+        const sCram = localStorage.getItem('mb_cram_mode');
+        if (sCram !== null) ankiSettings.cramActive = sCram === 'true';
+
+        TARGET_RETENTION = ankiSettings.targetRetention || 0.90;
+      } catch(e){}
+    }
+    loadAnkiSettings();
 
     function calculateInitialStability(rating){
       return Math.max(0.1, FSRS_W[rating - 1] || 1.0);
@@ -1614,11 +1998,16 @@
     }
     function calculateInterval(stability, desiredRetention = TARGET_RETENTION){
       if (stability <= 0) return 1;
-      const days = (stability / FSRS_FACTOR) * (Math.pow(desiredRetention, -2) - 1);
+      const ret = desiredRetention || TARGET_RETENTION || 0.90;
+      const days = (stability / FSRS_FACTOR) * (Math.pow(ret, -2) - 1);
       return Math.max(1, Math.round(days));
     }
     function formatInterval(days){
-      if (days < 1 / 144) return '< 10m';
+      if (days <= 0.0008) return '< 1m';
+      if (days < 0.04) {
+        const mins = Math.max(1, Math.round(days * 1440));
+        return mins <= 10 ? `< ${mins}m` : `${mins}m`;
+      }
       if (days < 1) {
         const hours = Math.round(days * 24);
         return hours <= 1 ? '1h' : `${hours}h`;
@@ -1635,12 +2024,15 @@
       let s = card.stability || 0;
       let d = card.difficulty || 0;
 
-      if (s === 0 || d === 0){
-        // New Card
+      const steps = parseLearningSteps(ankiSettings.learningSteps);
+      const isNew = !card.reps || card.reps === 0;
+
+      if (s === 0 || d === 0 || isNew){
+        // New Card Learning
         s = calculateInitialStability(rating);
         d = calculateInitialDifficulty(rating);
       } else {
-        // Review Card
+        // Review Card Recall / Forget
         const r = calculateRetrievability(elapsedDays, s);
         d = calculateNextDifficulty(d, rating);
         if (rating === 1){
@@ -1649,7 +2041,34 @@
           s = calculateNextStabilityOnRecall(d, s, r, rating);
         }
       }
-      const intervalDays = rating === 1 ? (10 / 1440) : calculateInterval(s, TARGET_RETENTION);
+
+      let intervalDays = 1;
+      if (rating === 1){
+        // Again: Reset to first learning step
+        intervalDays = steps[0] || (10 / 1440);
+      } else if (rating === 2){
+        // Hard: Intermediate step or penalty
+        if (isNew){
+          intervalDays = steps.length > 1 ? steps[Math.min(1, steps.length - 1)] : Math.max(steps[0] * 1.5, 0.01);
+        } else {
+          intervalDays = Math.max(1, Math.round(calculateInterval(s, TARGET_RETENTION) * 0.8));
+        }
+      } else if (rating === 3){
+        // Good: Graduating interval or standard FSRS calculation
+        if (isNew){
+          intervalDays = ankiSettings.graduatingInterval || 1;
+        } else {
+          intervalDays = calculateInterval(s, TARGET_RETENTION);
+        }
+      } else if (rating === 4){
+        // Easy: Easy interval or bonus FSRS calculation
+        if (isNew){
+          intervalDays = ankiSettings.easyInterval || 4;
+        } else {
+          intervalDays = Math.max(ankiSettings.easyInterval || 4, Math.round(calculateInterval(s, TARGET_RETENTION) * 1.3));
+        }
+      }
+
       return { stability: s, difficulty: d, intervalDays, formatted: formatInterval(intervalDays) };
     }
 
@@ -1673,6 +2092,7 @@
 
     function resetDeckState(){
       revokeAndClearMediaCache();
+      allDeckCards = [];
       deckCards = [];
       currentIndex = 0;
       reviewHistory = [];
@@ -1701,6 +2121,27 @@
       return idbPromise;
     }
 
+    async function persistCardReview(card){
+      if (!card) return;
+      try {
+        const db = await openVault();
+        const tx = db.transaction('cards', 'readwrite');
+        const cardStore = tx.objectStore('cards');
+        const origId = card.originalId || card.id;
+        const deckId = card.deckId || currentActiveDeckId || 'local-deck';
+        const scopedCardId = `${deckId}:::${origId}`;
+        cardStore.put({
+          ...card,
+          id: scopedCardId,
+          originalId: origId,
+          deckId: deckId
+        });
+        await new Promise((res, rej) => { tx.oncomplete = res; tx.onerror = rej; });
+      } catch(e){
+        console.warn('persistCardReview error:', e);
+      }
+    }
+
     function extractCleanFilename(src){
       if (!src) return '';
       try {
@@ -1712,40 +2153,43 @@
       }
     }
 
-    async function getMediaBlobUrl(filename){
+    async function getMediaBlobUrl(filename, deckId){
       if (!filename) return null;
-      const clean = decodeURIComponent(filename);
-      if (inMemoryMediaCache.has(clean)) return inMemoryMediaCache.get(clean);
-      if (inMemoryMediaCache.has(clean.toLowerCase())) return inMemoryMediaCache.get(clean.toLowerCase());
-      if (inMemoryMediaCache.has(filename)) return inMemoryMediaCache.get(filename);
+      let clean = filename;
+      try { clean = decodeURIComponent(filename); } catch(e){}
+      clean = clean.trim().replace(/^.*[\\\/]/, '');
+      const targetDeckId = deckId || currentActiveDeckId;
+      if (!targetDeckId) return null;
+
+      const scopedKey = `${targetDeckId}:::${clean}`;
+      const scopedKeyLower = `${targetDeckId}:::${clean.toLowerCase()}`;
+
+      // Strictly scoped in-memory cache lookup
+      if (inMemoryMediaCache.has(scopedKey)) return inMemoryMediaCache.get(scopedKey);
+      if (inMemoryMediaCache.has(scopedKeyLower)) return inMemoryMediaCache.get(scopedKeyLower);
+
       try {
         const db = await openVault();
         const tx = db.transaction('media', 'readonly');
         const store = tx.objectStore('media');
 
-        // 1. First attempt scoped key for current active deck
-        if (currentActiveDeckId){
-          const scopedKey = `${currentActiveDeckId}:::${clean}`;
-          const reqScoped = store.get(scopedKey);
-          const resScoped = await new Promise(r => { reqScoped.onsuccess = () => r(reqScoped.result); reqScoped.onerror = () => r(null); });
-          if (resScoped && resScoped.blob){
-            const url = URL.createObjectURL(resScoped.blob);
-            inMemoryMediaCache.set(clean, url);
-            inMemoryMediaCache.set(clean.toLowerCase(), url);
-            inMemoryMediaCache.set(filename, url);
-            inMemoryMediaCache.set(scopedKey, url);
-            return url;
-          }
+        // Strictly scoped IndexedDB lookup (exact case)
+        const reqScoped = store.get(scopedKey);
+        const resScoped = await new Promise(r => { reqScoped.onsuccess = () => r(reqScoped.result); reqScoped.onerror = () => r(null); });
+        if (resScoped && resScoped.blob){
+          const url = URL.createObjectURL(resScoped.blob);
+          inMemoryMediaCache.set(scopedKey, url);
+          inMemoryMediaCache.set(scopedKeyLower, url);
+          return url;
         }
 
-        // 2. Fallback to clean key with deck isolation verification
-        const req = store.get(clean);
-        const res = await new Promise(r => { req.onsuccess = () => r(req.result); req.onerror = () => r(null); });
-        if (res && res.blob && (!res.deckId || !currentActiveDeckId || res.deckId === currentActiveDeckId)){
-          const url = URL.createObjectURL(res.blob);
-          inMemoryMediaCache.set(clean, url);
-          inMemoryMediaCache.set(clean.toLowerCase(), url);
-          inMemoryMediaCache.set(filename, url);
+        // Strictly scoped IndexedDB lookup (lowercase)
+        const reqScopedLower = store.get(scopedKeyLower);
+        const resScopedLower = await new Promise(r => { reqScopedLower.onsuccess = () => r(reqScopedLower.result); reqScopedLower.onerror = () => r(null); });
+        if (resScopedLower && resScopedLower.blob){
+          const url = URL.createObjectURL(resScopedLower.blob);
+          inMemoryMediaCache.set(scopedKey, url);
+          inMemoryMediaCache.set(scopedKeyLower, url);
           return url;
         }
       } catch(e){}
@@ -1762,16 +2206,18 @@
         if (!img.title) img.title = 'Click to inspect in clinical diagram lightbox (scroll/pan/zoom)';
         
         let fn = img.dataset.filename;
+        const deckId = img.dataset.deckId || currentActiveDeckId;
         if (!fn){
           const rawSrc = img.getAttribute('src') || '';
-          if (!rawSrc.startsWith('data:')){
+          if (!rawSrc.startsWith('data:') && !rawSrc.startsWith('blob:')){
             fn = extractCleanFilename(rawSrc);
             img.dataset.filename = fn;
+            if (deckId) img.dataset.deckId = deckId;
           }
         }
         
-        if (fn && !img.src.startsWith('data:')){
-          const activeUrl = await getMediaBlobUrl(fn);
+        if (fn && (!img.src || (!img.src.startsWith('blob:') && !img.src.startsWith('data:')))){
+          const activeUrl = await getMediaBlobUrl(fn, deckId);
           if (activeUrl && img.src !== activeUrl){
             img.src = activeUrl;
           }
@@ -1780,11 +2226,32 @@
         img.onerror = () => {
           if (img.dataset.filename && !img.dataset.retried){
             img.dataset.retried = '1';
-            getMediaBlobUrl(img.dataset.filename).then(u => {
+            getMediaBlobUrl(img.dataset.filename, img.dataset.deckId || currentActiveDeckId).then(u => {
               if (u) img.src = u;
             });
           }
         };
+      }
+
+      // Resolve audio tags
+      const audios = container.querySelectorAll('audio');
+      for (const audio of audios){
+        let fn = audio.dataset.filename;
+        const deckId = audio.dataset.deckId || currentActiveDeckId;
+        if (!fn){
+          const rawSrc = audio.getAttribute('src') || '';
+          if (!rawSrc.startsWith('data:') && !rawSrc.startsWith('blob:')){
+            fn = extractCleanFilename(rawSrc);
+            audio.dataset.filename = fn;
+            if (deckId) audio.dataset.deckId = deckId;
+          }
+        }
+        if (fn && (!audio.src || (!audio.src.startsWith('blob:') && !audio.src.startsWith('data:')))){
+          const activeUrl = await getMediaBlobUrl(fn, deckId);
+          if (activeUrl && audio.src !== activeUrl){
+            audio.src = activeUrl;
+          }
+        }
       }
 
       // Add zoom cues to embedded SVGs
@@ -1809,14 +2276,12 @@
         });
         const mediaStore = tx.objectStore('media');
         for (const [name, blob] of Object.entries(mediaMap || {})){
-          const cleanName = decodeURIComponent(name);
+          const cleanName = decodeURIComponent(name).trim().replace(/^.*[\\\/]/, '');
           const scopedMediaKey = `${deckId}:::${cleanName}`;
           mediaStore.put({ name: scopedMediaKey, blob, deckId, fileName: cleanName });
           const url = URL.createObjectURL(blob);
-          inMemoryMediaCache.set(cleanName, url);
-          inMemoryMediaCache.set(cleanName.toLowerCase(), url);
-          inMemoryMediaCache.set(name, url);
           inMemoryMediaCache.set(scopedMediaKey, url);
+          inMemoryMediaCache.set(`${deckId}:::${cleanName.toLowerCase()}`, url);
         }
         await new Promise((res, rej) => { tx.oncomplete = res; tx.onerror = rej; });
       } catch(e){ console.warn('IndexedDB save skipped:', e); }
@@ -1847,10 +2312,10 @@
           if (isThisDeck && item.blob){
             try {
               const pureName = item.fileName || (item.name.startsWith(prefix) ? item.name.slice(prefix.length) : item.name);
+              const cleanPure = decodeURIComponent(pureName).trim().replace(/^.*[\\\/]/, '');
               const url = URL.createObjectURL(item.blob);
-              inMemoryMediaCache.set(pureName, url);
-              inMemoryMediaCache.set(decodeURIComponent(pureName), url);
-              inMemoryMediaCache.set(pureName.toLowerCase(), url);
+              inMemoryMediaCache.set(`${deckId}:::${cleanPure}`, url);
+              inMemoryMediaCache.set(`${deckId}:::${cleanPure.toLowerCase()}`, url);
             } catch(err){}
           }
         }
@@ -1871,12 +2336,26 @@
     const HIGH_YIELD_DEMO_DECK = [
       {
         id: 'demo-1',
+        originalId: 'demo-1',
+        deckId: 'demo',
+        noteId: 'demo-note-1',
+        ord: 0,
         cardType: 'physiology_formula',
         front: 'What is the fundamental clinical formula for Mean Arterial Pressure ($MAP$) in terms of Diastolic Pressure ($DP$) and Pulse Pressure ($PP$)?',
-        back: '$$MAP \\approx DP + \\frac{1}{3}PP = DP + \\frac{1}{3}(SP - DP)$$<br><strong>Clinical Pearl:</strong> Because diastole comprises approximately $2/3$ of the resting cardiac cycle, MAP is weighted much more heavily toward diastolic pressure.'
+        back: '$$MAP \\approx DP + \\frac{1}{3}PP = DP + \\frac{1}{3}(SP - DP)$$<br><strong>Clinical Pearl:</strong> Because diastole comprises approximately $2/3$ of the resting cardiac cycle, MAP is weighted much more heavily toward diastolic pressure.',
+        stability: 0,
+        difficulty: 0,
+        reps: 0,
+        lapses: 0,
+        due: 0,
+        lastReview: 0
       },
       {
         id: 'demo-2',
+        originalId: 'demo-2',
+        deckId: 'demo',
+        noteId: 'demo-note-2',
+        ord: 0,
         cardType: 'cardiac_cycle',
         front: 'During which phase of the left ventricular cardiac cycle is coronary perfusion to the left myocardium at its maximum?',
         back: `<strong>Isovolumetric Relaxation and Early Diastole</strong>.<br>During systole, forceful myocardial contraction compresses intramyocardial subendocardial coronary capillaries, abruptly reducing coronary blood flow to its trough.<br><br>
@@ -1901,16 +2380,52 @@
             <circle cx="280" cy="80" r="5" fill="#e0f2fe" stroke="#0284c7" stroke-width="2"/>
             <text x="290" y="96" fill="#38bdf8" font-size="10" font-weight="700">Peak Coronary Perfusion</text>
           </svg>
-        </div>`
+        </div>`,
+        stability: 0,
+        difficulty: 0,
+        reps: 0,
+        lapses: 0,
+        due: 0,
+        lastReview: 0
       },
       {
-        id: 'demo-3',
-        cardType: 'pharmacology',
-        front: 'Compare the primary hemodynamic target of {{c1::Dihydropyridines::Amlodipine/Nifedipine}} vs {{c2::Non-Dihydropyridines::Verapamil/Diltiazem}} calcium channel blockers.',
-        back: '<strong>Dihydropyridines</strong>: Selective peripheral vascular smooth muscle L-type $Ca^{2+}$ channel blockade &rarr; potent vasodilation with minimal nodal depression.<br><br><strong>Non-Dihydropyridines</strong>: Myocardial and AV nodal L-type $Ca^{2+}$ blockade &rarr; negative inotropy and negative dromotropy.'
+        id: 'demo-3-c1',
+        originalId: 'demo-3-c1',
+        deckId: 'demo',
+        noteId: 'demo-note-3',
+        ord: 0,
+        cardType: 'cloze_c1',
+        front: 'Compare the primary hemodynamic target of <span class="cloze-blank">[Amlodipine/Nifedipine]</span> vs Non-Dihydropyridines calcium channel blockers.',
+        back: 'Compare the primary hemodynamic target of <span class="cloze-blank">Dihydropyridines</span> vs Non-Dihydropyridines calcium channel blockers.<br><br><strong>Dihydropyridines</strong>: Selective peripheral vascular smooth muscle L-type $Ca^{2+}$ channel blockade &rarr; potent vasodilation with minimal nodal depression.<br><br><strong>Non-Dihydropyridines</strong>: Myocardial and AV nodal L-type $Ca^{2+}$ blockade &rarr; negative inotropy and negative dromotropy.',
+        stability: 0,
+        difficulty: 0,
+        reps: 0,
+        lapses: 0,
+        due: 0,
+        lastReview: 0
+      },
+      {
+        id: 'demo-3-c2',
+        originalId: 'demo-3-c2',
+        deckId: 'demo',
+        noteId: 'demo-note-3',
+        ord: 1,
+        cardType: 'cloze_c2',
+        front: 'Compare the primary hemodynamic target of Dihydropyridines vs <span class="cloze-blank">[Verapamil/Diltiazem]</span> calcium channel blockers.',
+        back: 'Compare the primary hemodynamic target of Dihydropyridines vs <span class="cloze-blank">Non-Dihydropyridines</span> calcium channel blockers.<br><br><strong>Dihydropyridines</strong>: Selective peripheral vascular smooth muscle L-type $Ca^{2+}$ channel blockade &rarr; potent vasodilation with minimal nodal depression.<br><br><strong>Non-Dihydropyridines</strong>: Myocardial and AV nodal L-type $Ca^{2+}$ blockade &rarr; negative inotropy and negative dromotropy.',
+        stability: 0,
+        difficulty: 0,
+        reps: 0,
+        lapses: 0,
+        due: 0,
+        lastReview: 0
       },
       {
         id: 'demo-4',
+        originalId: 'demo-4',
+        deckId: 'demo',
+        noteId: 'demo-note-4',
+        ord: 0,
         cardType: 'ecg_arrhythmia',
         front: 'What is the characteristic ECG finding in Wolff-Parkinson-White (WPW) syndrome, and what congenital anomalous pathway causes it?',
         back: `<strong>ECG Triad:</strong><br>1. Shortened $PR$ interval (< 120 ms)<br>2. Slurred upstroke of the QRS complex (<strong>Delta wave</strong>)<br>3. Widened $QRS$ complex (> 120 ms)<br><br><strong>Etiology:</strong> Bundle of Kent anomalous atrioventricular accessory pathway bypassing the AV node.<br><br>
@@ -1931,13 +2446,23 @@
             <path d="M 225 130 L 270 130 Q 320 85 370 130 L 450 130" fill="none" stroke="#4ade80" stroke-width="2.5"/>
             <text x="320" y="78" fill="#4ade80" font-size="11" font-weight="700" text-anchor="middle">T Wave</text>
           </svg>
-        </div>`
+        </div>`,
+        stability: 0,
+        difficulty: 0,
+        reps: 0,
+        lapses: 0,
+        due: 0,
+        lastReview: 0
       },
       {
-        id: 'demo-5',
-        cardType: 'cloze_recall',
-        front: 'The Frank-Starling mechanism states that increasing ventricular {{c1::end-diastolic volume (preload)}} leads to an increase in {{c2::stroke volume}}, due to optimal actin-myosin cross-bridge overlap.',
-        back: `The Frank-Starling mechanism states that increasing ventricular <span class="cloze-blank">end-diastolic volume (preload)</span> leads to an increase in <span class="cloze-blank">stroke volume</span>, due to optimal actin-myosin cross-bridge overlap.<br><br>
+        id: 'demo-5-c1',
+        originalId: 'demo-5-c1',
+        deckId: 'demo',
+        noteId: 'demo-note-5',
+        ord: 0,
+        cardType: 'cloze_c1',
+        front: 'The Frank-Starling mechanism states that increasing ventricular <span class="cloze-blank">[preload]</span> leads to an increase in stroke volume, due to optimal actin-myosin cross-bridge overlap.',
+        back: `The Frank-Starling mechanism states that increasing ventricular <span class="cloze-blank">end-diastolic volume (preload)</span> leads to an increase in stroke volume, due to optimal actin-myosin cross-bridge overlap.<br><br>
         <div style="text-align:center;">
           <svg viewBox="0 0 520 210" style="max-width:100%; height:auto; border-radius:8px; background:#18181b; border:1px solid #27272a; padding:12px;" role="img" aria-label="Frank-Starling Ventricular Function Curves">
             <text x="260" y="24" fill="#f4f4f5" font-size="13" font-weight="700" text-anchor="middle">Frank-Starling Ventricular Function Curves</text>
@@ -1955,18 +2480,113 @@
             <path d="M 60 180 Q 220 135 460 150" fill="none" stroke="#ef4444" stroke-width="2.5"/>
             <text x="465" y="152" fill="#ef4444" font-size="10" font-weight="700">Systolic Failure (Reduced EF)</text>
           </svg>
-        </div>`
+        </div>`,
+        stability: 0,
+        difficulty: 0,
+        reps: 0,
+        lapses: 0,
+        due: 0,
+        lastReview: 0
+      },
+      {
+        id: 'demo-5-c2',
+        originalId: 'demo-5-c2',
+        deckId: 'demo',
+        noteId: 'demo-note-5',
+        ord: 1,
+        cardType: 'cloze_c2',
+        front: 'The Frank-Starling mechanism states that increasing ventricular end-diastolic volume (preload) leads to an increase in <span class="cloze-blank">[...]</span>, due to optimal actin-myosin cross-bridge overlap.',
+        back: `The Frank-Starling mechanism states that increasing ventricular end-diastolic volume (preload) leads to an increase in <span class="cloze-blank">stroke volume</span>, due to optimal actin-myosin cross-bridge overlap.<br><br>
+        <div style="text-align:center;">
+          <svg viewBox="0 0 520 210" style="max-width:100%; height:auto; border-radius:8px; background:#18181b; border:1px solid #27272a; padding:12px;" role="img" aria-label="Frank-Starling Ventricular Function Curves">
+            <text x="260" y="24" fill="#f4f4f5" font-size="13" font-weight="700" text-anchor="middle">Frank-Starling Ventricular Function Curves</text>
+            <line x1="60" y1="180" x2="480" y2="180" stroke="#52525b" stroke-width="1.5"/>
+            <line x1="60" y1="40" x2="60" y2="180" stroke="#52525b" stroke-width="1.5"/>
+            <text x="55" y="45" fill="#a1a1aa" font-size="10" text-anchor="end">Stroke Volume / Cardiac Output</text>
+            <text x="270" y="200" fill="#a1a1aa" font-size="10" text-anchor="middle">Ventricular End-Diastolic Volume (Preload)</text>
+            <!-- Increased Inotropy curve -->
+            <path d="M 60 180 Q 180 50 460 70" fill="none" stroke="#22c55e" stroke-width="2.5"/>
+            <text x="465" y="72" fill="#22c55e" font-size="10" font-weight="700">+ Inotropy (Digoxin / Sympathetic)</text>
+            <!-- Normal Curve -->
+            <path d="M 60 180 Q 200 85 460 110" fill="none" stroke="#38bdf8" stroke-width="3"/>
+            <text x="465" y="112" fill="#38bdf8" font-size="10" font-weight="700">Normal Baseline Curve</text>
+            <!-- Heart Failure curve -->
+            <path d="M 60 180 Q 220 135 460 150" fill="none" stroke="#ef4444" stroke-width="2.5"/>
+            <text x="465" y="152" fill="#ef4444" font-size="10" font-weight="700">Systolic Failure (Reduced EF)</text>
+          </svg>
+        </div>`,
+        stability: 0,
+        difficulty: 0,
+        reps: 0,
+        lapses: 0,
+        due: 0,
+        lastReview: 0
       }
     ];
 
     /* =========================================================================
-       5. WORKSTATION STATE
+       5. WORKSTATION STATE & DAILY QUEUE ENGINE
        ========================================================================= */
+    let allDeckCards = [];
     let deckCards = [];
     let currentIndex = 0;
     let isFlipped = false;
     let reviewHistory = [];
     let sessionStats = { again: 0, hard: 0, good: 0, easy: 0, startTime: Date.now() };
+
+    // Daily Study Queue & Spaced Repetition Settings
+    let isCramMode = false;
+    let dailyNewLimit = 20;
+    let burySiblingsEnabled = true;
+    try {
+      const savedLimit = localStorage.getItem('mb_daily_new_limit');
+      if (savedLimit !== null) dailyNewLimit = parseInt(savedLimit, 10) || 20;
+      const savedBury = localStorage.getItem('mb_bury_siblings');
+      if (savedBury !== null) burySiblingsEnabled = savedBury !== 'false';
+      const savedCram = localStorage.getItem('mb_cram_mode');
+      if (savedCram === 'true') isCramMode = true;
+    } catch(e){}
+
+    function buildStudyQueue(cards, { isCramMode: cram = false, dailyNewLimit: limit = 20, now = Date.now() } = {}){
+      if (!cards || !Array.isArray(cards)){
+        const empty = [];
+        empty.queue = empty;
+        empty.dueCount = 0;
+        empty.newCount = 0;
+        empty.totalCards = 0;
+        return empty;
+      }
+
+      if (cram){
+        let queue = [...cards];
+        if (ankiSettings && typeof ankiSettings.cramBatchSize === 'number' && ankiSettings.cramBatchSize > 0){
+          queue = queue.slice(0, ankiSettings.cramBatchSize);
+        }
+        queue.queue = queue;
+        queue.dueCount = cards.filter(c => c.reps > 0 && (c.due || 0) <= now).length;
+        queue.newCount = cards.filter(c => !c.reps).length;
+        queue.totalCards = cards.length;
+        return queue;
+      }
+
+      // Filter out buried cards
+      const unburiedCards = cards.filter(c => !c.buriedUntil || c.buriedUntil <= now);
+
+      // Separate Due cards (reps > 0 and due <= now or due today)
+      const todayEnd = new Date(now).setHours(23, 59, 59, 999);
+      const dueCards = unburiedCards.filter(c => c.reps > 0 && (c.due || 0) <= todayEnd);
+
+      // Separate New cards (reps === 0)
+      const newCards = unburiedCards.filter(c => !c.reps);
+      const admittedNew = newCards.slice(0, Math.max(0, limit));
+
+      const queue = [...dueCards, ...admittedNew];
+      queue.queue = queue;
+      queue.dueCount = dueCards.length;
+      queue.newCount = admittedNew.length;
+      queue.totalCards = cards.length;
+      return queue;
+    }
 
     // Timers
     let timerMode = 'stopwatch'; // 'stopwatch' | 'usmle_60s'
@@ -2164,18 +2784,45 @@
        ========================================================================= */
     function renderCard(){
       if (!deckCards.length){
-        frontContent.innerHTML = `
-          <div style="text-align:center; padding:30px 10px;">
-            <div style="font-size:2.5rem; margin-bottom:12px;">📭</div>
-            <h3 style="font-size:1.1rem; font-weight:700; margin-bottom:8px;">No Cards in Current Deck</h3>
-            <p style="font-size:0.85rem; color:var(--text-dim); margin-bottom:20px;">Open a local .apkg file from disk or explore the high-yield clinical demo deck.</p>
-            <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
-              <button type="button" class="primary-btn" onclick="document.getElementById('localApkgInput').click()">Open .apkg File</button>
-              <button type="button" class="secondary-btn" onclick="window.location.search='?deck=demo'">Load Demo Deck</button>
+        if (allDeckCards.length > 0){
+          frontContent.innerHTML = `
+            <div style="text-align:center; padding:32px 12px;">
+              <div style="font-size:2.8rem; margin-bottom:12px;">🎉</div>
+              <h3 style="font-size:1.15rem; font-weight:800; margin-bottom:8px; color:var(--text);">All Caught Up for Today!</h3>
+              <p style="font-size:0.86rem; color:var(--text-dim); margin-bottom:20px; line-height:1.5;">You've reviewed all currently due cards and completed your daily new allocation.</p>
+              <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
+                <button type="button" class="primary-btn" id="finishCramBtn">⚡ Study All Cards (Cram All)</button>
+              </div>
             </div>
-          </div>
-        `;
+          `;
+          const fBtn = document.getElementById('finishCramBtn');
+          if (fBtn){
+            fBtn.onclick = () => {
+              isCramMode = true;
+              updateCramToggleUI();
+              deckCards = buildStudyQueue(allDeckCards, { isCramMode, dailyNewLimit });
+              currentIndex = 0;
+              renderCard();
+            };
+          }
+        } else {
+          frontContent.innerHTML = `
+            <div style="text-align:center; padding:30px 10px;">
+              <div style="font-size:2.5rem; margin-bottom:12px;">📭</div>
+              <h3 style="font-size:1.1rem; font-weight:700; margin-bottom:8px;">No Cards in Current Deck</h3>
+              <p style="font-size:0.85rem; color:var(--text-dim); margin-bottom:20px;">Open a local .apkg file from disk or explore the high-yield clinical demo deck.</p>
+              <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
+                <button type="button" class="primary-btn" onclick="document.getElementById('localApkgInput').click()">Open .apkg File</button>
+                <button type="button" class="secondary-btn" onclick="window.location.search='?deck=demo'">Load Demo Deck</button>
+              </div>
+            </div>
+          `;
+        }
         backContent.innerHTML = '';
+        unflippedActions.style.display = 'none';
+        flippedActions.style.display = 'none';
+        progressFill.style.width = '100%';
+        progressCount.textContent = '0 / 0';
         return;
       }
       const card = deckCards[currentIndex];
@@ -2186,8 +2833,14 @@
       unflippedActions.style.display = 'block';
       flippedActions.style.display = 'none';
 
-      frontCardType.textContent = (card.cardType || 'CLINICAL CARD').toUpperCase();
-      frontSrsInfo.textContent = card.reps ? `Reps: ${card.reps} · S: ${(card.stability||1).toFixed(1)}d` : 'FSRS-5 · Due';
+      const typeLabel = card.cardType ? card.cardType : (card.ord !== undefined ? (card.ord === 0 ? 'Card 1 (Forward)' : 'Card 2 (Reversed)') : 'Clinical Vignette');
+      frontCardType.textContent = typeLabel.toUpperCase();
+      if (card.reps){
+        const isDue = (card.due || 0) <= Date.now();
+        frontSrsInfo.textContent = `Reps: ${card.reps} · S: ${(card.stability||1).toFixed(1)}d · ${isDue ? 'Due' : 'Review'}`;
+      } else {
+        frontSrsInfo.textContent = card.buriedUntil && card.buriedUntil > Date.now() ? 'Buried until tomorrow' : 'FSRS-5 · New';
+      }
       backSrsInfo.textContent = `Target Retention: ${Math.round(TARGET_RETENTION * 100)}%`;
 
       frontContent.innerHTML = renderMathInHtml(card.front);
@@ -2215,6 +2868,9 @@
 
       undoBtn.disabled = reviewHistory.length === 0;
 
+      // Update Stop Sign Bookmark indicator
+      updateStopSignUI();
+
       // Reset timer if in USMLE 60-second pace mode
       if (timerMode === 'usmle_60s') timerSeconds = 60;
     }
@@ -2233,6 +2889,7 @@
       const card = deckCards[currentIndex];
       if (!card) return;
 
+      const now = Date.now();
       // Compute schedule
       const sched = computeFsrsSchedule(card, rating);
       const prevCardState = { ...card };
@@ -2241,8 +2898,52 @@
       card.stability = sched.stability;
       card.difficulty = sched.difficulty;
       card.reps = (card.reps || 0) + 1;
-      card.lastReview = Date.now();
+      card.lastReview = now;
+      card.due = now + Math.round(sched.intervalDays * 86400000);
       if (rating === 1) card.lapses = (card.lapses || 0) + 1;
+
+      // Persist updated metrics to IndexedDB vault
+      persistCardReview(card);
+
+      // Sync back to allDeckCards
+      const allIdx = allDeckCards.findIndex(c => (c.originalId || c.id) === (card.originalId || card.id));
+      if (allIdx !== -1) allDeckCards[allIdx] = { ...card };
+
+      // Cross-tab live sync notification to curriculum explorer
+      try {
+        if (typeof BroadcastChannel !== 'undefined'){
+          const bc = new BroadcastChannel('mb_vault_channel');
+          bc.postMessage({ type: 'CARD_RATED', deckId: currentActiveDeckId, cardId: card.id, reps: card.reps, due: card.due });
+        }
+        localStorage.setItem('mb_vault_last_update', Date.now().toString());
+      } catch(e){}
+
+      // Automatically advance session bookmark position
+      saveStopSignBookmark(currentActiveDeckId, currentIndex + 1 < deckCards.length ? currentIndex + 1 : currentIndex, card, false);
+
+      // Sibling Burying: bury reversed and cloze siblings until tomorrow
+      if (card.noteId && burySiblingsEnabled && !isCramMode){
+        const tomorrowMidnight = new Date(now).setHours(24, 0, 0, 0);
+
+        // Bury in allDeckCards and persist
+        allDeckCards.forEach(s => {
+          if (s.noteId === card.noteId && (s.originalId || s.id) !== (card.originalId || card.id)){
+            s.buriedUntil = tomorrowMidnight;
+            persistCardReview(s);
+          }
+        });
+
+        // Mark remaining cards in session queue
+        for (let i = currentIndex + 1; i < deckCards.length; i++){
+          const s = deckCards[i];
+          if (s.noteId === card.noteId && (s.originalId || s.id) !== (card.originalId || card.id)){
+            s.buriedUntil = tomorrowMidnight;
+          }
+        }
+
+        // Filter out buried siblings from upcoming cards in this queue
+        deckCards = deckCards.filter((c, idx) => idx <= currentIndex || !c.buriedUntil || c.buriedUntil <= now);
+      }
 
       // Save to undo stack
       reviewHistory.push({
@@ -2259,8 +2960,10 @@
 
       triggerHaptic(30);
 
-      // Intra-session recycling: If "Again", re-queue at the end of the session
-      if (rating === 1){
+      // Intra-session recycling:
+      // If "Again" (1), re-queue at the end of the session.
+      // If "Hard" (2) and in initial learning, also re-queue so card is practiced again in this session!
+      if (rating === 1 || (rating === 2 && (card.reps || 0) <= 1)){
         deckCards.push({ ...card });
       }
 
@@ -2278,6 +2981,23 @@
       const last = reviewHistory.pop();
       currentIndex = last.index;
       deckCards[currentIndex] = last.previousState;
+
+      // Persist undone card state back to IndexedDB
+      persistCardReview(deckCards[currentIndex]);
+
+      const allIdx = allDeckCards.findIndex(c => (c.originalId || c.id) === (deckCards[currentIndex].originalId || deckCards[currentIndex].id));
+      if (allIdx !== -1) allDeckCards[allIdx] = { ...deckCards[currentIndex] };
+
+      // Unbury any siblings in allDeckCards and persist them
+      const undoneCard = deckCards[currentIndex];
+      if (undoneCard && undoneCard.noteId){
+        allDeckCards.forEach(s => {
+          if (s.noteId === undoneCard.noteId && (s.originalId || s.id) !== (undoneCard.originalId || undoneCard.id)){
+            s.buriedUntil = 0;
+            persistCardReview(s);
+          }
+        });
+      }
 
       if (last.rating === 1){
         sessionStats.again--;
@@ -2825,6 +3545,79 @@
       setSwipeGesturesActive(!showGestureCompass);
     });
 
+    function updateCramToggleUI(){
+      const cramBtn = document.getElementById('cramToggleBtn');
+      const cramIcon = document.getElementById('cramToggleIcon');
+      const cramText = document.getElementById('cramToggleText');
+      if (!cramBtn) return;
+      if (isCramMode){
+        cramBtn.classList.add('is-cram');
+        if (cramIcon) cramIcon.textContent = '⚡';
+        if (cramText){
+          cramText.textContent = currentLang === 'ar' ? 'مذاكرة شاملة' : 'Cram All';
+        }
+      } else {
+        cramBtn.classList.remove('is-cram');
+        if (cramIcon) cramIcon.textContent = '📅';
+        if (cramText){
+          cramText.textContent = currentLang === 'ar' ? 'الجدول اليومي' : 'Daily Queue';
+        }
+      }
+    }
+
+    const cramToggleBtn = document.getElementById('cramToggleBtn');
+    if (cramToggleBtn){
+      cramToggleBtn.addEventListener('click', () => {
+        isCramMode = !isCramMode;
+        try { localStorage.setItem('mb_cram_mode', isCramMode ? 'true' : 'false'); } catch(e){}
+        updateCramToggleUI();
+        if (allDeckCards && allDeckCards.length > 0){
+          deckCards = buildStudyQueue(allDeckCards, { isCramMode, dailyNewLimit });
+          currentIndex = 0;
+          renderCard();
+        }
+      });
+    }
+
+    const dailyLimitRow = document.getElementById('dailyLimitRow');
+    const dailyLimitLabel = document.getElementById('dailyLimitLabel');
+    function updateDailyLimitUI(){
+      if (dailyLimitLabel){
+        dailyLimitLabel.textContent = currentLang === 'ar' 
+          ? `الكروت الجديدة اليومية: ${dailyNewLimit}` 
+          : `Daily New Cards: ${dailyNewLimit}`;
+      }
+    }
+    if (dailyLimitRow){
+      dailyLimitRow.addEventListener('click', () => {
+        const limits = [10, 20, 50, 100];
+        const nextIdx = (limits.indexOf(dailyNewLimit) + 1) % limits.length;
+        dailyNewLimit = limits[nextIdx];
+        try { localStorage.setItem('mb_daily_new_limit', String(dailyNewLimit)); } catch(e){}
+        updateDailyLimitUI();
+        if (!isCramMode && allDeckCards && allDeckCards.length > 0){
+          deckCards = buildStudyQueue(allDeckCards, { isCramMode, dailyNewLimit });
+          currentIndex = 0;
+          renderCard();
+        }
+      });
+    }
+
+    const burySiblingsRow = document.getElementById('burySiblingsRow');
+    const burySiblingsCheckmark = document.getElementById('burySiblingsCheckmark');
+    function updateBurySiblingsUI(){
+      if (burySiblingsCheckmark){
+        burySiblingsCheckmark.textContent = burySiblingsEnabled ? '✓' : '';
+      }
+    }
+    if (burySiblingsRow){
+      burySiblingsRow.addEventListener('click', () => {
+        burySiblingsEnabled = !burySiblingsEnabled;
+        try { localStorage.setItem('mb_bury_siblings', burySiblingsEnabled ? 'true' : 'false'); } catch(e){}
+        updateBurySiblingsUI();
+      });
+    }
+
     document.getElementById('downloadRow').addEventListener('click', () => {
       closeSettings();
       if (!deckFileBuffer) return;
@@ -2836,6 +3629,349 @@
       a.click();
       setTimeout(() => URL.revokeObjectURL(url), 2000);
     });
+
+    /* =========================================================================
+       15B. STOP SIGN & SESSION BOOKMARK ENGINE
+       ========================================================================= */
+    const stopSignBtn = document.getElementById('stopSignBtn');
+    const stopSignMenuRow = document.getElementById('stopSignMenuRow');
+    const ankiSettingsBtn = document.getElementById('ankiSettingsBtn');
+    const ankiDeckOptionsRow = document.getElementById('ankiDeckOptionsRow');
+    const ankiSettingsModal = document.getElementById('ankiSettingsModal');
+    const closeAnkiSettingsBtn = document.getElementById('closeAnkiSettingsBtn');
+    const saveAnkiSettingsBtn = document.getElementById('saveAnkiSettingsBtn');
+    const resumeSessionBanner = document.getElementById('resumeSessionBanner');
+    const resumeJumpBtn = document.getElementById('resumeJumpBtn');
+    const resumeDismissBtn = document.getElementById('resumeDismissBtn');
+
+    function getDeckBookmark(deckId){
+      if (!deckId) return null;
+      try {
+        const raw = localStorage.getItem('mb_bookmark_' + deckId);
+        return raw ? JSON.parse(raw) : null;
+      } catch(e){ return null; }
+    }
+
+    function saveStopSignBookmark(deckId, idx, card, explicit = false){
+      if (!deckId) return;
+      try {
+        const payload = {
+          deckId: deckId,
+          index: Math.max(0, Math.min(idx, Math.max(0, (deckCards.length || 1) - 1))),
+          cardId: card ? (card.originalId || card.id) : '',
+          total: deckCards.length,
+          title: deckTitle ? deckTitle.textContent : '',
+          timestamp: Date.now(),
+          explicit: !!explicit
+        };
+        localStorage.setItem('mb_bookmark_' + deckId, JSON.stringify(payload));
+        localStorage.setItem('mb_vault_last_update', Date.now().toString());
+        updateStopSignUI();
+        if (explicit){
+          showStopSignToast(payload.index + 1, deckCards.length);
+        }
+      } catch(e){}
+    }
+
+    function showStopSignToast(cardNum, total){
+      let toast = document.getElementById('stopSignToast');
+      if (!toast){
+        toast = document.createElement('div');
+        toast.id = 'stopSignToast';
+        toast.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:rgba(239,68,68,0.95);color:#fff;font-weight:800;font-size:0.82rem;padding:9px 18px;border-radius:24px;box-shadow:0 10px 25px rgba(0,0,0,0.4);z-index:9999;transition:opacity 0.3s;pointer-events:none;display:flex;align-items:center;gap:8px;';
+        document.body.appendChild(toast);
+      }
+      toast.textContent = currentLang === 'ar'
+        ? `🛑 تم وضع علامة التوقف عند البطاقة ${cardNum} من ${total}! تم حفظ الجلسة.`
+        : `🛑 Stop Sign placed at Card ${cardNum} of ${total}! Session saved.`;
+      toast.style.opacity = '1';
+      setTimeout(() => { if (toast) toast.style.opacity = '0'; }, 2600);
+    }
+
+    function updateStopSignUI(){
+      if (!stopSignBtn) return;
+      const bm = getDeckBookmark(currentActiveDeckId);
+      const label = document.getElementById('stopSignText');
+      const menuStatus = document.getElementById('stopSignMenuStatus');
+
+      if (bm && typeof bm.index === 'number'){
+        const isCurrent = bm.index === currentIndex;
+        stopSignBtn.classList.toggle('active', isCurrent);
+        if (label){
+          label.textContent = isCurrent
+            ? (currentLang === 'ar' ? `توقف هنا (${currentIndex + 1})` : `Stopped Here (${currentIndex + 1})`)
+            : (currentLang === 'ar' ? `علامة توقف (${bm.index + 1})` : `Stop Sign (${bm.index + 1})`);
+        }
+        if (menuStatus){
+          menuStatus.textContent = `Card ${bm.index + 1}/${bm.total || deckCards.length}`;
+        }
+      } else {
+        stopSignBtn.classList.remove('active');
+        if (label) label.textContent = currentLang === 'ar' ? 'علامة توقف' : 'Stop Sign';
+        if (menuStatus) menuStatus.textContent = 'None';
+      }
+    }
+
+    function checkResumeBookmark(){
+      if (!currentActiveDeckId) return;
+      try {
+        const bm = getDeckBookmark(currentActiveDeckId);
+        if (bm && typeof bm.index === 'number' && bm.index > 0 && bm.index < deckCards.length){
+          const p = new URLSearchParams(window.location.search);
+          if (p.get('resume') !== null){
+            currentIndex = bm.index;
+            renderCard();
+            return;
+          }
+          if (resumeSessionBanner){
+            const txt = document.getElementById('resumeBannerText');
+            const sub = document.getElementById('resumeBannerSub');
+            if (txt){
+              txt.textContent = currentLang === 'ar'
+                ? `علامة توقف: توقفت عند البطاقة ${bm.index + 1} من ${bm.total || deckCards.length}`
+                : `Session Bookmark: You stopped at Card ${bm.index + 1} of ${bm.total || deckCards.length}`;
+            }
+            if (sub){
+              sub.textContent = currentLang === 'ar'
+                ? `تم التوقف سابقاً · انقر للاستكمال من حيث توقفت`
+                : `Paused earlier · Click to continue right where you left off`;
+            }
+            resumeSessionBanner.style.display = 'flex';
+          }
+        }
+      } catch(e){}
+    }
+
+    if (stopSignBtn){
+      stopSignBtn.addEventListener('click', () => {
+        const card = deckCards[currentIndex];
+        saveStopSignBookmark(currentActiveDeckId, currentIndex, card, true);
+      });
+    }
+
+    if (stopSignMenuRow){
+      stopSignMenuRow.addEventListener('click', () => {
+        closeSettings();
+        const card = deckCards[currentIndex];
+        saveStopSignBookmark(currentActiveDeckId, currentIndex, card, true);
+      });
+    }
+
+    if (resumeJumpBtn){
+      resumeJumpBtn.addEventListener('click', () => {
+        const bm = getDeckBookmark(currentActiveDeckId);
+        if (bm && typeof bm.index === 'number' && bm.index < deckCards.length){
+          currentIndex = bm.index;
+          renderCard();
+        }
+        if (resumeSessionBanner) resumeSessionBanner.style.display = 'none';
+      });
+    }
+
+    if (resumeDismissBtn){
+      resumeDismissBtn.addEventListener('click', () => {
+        if (resumeSessionBanner) resumeSessionBanner.style.display = 'none';
+      });
+    }
+
+    /* =========================================================================
+       15C. ANKI DECK STUDY OPTIONS & FSRS-5 TIMINGS MODAL
+       ========================================================================= */
+    function openAnkiSettingsModal(){
+      loadAnkiSettings();
+      const selSteps = document.getElementById('settingLearningSteps');
+      const customStepsRow = document.getElementById('customStepsRow');
+      const inCustomSteps = document.getElementById('settingCustomSteps');
+      const selGrad = document.getElementById('settingGraduatingIvl');
+      const selEasy = document.getElementById('settingEasyIvl');
+      const rngRetention = document.getElementById('settingTargetRetention');
+      const txtRetention = document.getElementById('targetRetentionVal');
+      const selNew = document.getElementById('settingDailyNew');
+      const selRev = document.getElementById('settingDailyReviews');
+      const chkCram = document.getElementById('settingCramActive');
+      const selCramQuota = document.getElementById('settingCramQuota');
+      const customCramRow = document.getElementById('customCramRow');
+      const inCustomCram = document.getElementById('settingCustomCram');
+      const descBm = document.getElementById('settingBookmarkDesc');
+
+      if (selSteps){
+        const known = ['10m', '1m 10m', '1m 5m 15m', '5m 20m'];
+        if (known.includes(ankiSettings.learningSteps)){
+          selSteps.value = ankiSettings.learningSteps;
+          if (customStepsRow) customStepsRow.style.display = 'none';
+        } else {
+          selSteps.value = 'custom';
+          if (customStepsRow) customStepsRow.style.display = 'flex';
+          if (inCustomSteps) inCustomSteps.value = ankiSettings.learningSteps;
+        }
+      }
+
+      if (selGrad) selGrad.value = String(ankiSettings.graduatingInterval || 1);
+      if (selEasy) selEasy.value = String(ankiSettings.easyInterval || 4);
+      if (rngRetention) {
+        rngRetention.value = Math.round((ankiSettings.targetRetention || 0.90) * 100);
+        if (txtRetention) txtRetention.textContent = `${rngRetention.value}%`;
+      }
+      if (selNew) selNew.value = String(ankiSettings.dailyNewLimit || 20);
+      if (selRev) selRev.value = String(ankiSettings.dailyReviewLimit || 200);
+      if (chkCram) chkCram.checked = !!isCramMode;
+
+      if (selCramQuota){
+        const knownQuota = [0, 10, 25, 50, 100];
+        const curBatch = ankiSettings.cramBatchSize || 0;
+        if (knownQuota.includes(curBatch)){
+          selCramQuota.value = String(curBatch);
+          if (customCramRow) customCramRow.style.display = 'none';
+        } else {
+          selCramQuota.value = 'custom';
+          if (customCramRow) customCramRow.style.display = 'flex';
+          if (inCustomCram) inCustomCram.value = String(curBatch);
+        }
+      }
+
+      const bm = getDeckBookmark(currentActiveDeckId);
+      if (descBm){
+        if (bm && typeof bm.index === 'number'){
+          descBm.innerHTML = currentLang === 'ar'
+            ? `🛑 توقف عند <strong>البطاقة ${bm.index + 1} من ${bm.total || deckCards.length}</strong> · حفظ: ${new Date(bm.timestamp).toLocaleTimeString()}`
+            : `🛑 Paused at <strong>Card ${bm.index + 1} of ${bm.total || deckCards.length}</strong> · Saved: ${new Date(bm.timestamp).toLocaleTimeString()}`;
+        } else {
+          descBm.textContent = currentLang === 'ar' ? 'لا توجد علامة توقف محفوظة لهذه الحزمة بعد.' : 'No saved bookmark for this deck yet.';
+        }
+      }
+
+      if (ankiSettingsModal) ankiSettingsModal.classList.add('open');
+    }
+
+    function closeAnkiSettingsModal(){
+      if (ankiSettingsModal) ankiSettingsModal.classList.remove('open');
+    }
+
+    if (ankiSettingsBtn) ankiSettingsBtn.addEventListener('click', openAnkiSettingsModal);
+    if (ankiDeckOptionsRow) {
+      ankiDeckOptionsRow.addEventListener('click', () => {
+        closeSettings();
+        openAnkiSettingsModal();
+      });
+    }
+    if (closeAnkiSettingsBtn) closeAnkiSettingsBtn.addEventListener('click', closeAnkiSettingsModal);
+
+    const settingLearningStepsEl = document.getElementById('settingLearningSteps');
+    if (settingLearningStepsEl){
+      settingLearningStepsEl.addEventListener('change', () => {
+        const customRow = document.getElementById('customStepsRow');
+        if (customRow) customRow.style.display = settingLearningStepsEl.value === 'custom' ? 'flex' : 'none';
+      });
+    }
+
+    const settingCramQuotaEl = document.getElementById('settingCramQuota');
+    if (settingCramQuotaEl){
+      settingCramQuotaEl.addEventListener('change', () => {
+        const customCramRow = document.getElementById('customCramRow');
+        if (customCramRow) customCramRow.style.display = settingCramQuotaEl.value === 'custom' ? 'flex' : 'none';
+      });
+    }
+
+    const settingTargetRetentionEl = document.getElementById('settingTargetRetention');
+    if (settingTargetRetentionEl){
+      settingTargetRetentionEl.addEventListener('input', () => {
+        const valSpan = document.getElementById('targetRetentionVal');
+        if (valSpan) valSpan.textContent = `${settingTargetRetentionEl.value}%`;
+      });
+    }
+
+    const setBookmarkCurrentBtn = document.getElementById('setBookmarkCurrentBtn');
+    if (setBookmarkCurrentBtn){
+      setBookmarkCurrentBtn.addEventListener('click', () => {
+        const card = deckCards[currentIndex];
+        saveStopSignBookmark(currentActiveDeckId, currentIndex, card, true);
+        const descBm = document.getElementById('settingBookmarkDesc');
+        if (descBm){
+          descBm.innerHTML = `🛑 Saved Stop Sign at <strong>Card ${currentIndex + 1} of ${deckCards.length}</strong>!`;
+        }
+      });
+    }
+
+    const jumpToBookmarkBtn = document.getElementById('jumpToBookmarkBtn');
+    if (jumpToBookmarkBtn){
+      jumpToBookmarkBtn.addEventListener('click', () => {
+        const bm = getDeckBookmark(currentActiveDeckId);
+        if (bm && typeof bm.index === 'number' && bm.index < deckCards.length){
+          currentIndex = bm.index;
+          renderCard();
+          closeAnkiSettingsModal();
+        }
+      });
+    }
+
+    const clearBookmarkBtn = document.getElementById('clearBookmarkBtn');
+    if (clearBookmarkBtn){
+      clearBookmarkBtn.addEventListener('click', () => {
+        if (currentActiveDeckId) localStorage.removeItem('mb_bookmark_' + currentActiveDeckId);
+        localStorage.setItem('mb_vault_last_update', Date.now().toString());
+        updateStopSignUI();
+        const descBm = document.getElementById('settingBookmarkDesc');
+        if (descBm) descBm.textContent = currentLang === 'ar' ? 'تم حذف علامة التوقف.' : 'Bookmark cleared.';
+      });
+    }
+
+    if (saveAnkiSettingsBtn){
+      saveAnkiSettingsBtn.addEventListener('click', () => {
+        const selSteps = document.getElementById('settingLearningSteps');
+        const inCustomSteps = document.getElementById('settingCustomSteps');
+        const selGrad = document.getElementById('settingGraduatingIvl');
+        const selEasy = document.getElementById('settingEasyIvl');
+        const rngRetention = document.getElementById('settingTargetRetention');
+        const selNew = document.getElementById('settingDailyNew');
+        const selRev = document.getElementById('settingDailyReviews');
+        const chkCram = document.getElementById('settingCramActive');
+        const selCramQuota = document.getElementById('settingCramQuota');
+        const inCustomCram = document.getElementById('settingCustomCram');
+
+        let stepsVal = selSteps ? selSteps.value : '10m';
+        if (stepsVal === 'custom' && inCustomSteps) stepsVal = inCustomSteps.value.trim() || '10m';
+
+        let quotaVal = 0;
+        if (selCramQuota){
+          if (selCramQuota.value === 'custom' && inCustomCram){
+            quotaVal = parseInt(inCustomCram.value, 10) || 0;
+          } else {
+            quotaVal = parseInt(selCramQuota.value, 10) || 0;
+          }
+        }
+
+        ankiSettings.learningSteps = stepsVal;
+        ankiSettings.graduatingInterval = selGrad ? (parseFloat(selGrad.value) || 1) : 1;
+        ankiSettings.easyInterval = selEasy ? (parseFloat(selEasy.value) || 4) : 4;
+        ankiSettings.targetRetention = rngRetention ? (parseInt(rngRetention.value, 10) / 100) : 0.90;
+        ankiSettings.dailyNewLimit = selNew ? (parseInt(selNew.value, 10) || 20) : 20;
+        ankiSettings.dailyReviewLimit = selRev ? (parseInt(selRev.value, 10) || 200) : 200;
+        ankiSettings.cramActive = chkCram ? chkCram.checked : false;
+        ankiSettings.cramBatchSize = quotaVal;
+
+        try {
+          localStorage.setItem(ANKI_SETTINGS_LS_KEY, JSON.stringify(ankiSettings));
+          localStorage.setItem('mb_daily_new_limit', String(ankiSettings.dailyNewLimit));
+          localStorage.setItem('mb_cram_mode', ankiSettings.cramActive ? 'true' : 'false');
+          localStorage.setItem('mb_vault_last_update', Date.now().toString());
+        } catch(e){}
+
+        TARGET_RETENTION = ankiSettings.targetRetention;
+        dailyNewLimit = ankiSettings.dailyNewLimit;
+        isCramMode = ankiSettings.cramActive;
+
+        updateCramToggleUI();
+        updateDailyLimitUI();
+
+        if (allDeckCards && allDeckCards.length > 0){
+          deckCards = buildStudyQueue(allDeckCards, { isCramMode, dailyNewLimit });
+          if (currentIndex >= deckCards.length) currentIndex = Math.max(0, deckCards.length - 1);
+          renderCard();
+        }
+
+        closeAnkiSettingsModal();
+      });
+    }
 
     /* =========================================================================
        16. APKG PARSER & FILE IMPORTER (SQLite via sql.js + JSZip)
@@ -2995,10 +4131,10 @@
           mediaUrlMap[cleanName.toLowerCase()] = url;
           mediaUrlMap[encodeURI(realName)] = url;
           mediaUrlMap[encodeURIComponent(realName)] = url;
-          inMemoryMediaCache.set(realName, url);
-          inMemoryMediaCache.set(cleanName, url);
-          inMemoryMediaCache.set(realName.toLowerCase(), url);
-          inMemoryMediaCache.set(cleanName.toLowerCase(), url);
+          if (currentActiveDeckId){
+            inMemoryMediaCache.set(`${currentActiveDeckId}:::${cleanName}`, url);
+            inMemoryMediaCache.set(`${currentActiveDeckId}:::${cleanName.toLowerCase()}`, url);
+          }
         } catch(err){}
       }));
 
@@ -3015,8 +4151,10 @@
             const url = URL.createObjectURL(blob);
             mediaUrlMap[baseName] = url;
             mediaUrlMap[baseName.toLowerCase()] = url;
-            inMemoryMediaCache.set(baseName, url);
-            inMemoryMediaCache.set(baseName.toLowerCase(), url);
+            if (currentActiveDeckId){
+              inMemoryMediaCache.set(`${currentActiveDeckId}:::${baseName}`, url);
+              inMemoryMediaCache.set(`${currentActiveDeckId}:::${baseName.toLowerCase()}`, url);
+            }
           } catch(err){}
         }
       }));
@@ -3164,6 +4302,31 @@
       const notesById = {};
       notes.forEach(n => { notesById[n.id] = n; });
 
+      // Multi-cloze note sibling preservation: ensure every cloze ordinal has a card row
+      const existingCardKeys = new Set(cardRows.map(r => `${r.nid}:${r.ord}`));
+      const clozeRegex = /{{c(\d+)::/g;
+      for (const note of notes){
+        const clozes = new Set();
+        let m;
+        while ((m = clozeRegex.exec(note.flds)) !== null){
+          clozes.add(parseInt(m[1], 10));
+        }
+        if (clozes.size > 1){
+          for (const cNum of clozes){
+            const ord = cNum - 1;
+            const key = `${note.id}:${ord}`;
+            if (!existingCardKeys.has(key)){
+              cardRows.push({
+                id: `${note.id}-c${cNum}`,
+                nid: note.id,
+                ord: ord
+              });
+              existingCardKeys.add(key);
+            }
+          }
+        }
+      }
+
       // Media resolver helper
       function resolveMediaUrl(fn){
         if (!fn) return '';
@@ -3178,17 +4341,26 @@
         if (mediaUrlMap[clean.toLowerCase()]) return mediaUrlMap[clean.toLowerCase()];
         if (mediaUrlMap[encodeURI(clean)]) return mediaUrlMap[encodeURI(clean)];
         if (mediaUrlMap[encodeURIComponent(clean)]) return mediaUrlMap[encodeURIComponent(clean)];
-        if (inMemoryMediaCache.has(clean)) return inMemoryMediaCache.get(clean);
-        if (inMemoryMediaCache.has(clean.toLowerCase())) return inMemoryMediaCache.get(clean.toLowerCase());
-        if (inMemoryMediaCache.has(fn)) return inMemoryMediaCache.get(fn);
+        if (currentActiveDeckId){
+          const scopedK = `${currentActiveDeckId}:::${clean}`;
+          const scopedKLower = `${currentActiveDeckId}:::${clean.toLowerCase()}`;
+          if (inMemoryMediaCache.has(scopedK)) return inMemoryMediaCache.get(scopedK);
+          if (inMemoryMediaCache.has(scopedKLower)) return inMemoryMediaCache.get(scopedKLower);
+        }
 
         // Normalized matching (spaces, %20, underscores)
         const normTarget = clean.toLowerCase().replace(/%20/g, ' ').replace(/[\s_\-]+/g, '');
         for (const [k, url] of Object.entries(mediaUrlMap)){
           if (k.toLowerCase().replace(/%20/g, ' ').replace(/[\s_\-]+/g, '') === normTarget) return url;
         }
-        for (const [k, url] of inMemoryMediaCache.entries()){
-          if (k.toLowerCase().replace(/%20/g, ' ').replace(/[\s_\-]+/g, '') === normTarget) return url;
+        if (currentActiveDeckId){
+          const pfx = `${currentActiveDeckId}:::`;
+          for (const [k, url] of inMemoryMediaCache.entries()){
+            if (k.startsWith(pfx)){
+              const subKey = k.slice(pfx.length).toLowerCase().replace(/%20/g, ' ').replace(/[\s_\-]+/g, '');
+              if (subKey === normTarget) return url;
+            }
+          }
         }
         return fn;
       }
@@ -3203,12 +4375,12 @@
             if (!fn.startsWith('data:')){
               try { cleanFn = decodeURIComponent(fn).replace(/^.*[\\\/]/, ''); } catch(e){}
             }
-            return `${before}src=${q}${resolvedSrc}${q} data-filename=${q}${cleanFn}${q} class="clinical-diagram-img" alt="Clinical Reference Diagram"${after}`;
+            return `${before}src=${q}${resolvedSrc}${q} data-filename=${q}${cleanFn}${q} data-deck-id=${q}${currentActiveDeckId || ''}${q} class="clinical-diagram-img" alt="Clinical Reference Diagram"${after}`;
           })
           .replace(/\[sound:([^\]]+)\]/gi, (match, soundFn) => {
             const cleanFn = soundFn.trim().replace(/^.*[\\\/]/, '');
             const u = resolveMediaUrl(cleanFn);
-            return u ? `<audio controls src="${u}"></audio>` : `<audio controls data-filename="${cleanFn}"></audio>`;
+            return u ? `<audio controls src="${u}" data-filename="${cleanFn}" data-deck-id="${currentActiveDeckId || ''}"></audio>` : `<audio controls data-filename="${cleanFn}" data-deck-id="${currentActiveDeckId || ''}"></audio>`;
           });
       };
 
@@ -3387,7 +4559,7 @@
         fieldMap.__typeName = model ? model.name : 'Clinical Note';
         fieldMap.__tags = note.tags || '';
 
-        const tmpl = model && model.tmpls ? model.tmpls[cr.ord] : null;
+        const tmpl = model && model.tmpls ? (model.tmpls[cr.ord] || (model.tmpls.length === 1 ? model.tmpls[0] : null)) : null;
 
         let frontHtml = '';
         let backHtml = '';
@@ -3405,10 +4577,12 @@
           backHtml = compileAnkiTemplate(tmpl.afmt, fieldMap, frontHtml, cr.ord, true);
         } else {
           let backFieldVal = fieldMap['Back'] || fieldValues[1] || '';
-          if (backFieldVal.includes('{{c') && backFieldVal.includes('::')){
-            backFieldVal = processClozeText(backFieldVal, cr.ord + 1, true);
+          let clozeBackText = (fieldMap['Text'] || fieldValues[0] || '');
+          if (clozeBackText.includes('{{c') && clozeBackText.includes('::')){
+            backHtml = `${processClozeText(clozeBackText, cr.ord + 1, true)}<hr id=answer>${backFieldVal}`;
+          } else {
+            backHtml = `${frontHtml}<hr id=answer>${backFieldVal}`;
           }
-          backHtml = `${frontHtml}<hr id=answer>${backFieldVal}`;
         }
 
         // Comprehensive reference image assurance:
@@ -3435,11 +4609,17 @@
         cards.push({
           id: `card-${cr.id}`,
           originalId: `card-${cr.id}`,
+          noteId: String(cr.nid),
+          ord: Number(cr.ord),
+          cardType: tmpl && tmpl.name ? tmpl.name : (cr.ord === 0 ? 'Card 1 (Forward)' : `Card ${cr.ord + 1}`),
           front: resolvedFront,
           back: resolvedBack,
           stability: 0,
           difficulty: 0,
-          reps: 0
+          reps: 0,
+          lapses: 0,
+          due: 0,
+          lastReview: 0
         });
       }
 
@@ -3466,7 +4646,8 @@
         const { cards, mediaBlobMap } = await parseApkg(arrayBuffer, (phase, pct, msg) => {
           updateDeckLoaderProgress(pct, msg, phase);
         });
-        deckCards = cards;
+        allDeckCards = cards;
+        deckCards = buildStudyQueue(allDeckCards, { isCramMode, dailyNewLimit });
         currentIndex = 0;
         reviewHistory = [];
         sessionStats = { again: 0, hard: 0, good: 0, easy: 0, startTime: Date.now() };
@@ -3482,13 +4663,15 @@
         await new Promise(r => setTimeout(r, 140));
         hideClinicalDeckLoader();
         renderCard();
+        checkResumeBookmark();
       } catch(err){
         hideClinicalDeckLoader();
         console.error('Failed to parse local .apkg:', err);
         alert('Failed to parse .apkg file: ' + (err.message || 'Invalid format'));
         deckTitle.textContent = 'High-Yield Clinical Physiology & Pharmacology';
         deckSub.textContent = 'Loaded Clinical Demo Deck';
-        deckCards = [...HIGH_YIELD_DEMO_DECK];
+        allDeckCards = HIGH_YIELD_DEMO_DECK.map(c => ({ ...c }));
+        deckCards = buildStudyQueue(allDeckCards, { isCramMode, dailyNewLimit });
         renderCard();
       }
     }
@@ -3519,6 +4702,9 @@
       initGestures();
       initLightbox();
       startTimer();
+      updateCramToggleUI();
+      updateDailyLimitUI();
+      updateBurySiblingsUI();
 
       // Wire up Local File Picker and Drag & Drop
       if (localApkgInput){
@@ -3587,8 +4773,28 @@
         hideClinicalDeckLoader();
         deckTitle.textContent = deckTitleParam || 'High-Yield Clinical Physiology & Pharmacology';
         deckSub.textContent = '5 Sample FSRS-5 Vignettes · High-Yield Clinical Benchmark';
-        deckCards = [...HIGH_YIELD_DEMO_DECK];
+        let demoCards = HIGH_YIELD_DEMO_DECK.map(c => ({ ...c }));
+        try {
+          const db = await openVault();
+          const tx = db.transaction('cards', 'readonly');
+          const allStored = await new Promise(res => {
+            const req = tx.objectStore('cards').getAll();
+            req.onsuccess = () => res(req.result || []);
+            req.onerror = () => res([]);
+          });
+          const demoStored = new Map();
+          allStored.forEach(c => {
+            if (c.deckId === 'demo') demoStored.set(c.originalId || c.id, c);
+          });
+          demoCards = demoCards.map(c => {
+            const stored = demoStored.get(c.originalId || c.id);
+            return stored ? { ...c, ...stored, id: c.originalId || c.id } : c;
+          });
+        } catch(e){}
+        allDeckCards = demoCards;
+        deckCards = buildStudyQueue(allDeckCards, { isCramMode, dailyNewLimit });
         renderCard();
+        checkResumeBookmark();
         return;
       }
 
@@ -3615,8 +4821,10 @@
         deckTitle.textContent = deckTitleParam || cached.meta.title || 'Clinical Flashcards';
         deckSub.textContent = `${cached.cards.length} cards · Offline Synaptic Vault`;
         offlineBadge.style.display = 'inline-flex';
-        deckCards = cached.cards;
+        allDeckCards = cached.cards;
+        deckCards = buildStudyQueue(allDeckCards, { isCramMode, dailyNewLimit });
         renderCard();
+        checkResumeBookmark();
         return;
       }
 
@@ -3710,7 +4918,8 @@
           const { cards, mediaBlobMap } = await parseApkg(arrayBuffer, (phase, pct, msg) => {
             updateDeckLoaderProgress(pct, msg, phase);
           });
-          deckCards = cards;
+          allDeckCards = cards;
+          deckCards = buildStudyQueue(allDeckCards, { isCramMode, dailyNewLimit });
           deckTitle.textContent = targetTitle;
           deckSub.textContent = `${cards.length} cards · FSRS-5 Calibrated`;
 
@@ -3723,6 +4932,7 @@
 
           hideClinicalDeckLoader();
           renderCard();
+          checkResumeBookmark();
         } catch(err){
           hideClinicalDeckLoader();
           console.error('Error loading cloud deck:', err);
@@ -3749,8 +4959,10 @@
         hideClinicalDeckLoader();
         deckTitle.textContent = deckTitleParam || 'High-Yield Clinical Physiology & Pharmacology';
         deckSub.textContent = 'No cloud file found · Loaded Clinical Benchmark Deck';
-        deckCards = [...HIGH_YIELD_DEMO_DECK];
+        allDeckCards = HIGH_YIELD_DEMO_DECK.map(c => ({ ...c }));
+        deckCards = buildStudyQueue(allDeckCards, { isCramMode, dailyNewLimit });
         renderCard();
+        checkResumeBookmark();
       }
     }
 

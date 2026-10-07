@@ -1083,6 +1083,12 @@
           </div>
           <input type="file" id="cardImageInput" accept="image/*" style="display:none;" />
         </div>
+        <div class="mfield" style="margin-top:10px;">
+          <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.86rem; color:var(--text); font-weight:600;">
+            <input type="checkbox" id="cardIsDualInput" ${existing && existing.isDual ? 'checked' : ''} style="width:16px; height:16px; accent-color:var(--accent); cursor:pointer;" />
+            <span>${currentLang==='ar'?'إنشاء بطاقة مزدوجة معكوسة (Card 1 وش لضهر & Card 2 ضهر لوش)':'Generate Dual/Reversed Sibling Card (Card 1: Forward & Card 2: Reversed)'}</span>
+          </label>
+        </div>
         <div class="save-card-row">
           <button type="button" class="cancel-edit-btn" id="cancelCardBtn">${currentLang==='ar'?'إلغاء':'Cancel'}</button>
           <button type="button" class="save-card-btn" id="saveCardBtn">${currentLang==='ar'?'حفظ البطاقة':'Save card'}</button>
@@ -1217,9 +1223,11 @@
     if (!back){ document.getElementById('backErr').classList.add('show'); ok = false; }
     if (!ok) return;
 
+    const isDualEl = document.getElementById('cardIsDualInput');
     const cardData = {
       front,
       back,
+      isDual: !!(isDualEl && isDualEl.checked),
       imageFile: pendingImage ? pendingImage.file : null,
       imageDataUrl: pendingImage ? pendingImage.dataUrl : null,
       imageName: pendingImage ? pendingImage.name : null
@@ -1364,19 +1372,41 @@
           const flatCards = [];
           decksWithCards.forEach(d => {
             d.cards.forEach((c, idx) => {
+              const noteId = 'nid-' + idx + '-' + Date.now();
+              const origId0 = 'card-' + idx + '-0';
               flatCards.push({
-                id: 'card-' + idx + '-' + Date.now(),
+                id: `${previewId}:::${origId0}`,
+                originalId: origId0,
+                noteId: noteId,
+                ord: 0,
                 deckId: previewId,
                 front: c.front,
                 back: c.back + (c.imageDataUrl ? `<br><img src="${c.imageDataUrl}">` : ''),
                 stability: 0,
                 difficulty: 0,
-                reps: 0
+                reps: 0,
+                due: 0
               });
+              if (c.isDual){
+                const origId1 = 'card-' + idx + '-1';
+                flatCards.push({
+                  id: `${previewId}:::${origId1}`,
+                  originalId: origId1,
+                  noteId: noteId,
+                  ord: 1,
+                  deckId: previewId,
+                  front: c.back,
+                  back: c.front + (c.imageDataUrl ? `<br><img src="${c.imageDataUrl}">` : ''),
+                  stability: 0,
+                  difficulty: 0,
+                  reps: 0,
+                  due: 0
+                });
+              }
             });
           });
 
-          const req = indexedDB.open('mb_synaptic_vault', 1);
+          const req = indexedDB.open('mb_synaptic_vault', 3);
           req.onupgradeneeded = (e) => {
             const db = e.target.result;
             if (!db.objectStoreNames.contains('decks')) db.createObjectStore('decks', { keyPath: 'id' });
@@ -1618,6 +1648,17 @@
             did: null,
             bfont: '',
             bsize: 0
+          },
+          {
+            name: 'Card 2',
+            ord: 1,
+            qfmt: '{{Back}}',
+            afmt: '{{FrontSide}}<hr id="answer">{{Front}}',
+            bqfmt: '',
+            bafmt: '',
+            did: null,
+            bfont: '',
+            bsize: 0
           }
         ],
         flds: [
@@ -1628,7 +1669,7 @@
         latexPre: '',
         latexPost: '',
         latexsvg: false,
-        req: [[0, 'any', [0]]]
+        req: [[0, 'all', [0]], [1, 'all', [1]]]
       }
     };
 
@@ -1715,6 +1756,15 @@
           [cardId, noteId, deckId, 0, nowSec, usnBase, 0, 0, due, 0, 0, 0, 0, 0, 0, 0, 0, '']
         );
         due++;
+
+        if (card.isDual){
+          const cardId2 = cardIdCounter++;
+          db.run(
+            `INSERT INTO cards (id, nid, did, ord, mod, usn, type, queue, due, ivl, factor, reps, lapses, left, odue, odid, flags, data) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+            [cardId2, noteId, deckId, 1, nowSec, usnBase, 0, 0, due, 0, 0, 0, 0, 0, 0, 0, 0, '']
+          );
+          due++;
+        }
       }
     }
 

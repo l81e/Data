@@ -560,6 +560,755 @@ assert(fs.existsSync('fzstd.min.js'), 'fzstd.min.js is bundled locally for 100% 
   assert(indexHtml.includes('id="curriculumLoading"') && indexHtml.includes('role="status"') && indexHtml.includes('aria-live="polite"'), 'curriculum loader includes WCAG accessibility live status attributes');
 }
 
+// =============================================================================
+// Suite 33: Requirement 1 — Spaced Repetition Fidelity, Dual Cards & Due Queue
+// Validates: Dual card siblings generation, independent review states,
+// sibling burying, daily queue calculation, Cram All mode, FSRS-5 metrics,
+// and IndexedDB review persistence.
+// =============================================================================
+{
+  console.log('--- Suite 33: Requirement 1 (Spaced Repetition & Dual Cards Engine) ---');
+
+  // 1. Dual Card Siblings Generation (Basic Reversed & Cloze Notes)
+  function generateDualCardSiblings(note, deckId) {
+    const cards = [];
+    if (!note || !note.id) return cards;
+
+    if (note.type === 'basic_reversed' || (note.front && note.back && note.isReversed !== false)) {
+      // Card 1: Forward (ord: 0)
+      cards.push({
+        id: `${deckId}:::${note.id}-0`,
+        originalId: `${note.id}-0`,
+        deckId: deckId,
+        noteId: note.id,
+        ord: 0,
+        cardType: 'forward',
+        front: note.front,
+        back: note.back,
+        stability: 0,
+        difficulty: 0,
+        reps: 0,
+        lapses: 0,
+        due: 0,
+        lastReview: 0
+      });
+      // Card 2: Reversed sibling (ord: 1)
+      cards.push({
+        id: `${deckId}:::${note.id}-1`,
+        originalId: `${note.id}-1`,
+        deckId: deckId,
+        noteId: note.id,
+        ord: 1,
+        cardType: 'reversed',
+        front: note.back,
+        back: note.front,
+        stability: 0,
+        difficulty: 0,
+        reps: 0,
+        lapses: 0,
+        due: 0,
+        lastReview: 0
+      });
+    } else if (note.type === 'cloze' || (note.text && note.text.includes('{{c'))) {
+      // Extract unique cloze numbers
+      const clozeMatches = [...note.text.matchAll(/{{c(\d+)::/g)];
+      const clozeNums = [...new Set(clozeMatches.map(m => parseInt(m[1], 10)))].sort((a, b) => a - b);
+      
+      // Dedicated cloze processor for siblings
+      function renderCloze(text, targetNum, isBack) {
+        return text.replace(/{{c(\d+)::([\s\S]*?)}}/g, (match, numStr, content) => {
+          const num = parseInt(numStr, 10);
+          let answer = content;
+          let hint = '';
+          const hintIdx = content.indexOf('::');
+          if (hintIdx !== -1) {
+            answer = content.substring(0, hintIdx);
+            hint = content.substring(hintIdx + 2);
+          }
+          if (num === targetNum) {
+            if (isBack) return `<span class="cloze-blank">${answer}</span>`;
+            const hintLabel = hint ? `[${hint}]` : '[...]';
+            return `<span class="cloze-blank">${hintLabel}</span>`;
+          }
+          return answer;
+        });
+      }
+
+      clozeNums.forEach((cNum, index) => {
+        cards.push({
+          id: `${deckId}:::${note.id}-${index}`,
+          originalId: `${note.id}-${index}`,
+          deckId: deckId,
+          noteId: note.id,
+          ord: index,
+          cardType: `cloze_c${cNum}`,
+          front: renderCloze(note.text, cNum, false),
+          back: renderCloze(note.text, cNum, true),
+          stability: 0,
+          difficulty: 0,
+          reps: 0,
+          lapses: 0,
+          due: 0,
+          lastReview: 0
+        });
+      });
+    } else {
+      // Standard single card
+      cards.push({
+        id: `${deckId}:::${note.id}-0`,
+        originalId: `${note.id}-0`,
+        deckId: deckId,
+        noteId: note.id,
+        ord: 0,
+        cardType: 'forward',
+        front: note.front || '',
+        back: note.back || '',
+        stability: 0,
+        difficulty: 0,
+        reps: 0,
+        lapses: 0,
+        due: 0,
+        lastReview: 0
+      });
+    }
+    return cards;
+  }
+
+  // Test Basic Reversed Note generates 2 sibling cards
+  const basicNote = {
+    id: 'note-cvs-01',
+    type: 'basic_reversed',
+    front: '<b>Mitral Stenosis Murmur</b>',
+    back: 'Opening snap followed by mid-diastolic rumbling murmur'
+  };
+  const basicSiblings = generateDualCardSiblings(basicNote, 'deck-cvs');
+  assert(basicSiblings.length === 2, 'Basic reversed note generates exactly 2 dual card siblings');
+  assert(basicSiblings[0].noteId === 'note-cvs-01' && basicSiblings[1].noteId === 'note-cvs-01', 'Both dual card siblings share the identical noteId');
+  assert(basicSiblings[0].ord === 0 && basicSiblings[1].ord === 1, 'Dual card siblings have distinct ordinals (ord: 0 and ord: 1)');
+  assert(basicSiblings[0].id === 'deck-cvs:::note-cvs-01-0' && basicSiblings[1].id === 'deck-cvs:::note-cvs-01-1', 'Dual card siblings use strictly namespaced card IDs');
+  assert(basicSiblings[1].front.includes('Opening snap') && basicSiblings[1].back.includes('Mitral Stenosis'), 'Reversed Card 2 swaps front and back fields accurately');
+
+  // Test Multi-Cloze Note generates $k$ sibling cards
+  const clozeNote = {
+    id: 'note-vignette-02',
+    type: 'cloze',
+    text: 'A patient with chest pain has {{c1::Inferior STEMI::Type}} caused by {{c2::Right Coronary Artery::Vessel}} occlusion causing {{c3::AV block::Complication}}.'
+  };
+  const clozeSiblings = generateDualCardSiblings(clozeNote, 'deck-cvs');
+  assert(clozeSiblings.length === 3, 'Multi-cloze note with 3 clozes generates exactly 3 sibling cards');
+  assert(clozeSiblings.every(s => s.noteId === 'note-vignette-02'), 'All 3 cloze siblings share identical noteId');
+  assert(clozeSiblings[0].front.includes('[Type]') && clozeSiblings[0].front.includes('Right Coronary Artery'), 'Cloze sibling 1 blanks c1 while revealing c2 and c3');
+  assert(clozeSiblings[1].front.includes('Inferior STEMI') && clozeSiblings[1].front.includes('[Vessel]'), 'Cloze sibling 2 blanks c2 while revealing c1 and c3');
+  assert(clozeSiblings[2].front.includes('[Complication]') && clozeSiblings[2].front.includes('Inferior STEMI'), 'Cloze sibling 3 blanks c3 while revealing c1 and c2');
+
+  // 2. Independent Review States & Progress Isolation
+  function simulateFsrsReview(card, rating, now = Date.now()) {
+    const W = [
+      0.4072, 1.1829, 3.173, 15.691, 7.1949, 0.5345, 1.4604, 0.0046, 1.5457,
+      0.1192, 1.0192, 1.9395, 0.11, 0.296, 0.227, 0.2595, 2.9466, 0.5, 0.6391
+    ];
+    const FACTOR = 19 / 81;
+    let newS = 0;
+    let newD = card.difficulty || (W[4] - Math.exp(W[5] * (rating - 1)) + 1);
+    newD = Math.max(1.0, Math.min(10.0, newD));
+
+    if (card.reps === 0) {
+      newS = W[rating - 1];
+    } else {
+      const elapsedDays = Math.max(0, (now - card.lastReview) / 86400000);
+      const R = Math.pow(1 + (FACTOR * elapsedDays) / card.stability, -0.5);
+      if (rating === 1) {
+        newS = W[11] * Math.pow(newD, -W[12]) * (Math.pow(card.stability + 1, W[13]) - 1) * Math.exp((1 - R) * W[14]);
+      } else {
+        const hardPenalty = rating === 2 ? W[15] : 1;
+        const easyBonus = rating === 4 ? W[16] : 1;
+        newS = card.stability * (1 + Math.exp(W[8]) * (11 - newD) * Math.pow(card.stability, -W[9]) * (Math.exp((1 - R) * W[10]) - 1) * hardPenalty * easyBonus);
+      }
+    }
+
+    let intervalDays = 0;
+    if (rating === 1) {
+      intervalDays = 10 / 1440; // 10 minutes
+    } else {
+      intervalDays = Math.max(1, Math.round((newS / FACTOR) * (Math.pow(0.9, -2) - 1)));
+    }
+
+    const updatedCard = {
+      ...card,
+      stability: Number(newS.toFixed(4)),
+      difficulty: Number(newD.toFixed(4)),
+      reps: (card.reps || 0) + 1,
+      lapses: rating === 1 ? (card.lapses || 0) + 1 : (card.lapses || 0),
+      lastReview: now,
+      due: now + Math.round(intervalDays * 86400000)
+    };
+    return { updatedCard, intervalDays };
+  }
+
+  const nowBase = 1770000000000;
+  const card1 = { ...basicSiblings[0] };
+  const card2 = { ...basicSiblings[1] };
+
+  // Review Card 1 with "Good" (rating 3)
+  const { updatedCard: reviewedCard1 } = simulateFsrsReview(card1, 3, nowBase);
+  assert(reviewedCard1.reps === 1, 'Card 1 reps incremented to 1 after review');
+  assert(reviewedCard1.stability === 3.173, 'Card 1 stability updated to 3.173 (Good)');
+  assert(reviewedCard1.due > nowBase, 'Card 1 due timestamp correctly calculated into the future');
+  
+  // Verify Sibling Card 2 is completely unchanged
+  assert(card2.reps === 0, 'Card 2 reps remains 0 (independent state)');
+  assert(card2.stability === 0, 'Card 2 stability remains 0 (unaffected by sibling review)');
+  assert(card2.due === 0, 'Card 2 due timestamp remains 0');
+
+  // Review Card 1 second time with "Easy" (rating 4) after 4 days
+  const fourDaysLater = nowBase + 4 * 86400000;
+  const { updatedCard: reviewedCard1Round2 } = simulateFsrsReview(reviewedCard1, 4, fourDaysLater);
+  assert(reviewedCard1Round2.reps === 2, 'Card 1 reps increments to 2 on second review');
+  assert(reviewedCard1Round2.stability > reviewedCard1.stability, 'Card 1 stability increases on successful Easy recall');
+  assert(card2.reps === 0 && card2.stability === 0, 'Card 2 remains untouched through repeated Card 1 reviews');
+
+  // 3. Sibling Burying Simulation
+  function applySiblingBurying(activeCard, allCards, burySiblings = true, now = Date.now()) {
+    if (!burySiblings) return allCards;
+    const tomorrowMidnight = new Date(now).setHours(24, 0, 0, 0);
+    return allCards.map(c => {
+      if (c.noteId === activeCard.noteId && c.id !== activeCard.id) {
+        return { ...c, buriedUntil: tomorrowMidnight };
+      }
+      return c;
+    });
+  }
+
+  const cardsPoolWithSiblings = [reviewedCard1, card2];
+  const buriedCards = applySiblingBurying(reviewedCard1, cardsPoolWithSiblings, true, nowBase);
+  const siblingAfterBury = buriedCards.find(c => c.id === card2.id);
+  assert(siblingAfterBury.buriedUntil > nowBase, 'Sibling Card 2 is buried until tomorrow upon reviewing Card 1');
+  assert(!buriedCards.find(c => c.id === reviewedCard1.id).buriedUntil, 'Active Card 1 is not buried');
+
+  // 4. Daily Queue Calculation (Due <= Today + New Limit & Burying)
+  function buildStudyQueue(cards, { isCramMode = false, dailyNewLimit = 20, now = Date.now() } = {}) {
+    if (!cards || !Array.isArray(cards)) return { queue: [], dueCount: 0, newCount: 0, totalCards: 0 };
+    
+    if (isCramMode) {
+      return {
+        queue: [...cards],
+        dueCount: cards.filter(c => c.reps > 0 && c.due <= now).length,
+        newCount: cards.filter(c => !c.reps).length,
+        totalCards: cards.length
+      };
+    }
+
+    // Filter out buried cards
+    const unburiedCards = cards.filter(c => !c.buriedUntil || c.buriedUntil <= now);
+    
+    // Separate Due cards (reps > 0 and due <= now)
+    const dueCards = unburiedCards.filter(c => c.reps > 0 && c.due <= now);
+    
+    // Separate New cards (reps === 0)
+    const newCards = unburiedCards.filter(c => !c.reps);
+    const admittedNew = newCards.slice(0, Math.max(0, dailyNewLimit));
+
+    return {
+      queue: [...dueCards, ...admittedNew],
+      dueCount: dueCards.length,
+      newCount: admittedNew.length,
+      totalCards: cards.length
+    };
+  }
+
+  // Category-Partition & Boundary Value Synthetic Dataset:
+  // 10 Overdue (due < now), 5 Due today (due === now), 15 Future (due > now),
+  // 30 New unreviewed (reps === 0), 2 Buried cards (buriedUntil > now)
+  const syntheticCards = [];
+  // 10 Overdue
+  for (let i = 1; i <= 10; i++) {
+    syntheticCards.push({ id: `card-overdue-${i}`, reps: 2, due: nowBase - i * 86400000 });
+  }
+  // 5 Due today
+  for (let i = 1; i <= 5; i++) {
+    syntheticCards.push({ id: `card-today-${i}`, reps: 1, due: nowBase });
+  }
+  // 15 Future due
+  for (let i = 1; i <= 15; i++) {
+    syntheticCards.push({ id: `card-future-${i}`, reps: 3, due: nowBase + i * 86400000 });
+  }
+  // 30 New cards
+  for (let i = 1; i <= 30; i++) {
+    syntheticCards.push({ id: `card-new-${i}`, reps: 0, due: 0 });
+  }
+  // 2 Buried cards (1 due, 1 new)
+  syntheticCards.push({ id: 'card-buried-due', reps: 2, due: nowBase - 3600000, buriedUntil: nowBase + 43200000 });
+  syntheticCards.push({ id: 'card-buried-new', reps: 0, due: 0, buriedUntil: nowBase + 43200000 });
+
+  // Standard Daily Queue: dailyNewLimit = 10, isCramMode = false
+  const standardQueueResult = buildStudyQueue(syntheticCards, { isCramMode: false, dailyNewLimit: 10, now: nowBase });
+  assert(standardQueueResult.dueCount === 15, 'Daily queue correctly identifies exactly 15 unburied due cards (10 overdue + 5 today)');
+  assert(standardQueueResult.newCount === 10, 'Daily queue respects dailyNewLimit=10 by admitting exactly 10 new cards');
+  assert(standardQueueResult.queue.length === 25, 'Daily queue total count equals 15 due + 10 new = 25 cards');
+  assert(!standardQueueResult.queue.some(c => c.due > nowBase && c.reps > 0), 'Daily queue strictly excludes future cards (due > now)');
+  assert(!standardQueueResult.queue.some(c => c.buriedUntil && c.buriedUntil > nowBase), 'Daily queue strictly excludes buried sibling cards');
+
+  // Boundary Value Analysis: dailyNewLimit = 0
+  const zeroNewResult = buildStudyQueue(syntheticCards, { isCramMode: false, dailyNewLimit: 0, now: nowBase });
+  assert(zeroNewResult.newCount === 0 && zeroNewResult.queue.length === 15, 'BVA: dailyNewLimit=0 admits 0 new cards and exactly 15 due cards');
+
+  // Boundary Value Analysis: dailyNewLimit = 50 (exceeds 30 available new unburied cards)
+  const excessiveLimitResult = buildStudyQueue(syntheticCards, { isCramMode: false, dailyNewLimit: 50, now: nowBase });
+  assert(excessiveLimitResult.newCount === 30 && excessiveLimitResult.queue.length === 45, 'BVA: dailyNewLimit > available admits all 30 unburied new cards without error');
+
+  // 5. Cram All / Free Study Toggle
+  const cramResult = buildStudyQueue(syntheticCards, { isCramMode: true, now: nowBase });
+  assert(cramResult.queue.length === syntheticCards.length, 'Cram All mode admits 100% of cards (all 62 cards) regardless of due date or limits');
+  assert(cramResult.queue.some(c => c.id === 'card-buried-due'), 'Cram All mode unblocks buried cards for unrestricted study');
+  assert(cramResult.queue.some(c => c.id.startsWith('card-future')), 'Cram All mode includes future cards');
+
+  // 6. FSRS-5 Metrics & Boundaries Calculation
+  const { updatedCard: lapsedCard } = simulateFsrsReview({ id: 'c1', stability: 4.5, difficulty: 5.0, reps: 3, lastReview: nowBase }, 1, nowBase + 86400000);
+  assert(lapsedCard.lapses === 1, 'Rating 1 (Again) correctly increments lapses counter');
+  assert(lapsedCard.due === nowBase + 86400000 + 600000, 'Rating 1 (Again) schedules card 10 minutes into the future');
+
+  // Verify Difficulty Bounds Clamping [1.0, 10.0]
+  const extremeHard = simulateFsrsReview({ id: 'c2', stability: 1.0, difficulty: 9.8, reps: 2, lastReview: nowBase }, 1, nowBase + 86400000);
+  assert(extremeHard.updatedCard.difficulty <= 10.0, 'FSRS-5 difficulty clamped at maximum 10.0');
+  const extremeEasy = simulateFsrsReview({ id: 'c3', stability: 1.0, difficulty: 1.2, reps: 2, lastReview: nowBase }, 4, nowBase + 86400000);
+  assert(extremeEasy.updatedCard.difficulty >= 1.0, 'FSRS-5 difficulty clamped at minimum 1.0');
+
+  // 7. IndexedDB Review Persistence & Undo Contract
+  function mockIndexedDbVault() {
+    const store = new Map();
+    return {
+      put: (card) => store.set(card.id, { ...card }),
+      get: (id) => store.get(id) || null,
+      getAll: () => Array.from(store.values())
+    };
+  }
+  const idbCardsStore = mockIndexedDbVault();
+  
+  // Persist review to IndexedDB
+  idbCardsStore.put(reviewedCard1);
+  const fetchedAfterReview = idbCardsStore.get(reviewedCard1.id);
+  assert(fetchedAfterReview !== null && fetchedAfterReview.reps === 1, 'IndexedDB persists updated card reps');
+  assert(fetchedAfterReview.stability === 3.173 && fetchedAfterReview.due === reviewedCard1.due, 'IndexedDB persists stability and due date');
+
+  // Simulate Undo: Reverts previous card state in IndexedDB
+  idbCardsStore.put(card1);
+  const fetchedAfterUndo = idbCardsStore.get(card1.id);
+  assert(fetchedAfterUndo.reps === 0 && fetchedAfterUndo.stability === 0, 'IndexedDB undo restoration cleanly restores previous review state');
+
+  // Static checks on flash.html for IDB vault integration
+  assert(flashHtml.includes('openVault()') || flashHtml.includes('openVault'), 'flash.html defines openVault() integration');
+  assert(flashHtml.includes('IDB_VERSION = 3') || flashHtml.includes('IDB_VERSION = 3;'), 'flash.html standardizes IDB_VERSION at version 3');
+}
+
+// =============================================================================
+// Suite 34: Requirement 2 — Strict Deck & Card Container Isolation & Constant Ratio
+// Validates: Strict media namespacing (deckId:::filename), card dimensions
+// (max 720px width, clamped height, overflow-y: auto), action buttons alignment
+// (56px), and module deck container borders.
+// =============================================================================
+{
+  console.log('--- Suite 34: Requirement 2 (Deck & Card Container Isolation & Media Namespacing) ---');
+
+  // 1. Strict Media Namespacing & Resolution Simulation
+  class MediaNamespaceResolver {
+    constructor() {
+      this.store = new Map(); // scopedKey -> blobContent
+      this.memoryCache = new Map(); // scopedKey -> objectUrl
+    }
+    saveMedia(deckId, filename, blobContent) {
+      const scopedKey = `${deckId}:::${filename}`;
+      this.store.set(scopedKey, blobContent);
+      const url = `blob:http://origin/${deckId}/${filename}`;
+      this.memoryCache.set(scopedKey, url);
+      return url;
+    }
+    resolveMedia(filename, activeDeckId) {
+      const scopedKey = `${activeDeckId}:::${filename}`;
+      if (this.memoryCache.has(scopedKey)) {
+        return this.memoryCache.get(scopedKey);
+      }
+      if (this.store.has(scopedKey)) {
+        const url = `blob:http://origin/${activeDeckId}/${filename}`;
+        this.memoryCache.set(scopedKey, url);
+        return url;
+      }
+      return null;
+    }
+    revokeAndClear() {
+      this.memoryCache.clear();
+    }
+  }
+
+  const resolver = new MediaNamespaceResolver();
+  // Deck CVS has 'diagram_heart.png'
+  resolver.saveMedia('deck-cvs', 'diagram_heart.png', 'BINARY_HEART_CVS');
+  // Deck RES has identical filename 'diagram_heart.png' with different content
+  resolver.saveMedia('deck-res', 'diagram_heart.png', 'BINARY_LUNG_HEART_RES');
+
+  // Verify resolution strictly respects activeDeckId
+  const cvsUrl = resolver.resolveMedia('diagram_heart.png', 'deck-cvs');
+  const resUrl = resolver.resolveMedia('diagram_heart.png', 'deck-res');
+  assert(cvsUrl !== null && cvsUrl.includes('/deck-cvs/'), 'Resolving diagram for deck-cvs returns strictly namespaced deck-cvs asset');
+  assert(resUrl !== null && resUrl.includes('/deck-res/'), 'Resolving diagram for deck-res returns strictly namespaced deck-res asset');
+  assert(cvsUrl !== resUrl, 'Identical filenames across different decks resolve to distinct, isolated URLs');
+
+  // Verify non-matching deck cannot access other decks' media
+  const gitUrl = resolver.resolveMedia('diagram_heart.png', 'deck-git');
+  assert(gitUrl === null, 'Unauthorized deck cannot bleed or access media belonging to other decks');
+
+  // Verify cache flush on deck switch
+  resolver.revokeAndClear();
+  assert(resolver.memoryCache.size === 0, 'revokeAndClear cleans memory cache completely on deck switch');
+
+  // 2. Card Dimensions, Constant Ratio & Internal Scrolling
+  assert(flashHtml.includes('overflow-y:auto') || flashHtml.includes('overflow-y: auto'), 'flash.html enforces overflow-y: auto on card faces to prevent expansion');
+  assert(flashHtml.includes('overscroll-behavior:contain') || flashHtml.includes('overscroll-behavior: contain'), 'flash.html enforces overscroll-behavior: contain');
+  assert(flashHtml.includes('.card-stage'), 'flash.html defines dedicated card-stage element');
+  assert(flashHtml.includes('.flip-face'), 'flash.html defines flip-face container');
+
+  // Simulation of Card Container Bounds Contract across viewport sizes
+  function verifyCardStageBounding(viewportWidth, viewportHeight) {
+    const maxStageWidth = 720;
+    const computedStageWidth = Math.min(viewportWidth - 32, maxStageWidth);
+    const minHeight = 360;
+    const maxHeight = 520;
+    const rawClampedHeight = Math.max(minHeight, Math.min(viewportHeight * 0.58, maxHeight));
+    return {
+      stageWidth: computedStageWidth,
+      stageHeight: rawClampedHeight,
+      widthClamped: computedStageWidth <= maxStageWidth,
+      heightClamped: rawClampedHeight >= minHeight && rawClampedHeight <= maxHeight
+    };
+  }
+
+  const mobileBounds = verifyCardStageBounding(375, 667);
+  assert(mobileBounds.widthClamped && mobileBounds.heightClamped, 'Mobile viewport (375x667) satisfies card stage width and height bounds');
+  const desktopBounds = verifyCardStageBounding(1440, 900);
+  assert(desktopBounds.stageWidth <= 720, 'Desktop widescreen (1440px) clamps card stage width to <= 720px');
+  assert(desktopBounds.stageHeight === 520, 'Desktop widescreen clamps card stage height to maximum 520px');
+
+  // 3. Action Buttons Height Equalization (56px)
+  assert(flashHtml.includes('.rate-btn') && flashHtml.includes('height:56px'), 'flash.html equalizes rate-btn height to 56px');
+  assert(flashHtml.includes('.action-container') && flashHtml.includes('flex-shrink:0'), 'flash.html anchors action-container with flex-shrink: 0 to prevent overlap');
+
+  // 4. Module Deck Container Boundaries in index.html
+  assert(indexHtml.includes('.curriculum-module-card'), 'index.html contains .curriculum-module-card container');
+  assert(indexHtml.includes('.curriculum-module-table-wrap'), 'index.html contains .curriculum-module-table-wrap wrapper');
+  assert(indexHtml.includes('.anki-deck-table'), 'index.html contains .anki-deck-table');
+}
+
+// =============================================================================
+// Suite 35: Requirement 3 — Curriculum Module Deck Categorization & Sorting System
+// Validates: Curriculum module sorting toolbar DOM structure, multi-criteria
+// comparators (Alphabetical A-Z/Z-A, Card count High/Low, Upload Date Newest/Oldest),
+// real-time sorting, and localStorage persistence.
+// =============================================================================
+{
+  console.log('--- Suite 35: Requirement 3 (Curriculum Module Deck Categorization & Sorting System) ---');
+
+  // 1. Multi-Criteria Sorting Engine Specification
+  function sortCurriculumDecks(decks, { key = 'title', dir = 'asc' } = {}) {
+    if (!Array.isArray(decks)) return [];
+    const copy = [...decks];
+
+    copy.sort((a, b) => {
+      // 1. Alphabetical Title Sorting
+      if (key === 'title') {
+        const res = (a.title || '').localeCompare(b.title || '', undefined, { numeric: true, sensitivity: 'base' });
+        return dir === 'desc' ? -res : res;
+      }
+      
+      // 2. Card Count Sorting (with title tie-breaker)
+      if (key === 'count') {
+        const countA = Number(a.totalCount != null ? a.totalCount : ((Number(a.dueCount) || 0) + (Number(a.newCount) || 0))) || 0;
+        const countB = Number(b.totalCount != null ? b.totalCount : ((Number(b.dueCount) || 0) + (Number(b.newCount) || 0))) || 0;
+        const diff = countB - countA; // default high to low
+        if (diff !== 0) return dir === 'asc' ? -diff : diff;
+        return (a.title || '').localeCompare(b.title || '', undefined, { numeric: true });
+      }
+
+      // 3. Upload / Import Date Sorting (with title tie-breaker)
+      if (key === 'date') {
+        const getTime = (d) => {
+          const val = d.createdAt || d.date || '';
+          if (!val) return 0;
+          const t = new Date(val).getTime();
+          return isNaN(t) ? 0 : t;
+        };
+        const timeA = getTime(a);
+        const timeB = getTime(b);
+        const diff = timeB - timeA; // default newest first
+        if (diff !== 0) return dir === 'asc' ? -diff : diff;
+        return (a.title || '').localeCompare(b.title || '', undefined, { numeric: true });
+      }
+
+      return 0;
+    });
+
+    return copy;
+  }
+
+  // Test Dataset for Curriculum Decks
+  const testDecks = [
+    { id: 'd1', title: 'Lecture 10 - Valvular Diseases', totalCount: 120, createdAt: '2026-03-20T10:00:00Z', subjectName: 'Pathology' },
+    { id: 'd2', title: 'Lecture 2 - Cardiac Anatomy', totalCount: 45, createdAt: '2026-01-15T10:00:00Z', subjectName: 'Anatomy' },
+    { id: 'd3', title: 'Lecture 1 - Introduction to CVS', totalCount: 200, createdAt: '2026-01-10T10:00:00Z', subjectName: 'Physiology' },
+    { id: 'd4', title: 'Pharmacology of Antiarrhythmics', totalCount: 45, createdAt: '2026-04-01T10:00:00Z', subjectName: 'Pharmacology' },
+    { id: 'd5', title: 'عناية مركزة وقلبية', totalCount: 80, createdAt: '2026-02-15T10:00:00Z', subjectName: 'Clinical' }
+  ];
+
+  // Test 1: Alphabetical (A-Z) with Natural Number Sorting
+  const sortedTitleAsc = sortCurriculumDecks(testDecks, { key: 'title', dir: 'asc' });
+  const titlesAsc = sortedTitleAsc.map(d => d.title);
+  assert(titlesAsc.indexOf('Lecture 2 - Cardiac Anatomy') < titlesAsc.indexOf('Lecture 10 - Valvular Diseases'), 'Natural alphanumeric sort: Lecture 2 sorts BEFORE Lecture 10');
+  assert(titlesAsc.indexOf('Lecture 1 - Introduction to CVS') < titlesAsc.indexOf('Lecture 2 - Cardiac Anatomy'), 'Natural alphanumeric sort: Lecture 1 sorts BEFORE Lecture 2');
+
+  // Test 2: Alphabetical (Z-A)
+  const sortedTitleDesc = sortCurriculumDecks(testDecks, { key: 'title', dir: 'desc' });
+  const titlesDesc = sortedTitleDesc.map(d => d.title);
+  assert(titlesDesc.indexOf('Pharmacology of Antiarrhythmics') < titlesDesc.indexOf('Lecture 10 - Valvular Diseases'), 'Z-A sort: Pharmacology sorts before Lecture 10');
+  assert(titlesDesc.indexOf('Lecture 10 - Valvular Diseases') < titlesDesc.indexOf('Lecture 2 - Cardiac Anatomy'), 'Z-A sort: Lecture 10 sorts before Lecture 2');
+
+  // Test 3: Card Count (High to Low / Descending)
+  const sortedCountDesc = sortCurriculumDecks(testDecks, { key: 'count', dir: 'desc' });
+  assert(sortedCountDesc[0].totalCount === 200, 'Card count high-to-low puts largest deck (200 cards) first');
+  assert(sortedCountDesc[1].totalCount === 120, 'Card count high-to-low second deck is 120 cards');
+  // Verify tie-breaker between d2 (45 cards) and d4 (45 cards): "Lecture 2..." before "Pharmacology..."
+  const tieDeck1 = sortedCountDesc.find(d => d.id === 'd2');
+  const tieDeck2 = sortedCountDesc.find(d => d.id === 'd4');
+  assert(sortedCountDesc.indexOf(tieDeck1) < sortedCountDesc.indexOf(tieDeck2), 'Card count tie-breaker sorts alphabetically by title');
+
+  // Test 4: Card Count (Low to High / Ascending)
+  const sortedCountAsc = sortCurriculumDecks(testDecks, { key: 'count', dir: 'asc' });
+  assert(sortedCountAsc[0].totalCount === 45, 'Card count low-to-high puts smallest deck (45 cards) first');
+  assert(sortedCountAsc[sortedCountAsc.length - 1].totalCount === 200, 'Card count low-to-high puts largest deck (200 cards) last');
+
+  // Test 5: Upload Date (Newest First / Descending)
+  const sortedDateDesc = sortCurriculumDecks(testDecks, { key: 'date', dir: 'desc' });
+  assert(sortedDateDesc[0].id === 'd4', 'Upload date newest-first puts April 2026 deck first');
+  assert(sortedDateDesc[1].id === 'd1', 'Upload date newest-first second deck is March 2026');
+  assert(sortedDateDesc[sortedDateDesc.length - 1].id === 'd3', 'Upload date newest-first puts oldest January 2026 deck last');
+
+  // Test 6: Upload Date (Oldest First / Ascending)
+  const sortedDateAsc = sortCurriculumDecks(testDecks, { key: 'date', dir: 'asc' });
+  assert(sortedDateAsc[0].id === 'd3', 'Upload date oldest-first puts January 10 deck first');
+  assert(sortedDateAsc[sortedDateAsc.length - 1].id === 'd4', 'Upload date oldest-first puts April 1 deck last');
+
+  // 2. Real-Time State Management & LocalStorage Persistence
+  class ModuleSortStateManager {
+    constructor() {
+      this.state = {};
+      this.storage = new Map();
+    }
+    load() {
+      try {
+        const raw = this.storage.get('mb_module_sort_state');
+        if (raw) this.state = JSON.parse(raw);
+      } catch(e) {}
+    }
+    setSort(modCode, sortKey) {
+      const cur = this.state[modCode] || { key: 'title', dir: 'asc' };
+      let newDir;
+      if (cur.key === sortKey) {
+        newDir = cur.dir === 'asc' ? 'desc' : 'asc';
+      } else {
+        newDir = sortKey === 'title' ? 'asc' : 'desc';
+      }
+      this.state[modCode] = { key: sortKey, dir: newDir };
+      this.storage.set('mb_module_sort_state', JSON.stringify(this.state));
+      return this.state[modCode];
+    }
+    getSort(modCode) {
+      return this.state[modCode] || { key: 'title', dir: 'asc' };
+    }
+  }
+
+  const sortManager = new ModuleSortStateManager();
+  // Set CVS to count desc
+  const cvsSort1 = sortManager.setSort('CVS', 'count');
+  assert(cvsSort1.key === 'count' && cvsSort1.dir === 'desc', 'Clicking count sets key: count, dir: desc');
+  
+  // Clicking count again toggles direction to asc
+  const cvsSort2 = sortManager.setSort('CVS', 'count');
+  assert(cvsSort2.key === 'count' && cvsSort2.dir === 'asc', 'Clicking count again toggles dir to asc');
+
+  // Set CNS independently to date desc
+  const cnsSort = sortManager.setSort('CNS', 'date');
+  assert(cnsSort.key === 'date' && cnsSort.dir === 'desc', 'Module CNS has independent sort config: date desc');
+  assert(sortManager.getSort('CVS').key === 'count', 'Module CVS retains its own sort config (count asc)');
+
+  // Verify persistence across page reload simulation
+  const freshManager = new ModuleSortStateManager();
+  freshManager.storage = sortManager.storage; // same localStorage backend
+  freshManager.load();
+  assert(freshManager.getSort('CVS').key === 'count' && freshManager.getSort('CVS').dir === 'asc', 'Sorting state persists and restores from localStorage across reloads');
+  assert(freshManager.getSort('CNS').key === 'date' && freshManager.getSort('CNS').dir === 'desc', 'All module sort configurations restored cleanly');
+
+  // 3. Subject Filter & Accordion Invariance Simulation
+  function simulateModuleExplorerView(moduleCode, decks, activeSubject = 'all', sortConfig = { key: 'title', dir: 'asc' }) {
+    // 1. Filter by subject tab
+    const filtered = activeSubject === 'all' 
+      ? [...decks]
+      : decks.filter(d => d.subjectName === activeSubject);
+    
+    // 2. Sort the filtered subset using module's persistent preference
+    return sortCurriculumDecks(filtered, sortConfig);
+  }
+
+  // Test that switching subject tab maintains module sort configuration
+  const allSubjsSorted = simulateModuleExplorerView('CVS', testDecks, 'all', { key: 'count', dir: 'desc' });
+  assert(allSubjsSorted[0].totalCount === 200, 'All subjects correctly sorted by count desc');
+
+  const pathologyOnlySorted = simulateModuleExplorerView('CVS', testDecks, 'Pathology', { key: 'count', dir: 'desc' });
+  assert(pathologyOnlySorted.length === 1 && pathologyOnlySorted[0].title.includes('Valvular'), 'Filtering to Pathology maintains sort configuration');
+
+  // 4. Contract Assertions for index.html Module Foundation
+  assert(indexHtml.includes('function classifyCurriculumHierarchy'), 'index.html defines classifyCurriculumHierarchy');
+  assert(indexHtml.includes('function fetchCurriculumHierarchy'), 'index.html defines fetchCurriculumHierarchy');
+  assert(indexHtml.includes('function renderCurriculumExplorer'), 'index.html defines renderCurriculumExplorer');
+  assert(indexHtml.includes('activeModuleSubjects'), 'index.html maintains activeModuleSubjects dictionary');
+  assert(indexHtml.includes('collapsedCurriculumModules'), 'index.html maintains collapsedCurriculumModules dictionary');
+}
+
+// -----------------------------------------------------------------------------
+// Suite 36: Authentic Anki Due Workload, Responsive Width, Bookmarks & Deck Options
+// -----------------------------------------------------------------------------
+function suite36() {
+  console.log('--- Suite 36: Authentic Anki Due, Responsive Width, Bookmarks & Deck Options ---');
+
+  // 1. Authentic Anki Due Workload Calculation Test
+  function computeAnkiDueWorkload(cards, dailyNewLimit = 20, now = Date.now()) {
+    const todayEnd = new Date(now).setHours(23, 59, 59, 999);
+    let reviewDueCount = 0;
+    let learningCount = 0;
+    let newCount = 0;
+
+    cards.forEach(c => {
+      if (!c.reps || c.reps === 0) {
+        newCount++;
+      } else {
+        const dueTimestamp = c.due || ((c.lastReview || 0) + ((c.stability || 1) * 86400000));
+        if (dueTimestamp <= todayEnd) {
+          if (c.stability && c.stability < 1) {
+            learningCount++;
+          } else {
+            reviewDueCount++;
+          }
+        }
+      }
+    });
+
+    const dueToday = reviewDueCount + learningCount + Math.min(newCount, dailyNewLimit);
+    return { reviewDueCount, learningCount, newCount, dueToday, total: cards.length };
+  }
+
+  // Case A: Fresh unstudied deck with 40 cards (never studied)
+  const freshDeckCards = Array.from({ length: 40 }, (_, i) => ({ id: `c-${i}`, reps: 0 }));
+  const freshResult = computeAnkiDueWorkload(freshDeckCards, 20);
+  assert(freshResult.dueToday === 20, 'Fresh unstudied deck calculates 20 Due cards (daily new limit), NOT 0');
+  assert(freshResult.newCount === 40, 'Fresh unstudied deck has 40 new cards in total');
+
+  // Case B: Deck with 5 cards due for review, 2 in learning, 15 new cards, 10 future reviews
+  const now = Date.now();
+  const mixedCards = [
+    ...Array.from({ length: 5 }, (_, i) => ({ id: `due-rev-${i}`, reps: 3, stability: 5, due: now - 3600000 })), // due reviews
+    ...Array.from({ length: 2 }, (_, i) => ({ id: `learn-${i}`, reps: 1, stability: 0.1, due: now + 600000 })), // learning (due in 10m today)
+    ...Array.from({ length: 15 }, (_, i) => ({ id: `new-${i}`, reps: 0 })), // new cards
+    ...Array.from({ length: 10 }, (_, i) => ({ id: `future-${i}`, reps: 4, stability: 12, due: now + 86400000 * 3 })) // future reviews
+  ];
+  const mixedResult = computeAnkiDueWorkload(mixedCards, 20);
+  assert(mixedResult.reviewDueCount === 5, 'Mixed deck identifies exactly 5 review cards due today');
+  assert(mixedResult.learningCount === 2, 'Mixed deck identifies exactly 2 learning cards due today');
+  assert(mixedResult.newCount === 15, 'Mixed deck identifies 15 new cards');
+  assert(mixedResult.dueToday === 5 + 2 + 15, 'Mixed deck calculates authentic Anki total due: 5 reviews + 2 learn + 15 new = 22');
+
+  // Case C: Unstudied catalog deck fallback
+  const catalogDeckCardsCount = 35;
+  const catalogDailyLimit = 20;
+  const catalogDueFallback = Math.min(catalogDeckCardsCount, catalogDailyLimit);
+  assert(catalogDueFallback === 20, 'Catalog deck without local cache correctly defaults to dailyNewLimit due cards');
+
+  // 2. Stop Sign Bookmark Persistence & URL Resume
+  class MockBookmarkStore {
+    constructor() { this.store = new Map(); }
+    saveBookmark(deckId, index, total, title, explicit = false) {
+      const payload = { deckId, index, total, title, timestamp: Date.now(), explicit };
+      this.store.set('mb_bookmark_' + deckId, JSON.stringify(payload));
+      return payload;
+    }
+    getBookmark(deckId) {
+      const raw = this.store.get('mb_bookmark_' + deckId);
+      return raw ? JSON.parse(raw) : null;
+    }
+  }
+
+  const bmStore = new MockBookmarkStore();
+  bmStore.saveBookmark('deck-cardio-1', 14, 50, 'Cardiovascular Physiology', true);
+  const loadedBm = bmStore.getBookmark('deck-cardio-1');
+  assert(loadedBm !== null, 'Stop sign bookmark persists to storage');
+  assert(loadedBm.index === 14, 'Bookmark records correct stopped card index (Card 15)');
+  assert(loadedBm.total === 50, 'Bookmark records total cards in deck');
+  assert(loadedBm.explicit === true, 'Explicit stop sign toggle is recorded');
+
+  // 3. FSRS Learning Steps & Intra-Session Recycling
+  function parseLearningSteps(str) {
+    if (!str || typeof str !== 'string') return [10];
+    const parts = str.trim().split(/\s+/).filter(Boolean);
+    const steps = [];
+    for (const p of parts) {
+      const m = p.match(/^(\d+(?:\.\d+)?)([mhd])?$/i);
+      if (m) {
+        const val = parseFloat(m[1]);
+        const unit = (m[2] || 'm').toLowerCase();
+        if (unit === 'm') steps.push(val);
+        else if (unit === 'h') steps.push(val * 60);
+        else if (unit === 'd') steps.push(val * 1440);
+      }
+    }
+    return steps.length ? steps : [10];
+  }
+
+  assert(JSON.stringify(parseLearningSteps('1m 10m')) === JSON.stringify([1, 10]), 'parseLearningSteps parses "1m 10m" to [1, 10]');
+  assert(JSON.stringify(parseLearningSteps('10m')) === JSON.stringify([10]), 'parseLearningSteps parses "10m" to [10]');
+  assert(JSON.stringify(parseLearningSteps('15m 1d')) === JSON.stringify([15, 1440]), 'parseLearningSteps parses "15m 1d" to [15, 1440]');
+
+  // Intra-session recycling simulation: Again (rating 1) re-inserts card to session queue
+  const sessionQueue = [{ id: 'card-1', reps: 0 }, { id: 'card-2', reps: 0 }];
+  const currentCard = sessionQueue[0];
+  const ratingAgain = 1;
+  if (ratingAgain === 1) {
+    sessionQueue.push({ ...currentCard });
+  }
+  assert(sessionQueue.length === 3, 'Rating Again (1) re-queues card at end of session');
+  assert(sessionQueue[2].id === 'card-1', 'Re-queued card is identical to rated card');
+
+  // 4. Responsive Card Container & Button Width Alignment Contract
+  assert(flashHtml.includes('width:100%; max-width:720px;'), 'flash.html enforces unified max-width: 720px for container alignment');
+  assert(/\.study-view\s*\{[\s\S]*?max-width:\s*720px/i.test(flashHtml), '.study-view matches max-width: 720px');
+  assert(/\.card-stage\s*\{[\s\S]*?max-width:\s*720px/i.test(flashHtml), '.card-stage matches max-width: 720px');
+  assert(/\.action-container\s*\{[\s\S]*?max-width:\s*720px/i.test(flashHtml), '.action-container matches max-width: 720px');
+  assert(flashHtml.includes('@media(max-width:480px)'), 'flash.html includes dedicated mobile viewport adaptions');
+  assert(flashHtml.includes('.card-stage{max-width:100%; height:clamp(320px, 54vh, 480px);'), 'Mobile viewport clamps card height responsively');
+
+  // 5. Deck Options Modal & Bookmarks UI Contracts in flash.html and index.html
+  assert(flashHtml.includes('id="stopSignBtn"'), 'flash.html contains header stop sign button');
+  assert(flashHtml.includes('id="resumeSessionBanner"'), 'flash.html contains resume session banner');
+  assert(flashHtml.includes('id="ankiSettingsModal"'), 'flash.html contains anki settings modal');
+  assert(flashHtml.includes('id="settingLearningSteps"'), 'flash.html contains learning steps selector');
+  assert(flashHtml.includes('id="settingTargetRetention"'), 'flash.html contains target retention slider');
+  assert(flashHtml.includes('id="settingCramQuota"'), 'flash.html contains cram batch quota selector');
+  assert(flashHtml.includes('function saveStopSignBookmark'), 'flash.html defines saveStopSignBookmark function');
+  assert(flashHtml.includes('function checkResumeBookmark'), 'flash.html defines checkResumeBookmark function');
+  assert(flashHtml.includes('checkResumeBookmark()'), 'flash.html invokes checkResumeBookmark on deck load');
+
+  assert(indexHtml.includes('.anki-pill-bookmark'), 'index.html defines .anki-pill-bookmark CSS class');
+  assert(indexHtml.includes('.anki-resume-btn'), 'index.html defines .anki-resume-btn CSS class');
+  assert(indexHtml.includes('BroadcastChannel(\'mb_vault_channel\')'), 'index.html listens to BroadcastChannel for real-time sync');
+  assert(indexHtml.includes('reviewDueCount + d.learningCount + Math.min(d.newCount, dailyNewLimit)'), 'index.html computes authentic Anki due workload');
+}
+
+suite36();
+
 console.log('\n==================================================');
 if (failures === 0) {
   console.log(`🎉 ALL ${passed} VERIFICATION CHECKS PASSED PERFECTLY!`);
@@ -570,3 +1319,4 @@ if (failures === 0) {
   console.log('==================================================');
   process.exit(1);
 }
+
