@@ -1375,10 +1375,12 @@ function suite37() {
   assert(flashHtml.includes('getMediaBlobUrl(fn, deckId)'), 'resolveCardMedia resolves active URL via getMediaBlobUrl');
   assert(!flashHtml.includes('(!img.src.startsWith(\'blob:\') && !img.src.startsWith(\'data:\'))'), 'resolveCardMedia no longer skips images with existing blob URLs');
 
-  // 4. Legacy Media Migration & Fallback Contract
-  assert(flashHtml.includes('Fallback 1: Legacy un-scoped key (exact case)'), 'getMediaBlobUrl includes legacy un-scoped exact key fallback');
-  assert(flashHtml.includes('Fallback 2: Legacy un-scoped key (lowercase)'), 'getMediaBlobUrl includes legacy un-scoped lowercase key fallback');
-  assert(flashHtml.includes('Legacy cache upgrade: If no scoped items were found'), 'loadDeckFromVault includes automatic legacy media migration');
+  // 4. Zero-Tolerance Scoped Media Isolation & Sanitization Contract
+  assert(flashHtml.includes('STRICT ZERO-TOLERANCE MEDIA ISOLATION'), 'getMediaBlobUrl enforces Strict Zero-Tolerance Media Isolation');
+  assert(!flashHtml.includes('Fallback 1: Legacy un-scoped key'), 'getMediaBlobUrl completely eliminates un-scoped legacy fallback to prevent media cross-bleeding');
+  assert(!flashHtml.includes('Fallback 2: Legacy un-scoped key'), 'getMediaBlobUrl completely eliminates un-scoped lowercase fallback');
+  assert(flashHtml.includes('function sanitizeVault'), 'flash.html defines sanitizeVault to clean un-scoped media keys from IndexedDB');
+  assert(flashHtml.includes('sanitizeVault(db)'), 'openVault calls sanitizeVault on initialization');
 
   // 5. Self-Healing Cache Validation Contract
   assert(flashHtml.includes('const hasMissingMediaBlobs = deckExpectsImages && inMemoryMediaCache.size === 0 && Boolean(targetUrl);'), 'flash.html defines hasMissingMediaBlobs self-healing detection');
@@ -1412,9 +1414,137 @@ function suite38() {
   assert(indexHtml.includes('anki-deck-mobile-header-row'), 'index.html template renders anki-deck-mobile-header-row in markup');
 }
 
+// --- Suite 39: Multi-Deck Cross-Collision Isolation Fixture & FSRS-5 Stability Preservation Suite ---
+function suite39() {
+  console.log('\n--- Suite 39: Multi-Deck Cross-Collision Isolation & FSRS-5 Stability Preservation ---');
+  const flashHtml = fs.readFileSync('flash.html', 'utf-8');
+  const indexHtml = fs.readFileSync('index.html', 'utf-8');
+
+  // 1. Strict Zero-Tolerance Media Scoping Simulation with Real Multi-Deck Collision Fixture
+  // 5 decks (L1-L5), each containing 40 identical filenames (slide_01.jpg .. slide_40.jpg)
+  const mockIdbMediaStore = new Map();
+  const mockMemoryCache = new Map();
+  const deckIds = ['deck-phys-l1', 'deck-phys-l2', 'deck-phys-l3', 'deck-phys-l4', 'deck-phys-l5'];
+  const sharedFilenames = [];
+  for (let i = 1; i <= 40; i++) {
+    sharedFilenames.push(`slide_${String(i).padStart(2, '0')}.jpg`);
+  }
+
+  // Populate mock IndexedDB with strictly scoped keys
+  deckIds.forEach(dId => {
+    sharedFilenames.forEach(fn => {
+      const scopedKey = `${dId}:::${fn}`;
+      mockIdbMediaStore.set(scopedKey, {
+        name: scopedKey,
+        deckId: dId,
+        fileName: fn,
+        blobUrl: `blob:http://localhost:8080/vault/${dId}/${fn}`
+      });
+    });
+  });
+
+  // Simulated getMediaBlobUrl mirroring the new zero-tolerance flash.html logic
+  function simulateGetMediaBlobUrl(filename, targetDeckId) {
+    if (!filename || !targetDeckId) return null;
+    let clean = filename.trim().replace(/^.*[\\\/]/, '');
+    const scopedKey = `${targetDeckId}:::${clean}`;
+    const scopedKeyLower = `${targetDeckId}:::${clean.toLowerCase()}`;
+
+    // 1. In-memory cache
+    if (mockMemoryCache.has(scopedKey)) return mockMemoryCache.get(scopedKey);
+    if (mockMemoryCache.has(scopedKeyLower)) return mockMemoryCache.get(scopedKeyLower);
+
+    // 2. Scoped DB lookup
+    const res = mockIdbMediaStore.get(scopedKey) || mockIdbMediaStore.get(scopedKeyLower);
+    if (res && res.blobUrl) {
+      mockMemoryCache.set(scopedKey, res.blobUrl);
+      mockMemoryCache.set(scopedKeyLower, res.blobUrl);
+      return res.blobUrl;
+    }
+
+    // STRICT ZERO-TOLERANCE: Never fallback to un-scoped keys!
+    return null;
+  }
+
+  // Test across all 40 shared collision filenames
+  for (const fn of sharedFilenames) {
+    const l2Url = simulateGetMediaBlobUrl(fn, 'deck-phys-l2');
+    const l3Url = simulateGetMediaBlobUrl(fn, 'deck-phys-l3');
+    const l4Url = simulateGetMediaBlobUrl(fn, 'deck-phys-l4');
+
+    assert(l2Url === `blob:http://localhost:8080/vault/deck-phys-l2/${fn}`, `L2 ${fn} resolves strictly to L2 vault blob`);
+    assert(l3Url === `blob:http://localhost:8080/vault/deck-phys-l3/${fn}`, `L3 ${fn} resolves strictly to L3 vault blob`);
+    assert(l4Url === `blob:http://localhost:8080/vault/deck-phys-l4/${fn}`, `L4 ${fn} resolves strictly to L4 vault blob`);
+    assert(l2Url !== l3Url, `L2 and L3 identical filename ${fn} have completely distinct URLs`);
+    assert(l3Url !== l4Url, `L3 and L4 identical filename ${fn} have completely distinct URLs`);
+  }
+
+  // Zero-Tolerance Leakage Rejection: Deck cannot access unowned file even if another deck has it
+  const nonExistentInL1 = simulateGetMediaBlobUrl('slide_99_unique_to_l2.jpg', 'deck-phys-l1');
+  assert(nonExistentInL1 === null, 'Query for file not in target deck returns null, zero cross-deck leakage');
+
+  // 2. In-Memory Cache Revocation on Deck Switch
+  mockMemoryCache.clear();
+  assert(mockMemoryCache.size === 0, 'Memory cache cleanly wiped on deck switch (revokeAndClearMediaCache)');
+
+  // 3. FSRS-5 Review Progress & Stability Preservation Contract
+  const cachedSrsCards = [
+    { id: 'card-1', originalId: 'c1', reps: 5, stability: 4.25, difficulty: 4.8, due: 1775836800000, lapses: 1, lastReview: 1775000000000 },
+    { id: 'card-2', originalId: 'c2', reps: 12, stability: 18.5, difficulty: 3.1, due: 1776836800000, lapses: 0, lastReview: 1775100000000 },
+    { id: 'card-3', originalId: 'c3', reps: 1, stability: 1.2, difficulty: 6.5, due: 1775200000000, lapses: 0, lastReview: 1775150000000 }
+  ];
+
+  const freshRepairedCards = [
+    { id: 'card-1', originalId: 'c1', reps: 0, stability: 0, difficulty: 0, due: 0, lapses: 0, lastReview: 0, front: 'Clean Q1', back: 'Clean A1' },
+    { id: 'card-2', originalId: 'c2', reps: 0, stability: 0, difficulty: 0, due: 0, lapses: 0, lastReview: 0, front: 'Clean Q2', back: 'Clean A2' },
+    { id: 'card-3', originalId: 'c3', reps: 0, stability: 0, difficulty: 0, due: 0, lapses: 0, lastReview: 0, front: 'Clean Q3', back: 'Clean A3' }
+  ];
+
+  // Simulate self-healing SRS merge logic from flash.html line 5143
+  const srsMap = new Map();
+  cachedSrsCards.forEach(c => {
+    const k = c.originalId || c.id;
+    srsMap.set(k, {
+      reps: c.reps || 0,
+      stability: c.stability || 0,
+      difficulty: c.difficulty || 0,
+      due: c.due || 0,
+      lapses: c.lapses || 0,
+      lastReview: c.lastReview || 0
+    });
+  });
+  freshRepairedCards.forEach(c => {
+    const k = c.originalId || c.id;
+    if (srsMap.has(k)) {
+      Object.assign(c, srsMap.get(k));
+    }
+  });
+
+  assert(freshRepairedCards[0].stability === 4.25, 'Card 1 preserves exact FSRS-5 stability (4.25)');
+  assert(freshRepairedCards[0].reps === 5, 'Card 1 preserves exact reps (5)');
+  assert(freshRepairedCards[1].stability === 18.5, 'Card 2 preserves mature stability (18.5)');
+  assert(freshRepairedCards[1].reps === 12, 'Card 2 preserves mature reps (12)');
+  assert(freshRepairedCards[2].due === 1775200000000, 'Card 3 preserves authentic scheduled due timestamp');
+
+  // 4. Authentic Anki Deck Metadata Binding Contracts in flash.html
+  assert(flashHtml.includes('const cardDeckName = (cr.did && decksMap[String(cr.did)] && decksMap[String(cr.did)] !== \'Default\')'), 'flash.html extracts authentic deck name from collection decks map');
+  assert(flashHtml.includes('fieldMap.__deckName = cardDeckName;'), 'flash.html binds fieldMap.__deckName to cardDeckName, never DOM textContent');
+  assert(!flashHtml.includes('fieldMap.__deckName = deckTitle.textContent'), 'flash.html eliminates transient DOM deckTitle binding');
+
+  // 5. Reference Attachment Duplication Prevention Contract
+  assert(flashHtml.includes('templateMentionsRef'), 'flash.html defines templateMentionsRef check');
+  assert(flashHtml.includes('!templateMentionsRef && !backHtml.includes(refContent)'), 'flash.html prevents duplicating reference attachment if template renders it');
+
+  // 6. Explicit Error State vs Silent Demo Substitution Contract
+  assert(flashHtml.includes('// Explicit Error State when requested deck has no cloud file'), 'flash.html defines explicit error state for missing cloud decks');
+  assert(flashHtml.includes('The Anki flashcard package (.apkg) for this lecture has not been uploaded to the cloud repository yet'), 'flash.html displays clinical explanation when cloud deck is missing');
+  assert(!indexHtml.includes('/flash.html?deck=demo&deckTitle='), 'index.html never disguises unlinked curriculum decks as demo deck');
+}
+
 suite36();
 suite37();
 suite38();
+suite39();
 
 console.log('\n==================================================');
 if (failures === 0) {

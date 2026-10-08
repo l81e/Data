@@ -7762,7 +7762,7 @@
                     ${moduleDecks.map(deck => {
                       const studyUrl = deck.url && deck.url !== '#'
                         ? `/flash.html?deckUrl=${encodeURIComponent(deck.url)}&deckTitle=${encodeURIComponent(deck.title)}&id=${encodeURIComponent(deck.materialId || deck.id)}`
-                        : `/flash.html?deck=demo&deckTitle=${encodeURIComponent(deck.title)}`;
+                        : `/flash.html?deckTitle=${encodeURIComponent(deck.title)}&id=${encodeURIComponent(deck.materialId || deck.id)}`;
                       const isAuth = isAdminAuthenticated();
                       const humanCaption = extractHumanCaption(deck.caption);
 

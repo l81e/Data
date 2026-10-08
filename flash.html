@@ -2209,6 +2209,32 @@
       if (typeof flippedActions !== 'undefined' && flippedActions) flippedActions.style.display = 'none';
     }
 
+    async function sanitizeVault(db){
+      if (typeof localStorage === 'undefined') return;
+      if (localStorage.getItem('mb_vault_isolated_v4')) return;
+      try {
+        const tx = db.transaction(['media'], 'readwrite');
+        const mediaStore = tx.objectStore('media');
+        const req = mediaStore.getAll();
+        const all = await new Promise(r => { req.onsuccess = () => r(req.result || []); req.onerror = () => r([]); });
+        let purgedCount = 0;
+        for (const item of all){
+          // Zero-Tolerance Isolation: Purge any un-scoped legacy media keys that lack deckId prefix delimiter ':::'
+          if (!item.name || !item.name.includes(':::')){
+            mediaStore.delete(item.name);
+            purgedCount++;
+          }
+        }
+        await new Promise((res, rej) => { tx.oncomplete = res; tx.onerror = rej; });
+        localStorage.setItem('mb_vault_isolated_v4', 'true');
+        if (purgedCount > 0){
+          console.log(`IndexedDB vault media sanitized: Purged ${purgedCount} legacy un-scoped collisions.`);
+        }
+      } catch(e){
+        console.warn('Vault sanitization deferred:', e);
+      }
+    }
+
     function openVault(){
       if (idbPromise) return idbPromise;
       idbPromise = new Promise((resolve, reject) => {
@@ -2219,7 +2245,11 @@
           if (!db.objectStoreNames.contains('cards')) db.createObjectStore('cards', { keyPath: 'id' });
           if (!db.objectStoreNames.contains('media')) db.createObjectStore('media', { keyPath: 'name' });
         };
-        req.onsuccess = () => resolve(req.result);
+        req.onsuccess = async () => {
+          const db = req.result;
+          await sanitizeVault(db);
+          resolve(db);
+        };
         req.onerror = () => reject(req.error);
       });
       return idbPromise;
@@ -2297,34 +2327,9 @@
           return url;
         }
 
-        // Fallback 1: Legacy un-scoped key (exact case)
-        const reqLegacy = store.get(clean);
-        const resLegacy = await new Promise(r => { reqLegacy.onsuccess = () => r(reqLegacy.result); reqLegacy.onerror = () => r(null); });
-        if (resLegacy && resLegacy.blob){
-          const url = URL.createObjectURL(resLegacy.blob);
-          inMemoryMediaCache.set(scopedKey, url);
-          inMemoryMediaCache.set(scopedKeyLower, url);
-          // Auto-upgrade in DB to scoped key
-          try {
-            const upTx = db.transaction('media', 'readwrite');
-            upTx.objectStore('media').put({ name: scopedKey, blob: resLegacy.blob, deckId: targetDeckId, fileName: clean });
-          } catch(ue){}
-          return url;
-        }
-
-        // Fallback 2: Legacy un-scoped key (lowercase)
-        const reqLegacyLower = store.get(clean.toLowerCase());
-        const resLegacyLower = await new Promise(r => { reqLegacyLower.onsuccess = () => r(reqLegacyLower.result); reqLegacyLower.onerror = () => r(null); });
-        if (resLegacyLower && resLegacyLower.blob){
-          const url = URL.createObjectURL(resLegacyLower.blob);
-          inMemoryMediaCache.set(scopedKey, url);
-          inMemoryMediaCache.set(scopedKeyLower, url);
-          try {
-            const upTx = db.transaction('media', 'readwrite');
-            upTx.objectStore('media').put({ name: scopedKey, blob: resLegacyLower.blob, deckId: targetDeckId, fileName: clean });
-          } catch(ue){}
-          return url;
-        }
+        // STRICT ZERO-TOLERANCE MEDIA ISOLATION:
+        // No un-scoped global fallbacks or cross-deck borrowing allowed.
+        // Images must strictly belong to targetDeckId.
       } catch(e){}
       return null;
     }
@@ -2431,7 +2436,7 @@
         currentActiveDeckId = deckId;
         const db = await openVault();
         const tx = db.transaction(['decks', 'cards', 'media'], 'readwrite');
-        tx.objectStore('decks').put({ id: deckId, ...meta, timestamp: Date.now() });
+        tx.objectStore('decks').put({ id: deckId, ...meta, timestamp: Date.now(), version: 4, mediaCount: Object.keys(mediaMap || {}).length });
         const cardStore = tx.objectStore('cards');
         cards.forEach(c => {
           const origId = c.originalId || c.id;
@@ -2481,32 +2486,6 @@
               inMemoryMediaCache.set(`${deckId}:::${cleanPure}`, url);
               inMemoryMediaCache.set(`${deckId}:::${cleanPure.toLowerCase()}`, url);
             } catch(err){}
-          }
-        }
-
-        // Legacy cache upgrade: If no scoped items were found for this deck, but un-scoped legacy items match card images
-        if (inMemoryMediaCache.size === 0 && allCards.some(c => c.deckId === deckId)){
-          const deckImageNames = new Set();
-          allCards.filter(c => c.deckId === deckId).forEach(c => {
-            const matches = ((c.front || '') + (c.back || '')).matchAll(/data-filename=["']([^"']+)["']/gi);
-            for (const m of matches) deckImageNames.add(m[1].toLowerCase());
-          });
-          for (const item of allMedia){
-            if (!item.deckId && item.name && !item.name.includes(':::') && item.blob){
-              const cleanPure = decodeURIComponent(item.fileName || item.name).trim().replace(/^.*[\\\/]/, '');
-              if (deckImageNames.has(cleanPure.toLowerCase())){
-                try {
-                  const url = URL.createObjectURL(item.blob);
-                  inMemoryMediaCache.set(`${deckId}:::${cleanPure}`, url);
-                  inMemoryMediaCache.set(`${deckId}:::${cleanPure.toLowerCase()}`, url);
-                  // Auto-upgrade in DB to scoped key
-                  try {
-                    const upTx = db.transaction('media', 'readwrite');
-                    upTx.objectStore('media').put({ name: `${deckId}:::${cleanPure}`, blob: item.blob, deckId, fileName: cleanPure });
-                  } catch(e){}
-                } catch(err){}
-              }
-            }
           }
         }
 
@@ -4178,7 +4157,7 @@
       return sqlJsInstancePromise;
     }
 
-    async function parseApkg(arrayBuffer, onProgress){
+    async function parseApkg(arrayBuffer, onProgress, options = {}){
       if (typeof onProgress === 'function') {
         onProgress('unpack', 58, currentLang === 'ar' ? 'فك حزمة الملفات والوسائط…' : 'Unpacking package & media assets…');
       }
@@ -4476,6 +4455,33 @@
         }
       }
 
+      // Extract authentic Anki collection decks metadata
+      let decksMap = {};
+      try {
+        const colDecksRes = db.exec("SELECT decks FROM col LIMIT 1");
+        if (colDecksRes && colDecksRes.length && colDecksRes[0].values.length && colDecksRes[0].values[0][0]){
+          const raw = colDecksRes[0].values[0][0];
+          if (typeof raw === 'string' && raw.trim().startsWith('{')){
+            const parsed = JSON.parse(raw);
+            for (const [did, dObj] of Object.entries(parsed)){
+              if (dObj && dObj.name) decksMap[String(did)] = dObj.name;
+            }
+          }
+        }
+      } catch(e){}
+      try {
+        const dRes = db.exec("SELECT id, name FROM decks");
+        if (dRes && dRes.length && dRes[0].values.length){
+          dRes[0].values.forEach(([id, name]) => {
+            if (id && name) decksMap[String(id)] = name;
+          });
+        }
+      } catch(e){}
+
+      const nonDefaultNames = Object.values(decksMap).filter(n => n && n !== 'Default');
+      const fallbackDeckName = options.deckTitle || (typeof targetTitle !== 'undefined' ? targetTitle : '') || 'Clinical Deck';
+      const authenticCollectionDeckName = nonDefaultNames.length > 0 ? nonDefaultNames[0] : fallbackDeckName;
+
       const notesRes = db.exec("SELECT id, mid, flds, tags FROM notes");
       const notes = (notesRes.length ? notesRes[0].values : []).map(r => ({
         id: r[0],
@@ -4484,8 +4490,14 @@
         tags: r[3] || ''
       }));
 
-      const cardsRes = db.exec("SELECT id, nid, ord FROM cards ORDER BY id ASC");
-      const cardRows = (cardsRes.length ? cardsRes[0].values : []).map(r => ({ id: r[0], nid: r[1], ord: r[2] }));
+      let cardRows = [];
+      try {
+        const cardsRes = db.exec("SELECT id, nid, did, ord FROM cards ORDER BY id ASC");
+        cardRows = (cardsRes.length ? cardsRes[0].values : []).map(r => ({ id: r[0], nid: r[1], did: r[2], ord: r[3] }));
+      } catch(e){
+        const cardsRes = db.exec("SELECT id, nid, ord FROM cards ORDER BY id ASC");
+        cardRows = (cardsRes.length ? cardsRes[0].values : []).map(r => ({ id: r[0], nid: r[1], did: 1, ord: r[2] }));
+      }
 
       if (typeof onProgress === 'function') {
         onProgress('sqlite', 88, currentLang === 'ar' ? 'معالجة الكروت والقوالب الطبية…' : 'Compiling flashcard templates…');
@@ -4511,6 +4523,7 @@
               cardRows.push({
                 id: `${note.id}-c${cNum}`,
                 nid: note.id,
+                did: cardRows.length > 0 ? (cardRows[0].did || 1) : 1,
                 ord: ord
               });
               existingCardKeys.add(key);
@@ -4745,8 +4758,11 @@
         if (!fieldMap['Front']) fieldMap['Front'] = fieldValues[0] || '';
         if (!fieldMap['Back']) fieldMap['Back'] = fieldValues[1] || '';
 
-        // Inject deck and card metadata
-        fieldMap.__deckName = deckTitle.textContent || 'Clinical Deck';
+        // Inject authentic deck and card metadata (never transient DOM text)
+        const cardDeckName = (cr.did && decksMap[String(cr.did)] && decksMap[String(cr.did)] !== 'Default')
+          ? decksMap[String(cr.did)]
+          : authenticCollectionDeckName;
+        fieldMap.__deckName = cardDeckName;
         fieldMap.__cardName = model && model.tmpls && model.tmpls[cr.ord] ? model.tmpls[cr.ord].name : `Card ${cr.ord + 1}`;
         fieldMap.__typeName = model ? model.name : 'Clinical Note';
         fieldMap.__tags = note.tags || '';
@@ -4781,16 +4797,25 @@
         // Check for dedicated reference/diagram fields that may contain rich images
         const refFieldKeys = ['PDF Reference', 'PDF_Reference', 'PDFReference', 'Reference', 'Reference Image', 'Lecture Reference', 'Slide Reference', 'Diagram', 'Image'];
         let refContent = '';
+        let matchedRefKey = '';
         for (const rk of refFieldKeys){
           const foundVal = getFieldValue(fieldMap, rk);
           if (foundVal && foundVal.trim().length > 0){
             refContent = foundVal.trim();
+            matchedRefKey = rk;
             break;
           }
         }
 
-        // If card back does not already include the reference content and it exists, append it
-        if (refContent && !backHtml.includes(refContent) && !frontHtml.includes(refContent)){
+        // Avoid duplicating reference attachment if card template already renders this field
+        const templateMentionsRef = tmpl && tmpl.afmt && matchedRefKey && (
+          tmpl.afmt.includes(`{{${matchedRefKey}}}`) ||
+          tmpl.afmt.includes(`{{#${matchedRefKey}}}`) ||
+          tmpl.afmt.includes(`:${matchedRefKey}}}`)
+        );
+
+        // If card back does not already include the reference content and template doesn't explicitly render it
+        if (refContent && !templateMentionsRef && !backHtml.includes(refContent) && !frontHtml.includes(refContent)){
           backHtml += `<div class="anki-reference-attachment" style="margin-top:16px; padding-top:12px; border-top:1px dashed var(--line-soft); text-align:center;">${refContent}</div>`;
         }
 
@@ -4837,7 +4862,7 @@
         deckFileBuffer = arrayBuffer.slice(0);
         const { cards, mediaBlobMap } = await parseApkg(arrayBuffer, (phase, pct, msg) => {
           updateDeckLoaderProgress(pct, msg, phase);
-        });
+        }, { deckTitle: deckBaseName, deckId: vaultDeckId });
         allDeckCards = cards;
         deckCards = buildStudyQueue(allDeckCards, { isCramMode, dailyNewLimit });
         currentIndex = 0;
@@ -4959,11 +4984,11 @@
       const isDemo = getParam('deck') === 'demo';
 
       // 1. Explicit Demo Deck request
-      if (isDemo || (!deckUrl && !materialId && !window.location.hash)){
+      if (isDemo || (!deckUrl && !materialId && !deckTitleParam && !window.location.hash)){
         resetDeckState();
         currentActiveDeckId = 'demo';
         hideClinicalDeckLoader();
-        deckTitle.textContent = deckTitleParam || 'High-Yield Clinical Physiology & Pharmacology';
+        deckTitle.textContent = 'High-Yield Clinical Physiology & Pharmacology';
         deckSub.textContent = '5 Sample FSRS-5 Vignettes · High-Yield Clinical Benchmark';
         let demoCards = HIGH_YIELD_DEMO_DECK.map(c => ({ ...c }));
         try {
@@ -5032,8 +5057,9 @@
       // Self-healing check: does the cached deck expect images but has ZERO live media blobs in vault?
       const deckExpectsImages = cached && cached.cards && cached.cards.some(c => ((c.front || '') + (c.back || '')).includes('<img'));
       const hasMissingMediaBlobs = deckExpectsImages && inMemoryMediaCache.size === 0 && Boolean(targetUrl);
+      const isLegacyUnscopedVersion = cached && cached.meta && (!cached.meta.version || cached.meta.version < 4) && deckExpectsImages && Boolean(targetUrl);
 
-      if (cached && cached.cards && cached.cards.length && !hasCorruptedTags && !isDummyWarning && !hasUnresolvedImages && !hasStaleEmptyImages && !hasMissingMediaBlobs){
+      if (cached && cached.cards && cached.cards.length && !hasCorruptedTags && !isDummyWarning && !hasUnresolvedImages && !hasStaleEmptyImages && !hasMissingMediaBlobs && !isLegacyUnscopedVersion){
         hideClinicalDeckLoader();
         deckTitle.textContent = deckTitleParam || cached.meta.title || targetTitle || 'Clinical Flashcards';
         deckSub.textContent = `${cached.cards.length} cards · Offline Synaptic Vault`;
@@ -5112,7 +5138,7 @@
 
           const { cards, mediaBlobMap } = await parseApkg(arrayBuffer, (phase, pct, msg) => {
             updateDeckLoaderProgress(pct, msg, phase);
-          });
+          }, { deckTitle: targetTitle, deckId: vaultKey });
 
           // Seamless self-healing: Preserve all user SRS progress from existing cached cards
           if (cached && cached.cards && cached.cards.length > 0){
@@ -5173,14 +5199,35 @@
           deckSub.textContent = 'Network or parsing error';
         }
       } else {
-        // Fallback when no URL could be resolved
+        // Explicit Error State when requested deck has no cloud file
         hideClinicalDeckLoader();
-        deckTitle.textContent = deckTitleParam || 'High-Yield Clinical Physiology & Pharmacology';
-        deckSub.textContent = 'No cloud file found · Loaded Clinical Benchmark Deck';
-        allDeckCards = HIGH_YIELD_DEMO_DECK.map(c => ({ ...c }));
-        deckCards = buildStudyQueue(allDeckCards, { isCramMode, dailyNewLimit });
-        renderCard();
-        checkResumeBookmark();
+        deckTitle.textContent = targetTitle || deckTitleParam || 'Flashcard Deck';
+        deckSub.textContent = currentLang === 'ar' ? 'الملف غير متوفر حاليًا' : 'Deck file not yet uploaded';
+        frontContent.innerHTML = `
+          <div style="text-align:center; padding:36px 18px;">
+            <div style="font-size:2.8rem; margin-bottom:12px;">📁</div>
+            <h3 style="font-size:1.2rem; font-weight:800; margin-bottom:8px; color:var(--text);">
+              ${escapeHtml(targetTitle || deckTitleParam || 'Deck Not Available')}
+            </h3>
+            <p style="font-size:0.86rem; color:var(--text-dim); max-width:460px; margin:0 auto 20px; line-height:1.5;">
+              ${currentLang === 'ar' 
+                ? 'لم يتم رفع حزمة الكروت (.apkg) لهذه المحاضرة إلى السحابة بعد. يمكنك فتح الملف يدويًا من جهازك إذا كان بحوزتك.' 
+                : 'The Anki flashcard package (.apkg) for this lecture has not been uploaded to the cloud repository yet. You can open a local file or explore the sample clinical deck.'}
+            </p>
+            <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
+              <button type="button" class="primary-btn" onclick="document.getElementById('localApkgInput').click()">
+                ${currentLang === 'ar' ? '📂 فتح ملف .apkg من الجهاز' : '📂 Open Local .apkg File'}
+              </button>
+              <button type="button" class="secondary-btn" onclick="window.location.href='/'">
+                ${currentLang === 'ar' ? '← العودة للمنهج' : '← Back to Curriculum'}
+              </button>
+              <button type="button" class="secondary-btn" onclick="window.location.href='/flash.html?deck=demo'">
+                ${currentLang === 'ar' ? 'تجربة الكروت التجريبية' : 'Try Demo Deck'}
+              </button>
+            </div>
+          </div>
+        `;
+        backContent.innerHTML = '';
       }
     }
 
