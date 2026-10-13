@@ -1,0 +1,218 @@
+/* =============================================================================
+   MedicineBank Clinical Design System — Unified Theme & Layout Engine
+   Includes: 7 Clinical Palettes, Theme-Reactive Scrollbars, FOUC Prevention
+   ============================================================================= */
+
+:root {
+  --bg:                     #0b0b0b;
+  --panel:                  #161616;
+  --panel-hi:               #1e1e1e;
+  --line:                   #2b2b2b;
+  --line-soft:              #232323;
+
+  --text:                   #f2f2f2;
+  --text-dim:               #a8a8a8;
+  --text-faint:             #6b6b6b;
+
+  --accent:                 #e8e8e8;
+  --accent-dark:            #ffffff;
+  --accent-glow:            rgba(255, 255, 255, 0.08);
+  --err:                    #c7c7c7;
+
+  --today-green:            #3ba55c;
+  --today-green-hi:         #46bd68;
+
+  --scrollbar-track:        #0b0b0b;
+  --scrollbar-thumb:        rgba(232, 232, 232, 0.25);
+  --scrollbar-thumb-hover:  rgba(232, 232, 232, 0.50);
+  --scrollbar-thumb-active: rgba(255, 255, 255, 0.80);
+  --scrollbar-glow:         rgba(255, 255, 255, 0.18);
+}
+
+/* 1. Light (Clinical Ivory) */
+html[data-theme="light"] {
+  --bg:                     #f4f4f2;
+  --panel:                  #ffffff;
+  --panel-hi:               #f0f0ee;
+  --line:                   #dcdcd8;
+  --line-soft:              #e4e4e0;
+  --text:                   #171715;
+  --text-dim:               #55554f;
+  --text-faint:             #8c8c85;
+  --accent:                 #171715;
+  --accent-dark:            #000000;
+  --accent-glow:            rgba(0, 0, 0, 0.06);
+  --err:                    #b3261e;
+
+  --scrollbar-track:        #f4f4f2;
+  --scrollbar-thumb:        rgba(23, 23, 21, 0.22);
+  --scrollbar-thumb-hover:  rgba(23, 23, 21, 0.48);
+  --scrollbar-thumb-active: rgba(0, 0, 0, 0.75);
+  --scrollbar-glow:         rgba(0, 0, 0, 0.10);
+}
+
+/* 2. Maroon (Deep Crimson) */
+html[data-theme="maroon"] {
+  --bg:                     #200a0d;
+  --panel:                  #33141a;
+  --panel-hi:               #3d1a20;
+  --line:                   #532029;
+  --line-soft:              #451b22;
+  --text:                   #f6e8ea;
+  --text-dim:               #cf9fa6;
+  --text-faint:             #8f6167;
+  --accent:                 #e8a3ab;
+  --accent-dark:            #ffffff;
+  --accent-glow:            rgba(232, 163, 171, 0.1);
+  --err:                    #ff9b9b;
+
+  --scrollbar-track:        #200a0d;
+  --scrollbar-thumb:        rgba(232, 163, 171, 0.30);
+  --scrollbar-thumb-hover:  rgba(232, 163, 171, 0.58);
+  --scrollbar-thumb-active: rgba(255, 200, 210, 0.88);
+  --scrollbar-glow:         rgba(232, 163, 171, 0.24);
+}
+
+/* 3. Blue (Clinical Navy) */
+html[data-theme="blue"] {
+  --bg:                     #0a1622;
+  --panel:                  #122438;
+  --panel-hi:               #172c42;
+  --line:                   #24405c;
+  --line-soft:              #1d3450;
+  --text:                   #e9f1fa;
+  --text-dim:               #a4c1dc;
+  --text-faint:             #6c88a4;
+  --accent:                 #8fc3ef;
+  --accent-dark:            #ffffff;
+  --accent-glow:            rgba(143, 195, 239, 0.1);
+  --err:                    #ff9b9b;
+
+  --scrollbar-track:        #0a1622;
+  --scrollbar-thumb:        rgba(143, 195, 239, 0.32);
+  --scrollbar-thumb-hover:  rgba(143, 195, 239, 0.60);
+  --scrollbar-thumb-active: rgba(185, 225, 255, 0.90);
+  --scrollbar-glow:         rgba(143, 195, 239, 0.26);
+}
+
+/* 4. Orange (Warm Ochre) */
+html[data-theme="orange"] {
+  --bg:                     #1f1006;
+  --panel:                  #32190a;
+  --panel-hi:               #3d200d;
+  --line:                   #5c331a;
+  --line-soft:              #4a2812;
+  --text:                   #fbebdd;
+  --text-dim:               #e0af86;
+  --text-faint:             #a17451;
+  --accent:                 #f2a35f;
+  --accent-dark:            #ffffff;
+  --accent-glow:            rgba(242, 163, 95, 0.1);
+  --err:                    #ff9b7a;
+
+  --scrollbar-track:        #1f1006;
+  --scrollbar-thumb:        rgba(242, 163, 95, 0.32);
+  --scrollbar-thumb-hover:  rgba(242, 163, 95, 0.60);
+  --scrollbar-thumb-active: rgba(255, 190, 135, 0.90);
+  --scrollbar-glow:         rgba(242, 163, 95, 0.25);
+}
+
+/* 5. Champagne (Warm Sand) */
+html[data-theme="champagne"] {
+  --bg:                     #ece2c9;
+  --panel:                  #f7f1e1;
+  --panel-hi:               #fbf7ec;
+  --line:                   #d9cba3;
+  --line-soft:              #e2d6b3;
+  --text:                   #3a3220;
+  --text-dim:               #6d5f3f;
+  --text-faint:             #998a63;
+  --accent:                 #3a3220;
+  --accent-dark:            #000000;
+  --accent-glow:            rgba(58, 50, 32, 0.07);
+  --err:                    #a3402a;
+
+  --scrollbar-track:        #ece2c9;
+  --scrollbar-thumb:        rgba(58, 50, 32, 0.26);
+  --scrollbar-thumb-hover:  rgba(58, 50, 32, 0.50);
+  --scrollbar-thumb-active: rgba(30, 25, 15, 0.78);
+  --scrollbar-glow:         rgba(58, 50, 32, 0.14);
+}
+
+/* 6. Brown (Earthy Cocoa) */
+html[data-theme="brown"] {
+  --bg:                     #1b120c;
+  --panel:                  #291c13;
+  --panel-hi:               #322318;
+  --line:                   #4a3524;
+  --line-soft:              #3c2a1d;
+  --text:                   #f1e6da;
+  --text-dim:               #c7ab8e;
+  --text-faint:             #8d735a;
+  --accent:                 #d9ac7d;
+  --accent-dark:            #ffffff;
+  --accent-glow:            rgba(217, 172, 125, 0.1);
+  --err:                    #ff9b7a;
+
+  --scrollbar-track:        #1b120c;
+  --scrollbar-thumb:        rgba(217, 172, 125, 0.32);
+  --scrollbar-thumb-hover:  rgba(217, 172, 125, 0.60);
+  --scrollbar-thumb-active: rgba(245, 215, 185, 0.90);
+  --scrollbar-glow:         rgba(217, 172, 125, 0.25);
+}
+
+/* Universal Custom Scrollbar System & Standards */
+*, *::before, *::after {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  transition: background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+  background-clip: padding-box;
+  box-shadow: 0 0 10px var(--scrollbar-glow);
+}
+
+::-webkit-scrollbar-thumb:active {
+  background: var(--scrollbar-thumb-active);
+  background-clip: padding-box;
+}
+
+/* Eliminate OS default arrow buttons */
+::-webkit-scrollbar-button {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+/* Theme definition metadata for pickers */
+:root {
+  --theme-transition-duration: 0.15s;
+}
+
+/* Accessibility: Respect Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

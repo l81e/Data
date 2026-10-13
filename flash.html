@@ -7,6 +7,21 @@
 <link rel="icon" type="image/png" href="favicon.png" />
 <link rel="icon" type="image/x-icon" href="favicon.ico" />
 <link rel="apple-touch-icon" href="favicon.png" />
+<link rel="manifest" href="manifest.json" />
+<script>
+  (function(){
+    try {
+      var t = localStorage.getItem('mb_theme');
+      if (t && t !== 'dark') document.documentElement.setAttribute('data-theme', t);
+      var l = localStorage.getItem('mb_lang');
+      if (l === 'ar') {
+        document.documentElement.setAttribute('lang', 'ar');
+        document.documentElement.setAttribute('dir', 'rtl');
+      }
+    } catch(e){}
+  })();
+</script>
+<link rel="stylesheet" href="css/theme.css" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Cairo:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet" />
@@ -25,6 +40,10 @@
     document.write('<script src="https://cdn.jsdelivr.net/npm/fzstd@0.1.1/umd/index.js"><\/script>');
   }
 </script>
+<script src="js/supabaseClient.js"></script>
+<script src="js/i18n.js"></script>
+<script src="js/vault.js"></script>
+<script src="js/ankiParser.js"></script>
 
 <style>
   *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
@@ -669,6 +688,40 @@
     color:#10b981;
     background:rgba(16,185,129,0.14);
     border-bottom:2px solid #10b981;
+  }
+
+  /* Image Occlusion (IO) Overlays */
+  .image-occlusion-wrap{
+    position:relative; display:inline-block; max-width:100%; margin:10px auto;
+  }
+  .io-box, .qshape {
+    fill: #ff5252 !important;
+    fill-opacity: 0.88 !important;
+    stroke: #ff1744 !important;
+    stroke-width: 2px !important;
+    cursor: pointer;
+    transition: all .2s ease;
+  }
+  .io-revealed, .flip-face.face-back .io-box, .flip-face.face-back .qshape {
+    fill: #10b981 !important;
+    fill-opacity: 0.22 !important;
+    stroke: #10b981 !important;
+    stroke-dasharray: 4 2;
+  }
+  /* Audio Scrubber Visual Player Bar */
+  .clinical-audio-player {
+    display:flex; align-items:center; gap:10px; width:100%;
+    background:var(--panel-hi); border:1px solid var(--line);
+    border-radius:24px; padding:6px 14px; margin:10px 0;
+  }
+  .clinical-audio-player .audio-btn {
+    width:32px; height:32px; border-radius:50%; background:var(--accent);
+    color:var(--bg); border:none; display:flex; align-items:center; justify-content:center;
+    cursor:pointer; flex-shrink:0;
+  }
+  .clinical-audio-player .audio-scrubber {
+    flex:1; height:6px; -webkit-appearance:none; background:var(--line);
+    border-radius:3px; outline:none; accent-color:var(--accent);
   }
 
   /* Math Rendering KaTeX Adjustments */
@@ -3051,6 +3104,22 @@
       unflippedActions.style.display = 'none';
       flippedActions.style.display = 'block';
       triggerHaptic(15);
+
+      // Auto-play clinical audio on reveal if present
+      try {
+        const audio = backContent.querySelector('audio') || frontContent.querySelector('audio');
+        if (audio) {
+          audio.currentTime = 0;
+          audio.play().catch(()=>{});
+        }
+      } catch(e){}
+
+      // Reveal Image Occlusion target masks
+      try {
+        flipCard.querySelectorAll('.qshape, .io-box').forEach(box => {
+          box.classList.add('io-revealed');
+        });
+      } catch(e){}
     }
 
     function handleRate(rating){
@@ -3624,6 +3693,12 @@
       } else if (e.key === 'z' || e.key === 'Z'){
         e.preventDefault();
         handleUndo();
+      } else if (e.key === 'r' || e.key === 'R'){
+        e.preventDefault();
+        replayAudio();
+      } else if (e.key === '0'){
+        e.preventDefault();
+        resetImageZoom();
       } else if (e.key === 'b' || e.key === 'B'){
         e.preventDefault();
         openBrowserBtn.click();
@@ -3641,6 +3716,22 @@
         closeSettings();
       }
     });
+
+    function replayAudio(){
+      const audios = cardStage.querySelectorAll('audio');
+      if (audios.length > 0){
+        const a = audios[0];
+        a.currentTime = 0;
+        a.play().catch(()=>{});
+      }
+    }
+
+    function resetImageZoom(){
+      const activeImgs = cardStage.querySelectorAll('.clinical-diagram-img');
+      activeImgs.forEach(img => {
+        img.style.transform = 'scale(1)';
+      });
+    }
 
     revealBtn.addEventListener('click', revealAnswer);
     rateAgainBtn.addEventListener('click', () => handleRate(1));
@@ -5242,6 +5333,14 @@
 
     window.addEventListener('DOMContentLoaded', init);
   })();
+
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js').catch(err => {
+        console.warn('SW registration warning:', err);
+      });
+    });
+  }
   </script>
 </body>
 </html>

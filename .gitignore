@@ -1,0 +1,10 @@
+# Dependencies & logs
+node_modules/
+*.log
+
+# Agent & workspace internals
+.agents/
+
+# OS metadata
+.DS_Store
+Thumbs.db

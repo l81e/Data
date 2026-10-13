@@ -7,6 +7,21 @@
 <link rel="icon" type="image/png" href="favicon.png" />
 <link rel="icon" type="image/x-icon" href="favicon.ico" />
 <link rel="apple-touch-icon" href="favicon.png" />
+<link rel="manifest" href="manifest.json" />
+<script>
+  (function(){
+    try {
+      var t = localStorage.getItem('mb_theme');
+      if (t && t !== 'dark') document.documentElement.setAttribute('data-theme', t);
+      var l = localStorage.getItem('mb_lang');
+      if (l === 'ar') {
+        document.documentElement.setAttribute('lang', 'ar');
+        document.documentElement.setAttribute('dir', 'rtl');
+      }
+    } catch(e){}
+  })();
+</script>
+<link rel="stylesheet" href="css/theme.css" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
@@ -19,6 +34,10 @@
     document.write('<script src="https://cdn.jsdelivr.net/npm/fzstd@0.1.1/umd/index.js"><\/script>');
   }
 </script>
+<script src="js/supabaseClient.js"></script>
+<script src="js/i18n.js"></script>
+<script src="js/vault.js"></script>
+<script src="js/ankiParser.js"></script>
 <style>
   *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 
@@ -3867,9 +3886,8 @@
 
   /* ================================================================
      MASTER ADMIN AUTHENTICATION & ACCESS CONTROL
-     Passcode: You want to join US then V73
+     Zero-Plaintext Cryptographic Verification (SHA-256 Gate)
      ================================================================ */
-  const ADMIN_PASSCODE_RAW = 'You want to join US then V73';
   const ADMIN_PASSCODE_HASH = '8585cbc70875e01a27f468af838ce92f1727cddba7afb906a947fa89c96ce50e';
   const ADMIN_AUTH_SESSION_KEY = 'mb_admin_authenticated';
   const ADMIN_AUTH_LOCAL_KEY = 'mb_admin_remembered';
@@ -3897,7 +3915,7 @@
 
   async function verifyAdminPasscode(input){
     const clean = (input || '').trim();
-    if (clean === ADMIN_PASSCODE_RAW) return true;
+    if (!clean) return false;
     const computedHash = await sha256Hex(clean);
     if (computedHash === ADMIN_PASSCODE_HASH) return true;
     const customHash = localStorage.getItem('mb_custom_admin_hash');
@@ -7100,10 +7118,16 @@
   function classifyCurriculumHierarchy(lecture, material){
     const year = lecture.yearOfView || lecture.year_of_view || currentYear || 'first year';
     let captionMeta = {};
+    if (material && (material.module_code || material.moduleCode)) captionMeta.module = material.module_code || material.moduleCode;
+    if (material && (material.subject_name || material.subjectName)) captionMeta.subject = material.subject_name || material.subjectName;
+    if (material && material.semester != null) captionMeta.semester = parseInt(material.semester, 10);
+    if (material && (material.card_count != null || material.cardCount != null)) captionMeta.cards = parseInt(material.card_count || material.cardCount, 10);
+
     if (material && material.caption){
       try {
         if (material.caption.trim().startsWith('{')){
-          captionMeta = JSON.parse(material.caption);
+          const parsed = JSON.parse(material.caption);
+          captionMeta = { ...parsed, ...captionMeta };
         }
       } catch(e){}
       if (!captionMeta.module){
@@ -7316,12 +7340,20 @@
       let materials = [];
       if (!lecErr && lectures && lectures.length > 0){
         const lectureIds = lectures.map(l => l.id);
-        const { data: mats, error: matErr } = await supabase
+        let { data: mats, error: matErr } = await supabase
           .from('materials')
-          .select('id, lecture_id, type, kind, title, url, file_name, caption, uploaded_by, created_at')
+          .select('id, lecture_id, type, kind, title, url, file_name, caption, module_code, subject_name, semester, card_count, uploaded_by, created_at')
           .in('lecture_id', lectureIds)
           .order('created_at', { ascending: true });
-        if (!matErr && mats) materials = mats;
+        if (matErr) {
+          const fallback = await supabase
+            .from('materials')
+            .select('id, lecture_id, type, kind, title, url, file_name, caption, uploaded_by, created_at')
+            .in('lecture_id', lectureIds)
+            .order('created_at', { ascending: true });
+          if (!fallback.error && fallback.data) mats = fallback.data;
+        }
+        if (mats) materials = mats;
       }
 
       const modulesMap = {};
@@ -7642,14 +7674,21 @@
 
       // Filter by search query if any
       if (curriculumSearchQuery){
+        const qTokens = curriculumSearchQuery.toLowerCase().split(/\s+/).filter(Boolean);
         moduleDecks = moduleDecks.filter(d => {
-          const q = curriculumSearchQuery.toLowerCase();
           const humanCap = extractHumanCaption(d.caption);
-          return (d.title || '').toLowerCase().includes(q) ||
-                 humanCap.toLowerCase().includes(q) ||
-                 (d.subjTag || '').toLowerCase().includes(q) ||
-                 (mod.name || '').toLowerCase().includes(q) ||
-                 (mod.code || '').toLowerCase().includes(q);
+          const fullText = `${d.title || ''} ${humanCap} ${d.subjTag || ''} ${mod.name || ''} ${mod.code || ''}`.toLowerCase();
+          return qTokens.every(tok => {
+            if (fullText.includes(tok)) return true;
+            if (tok.length >= 3) {
+              let tIdx = 0;
+              for (let i = 0; i < fullText.length && tIdx < tok.length; i++) {
+                if (fullText[i] === tok[tIdx]) tIdx++;
+              }
+              if (tIdx === tok.length) return true;
+            }
+            return false;
+          });
         });
       }
 
@@ -8435,13 +8474,17 @@
 
     const searchInput = document.getElementById('curriculumSearchInput');
     const clearBtn = document.getElementById('curriculumSearchClear');
+    let searchDebounceTimer = null;
     if (searchInput){
       searchInput.addEventListener('input', (e) => {
         curriculumSearchQuery = e.target.value.trim().toLowerCase();
         if (clearBtn){
           clearBtn.style.display = curriculumSearchQuery ? 'block' : 'none';
         }
-        renderCurriculumExplorer();
+        clearTimeout(searchDebounceTimer);
+        searchDebounceTimer = setTimeout(() => {
+          renderCurriculumExplorer();
+        }, 120);
       });
       if (clearBtn){
         clearBtn.addEventListener('click', () => {
@@ -8814,6 +8857,15 @@
     await loadCurriculumExplorer();
   })();
 })();
+
+// Sovereign Offline PWA Service Worker Registration
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(err => {
+      console.warn('SW registration warning:', err);
+    });
+  });
+}
 </script>
 </body>
 </html>

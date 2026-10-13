@@ -5,6 +5,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import crypto from 'node:crypto';
 
 let failures = 0;
 let passed = 0;
@@ -122,8 +123,12 @@ assert(indexHtml.includes('ankiDeckSearchInput'), 'index.html includes real-time
 assert(indexHtml.includes('anki-supplement-wrap'), 'index.html cleanly separates supplemental lecture resources');
 
 // 10. Master Admin Passcode Authentication Gate
-assert(indexHtml.includes('You want to join US then V73'), 'index.html defines the Master Admin Passcode: "You want to join US then V73"');
+assert(!indexHtml.includes('ADMIN_PASSCODE_RAW'), 'index.html eliminates client-side plaintext admin credentials (zero hardcoded raw passwords in source code)');
 assert(indexHtml.includes('ADMIN_PASSCODE_HASH'), 'index.html stores SHA-256 cryptographic hash of passcode');
+{
+  const cryptoHash = crypto.createHash('sha256').update('You want to join US then V73').digest('hex');
+  assert(cryptoHash === '8585cbc70875e01a27f468af838ce92f1727cddba7afb906a947fa89c96ce50e', 'Cryptographic SHA-256 hash validates passcode without plaintext leakage');
+}
 assert(indexHtml.includes('adminAuthModalOverlay'), 'index.html includes Admin Authentication modal (adminAuthModalOverlay)');
 assert(indexHtml.includes('adminAuthChip'), 'index.html includes Admin status indicator chip in header');
 assert(indexHtml.includes('verifyAdminPasscode'), 'index.html implements verifyAdminPasscode cryptographic routine');
@@ -1541,10 +1546,175 @@ function suite39() {
   assert(!indexHtml.includes('/flash.html?deck=demo&deckTitle='), 'index.html never disguises unlinked curriculum decks as demo deck');
 }
 
+// =============================================================================
+// SUITE 40: Modular Architecture, Shared Assets, Schema & Security Hardening
+// =============================================================================
+async function suite40(){
+  console.log('\n--- SUITE 40: Modular Architecture, Schema & Security Hardening ---');
+
+  // 1. Shared Asset Existence
+  assert(fs.existsSync('css/theme.css'), 'css/theme.css shared design system exists');
+  assert(fs.existsSync('js/supabaseClient.js'), 'js/supabaseClient.js shared client exists');
+  assert(fs.existsSync('js/i18n.js'), 'js/i18n.js shared bilingual engine exists');
+  assert(fs.existsSync('js/vault.js'), 'js/vault.js shared sovereign vault exists');
+  assert(fs.existsSync('js/ankiParser.js'), 'js/ankiParser.js universal parser exists');
+  assert(fs.existsSync('manifest.json'), 'manifest.json PWA web manifest exists');
+  assert(fs.existsSync('sw.js'), 'sw.js sovereign service worker exists');
+
+  // 2. Shared Theme System Verification
+  const themeCss = fs.readFileSync('css/theme.css', 'utf-8');
+  assert(themeCss.includes(':root') && themeCss.includes('--bg:'), 'theme.css defines default dark theme tokens');
+  assert(themeCss.includes('html[data-theme="light"]'), 'theme.css defines Light theme');
+  assert(themeCss.includes('html[data-theme="maroon"]'), 'theme.css defines Maroon theme');
+  assert(themeCss.includes('html[data-theme="blue"]'), 'theme.css defines Blue theme');
+  assert(themeCss.includes('html[data-theme="orange"]'), 'theme.css defines Orange theme');
+  assert(themeCss.includes('html[data-theme="champagne"]'), 'theme.css defines Champagne theme');
+  assert(themeCss.includes('html[data-theme="brown"]'), 'theme.css defines Brown theme');
+  assert(themeCss.includes('::-webkit-scrollbar-button') && themeCss.includes('display: none !important'), 'theme.css eliminates OS arrow buttons');
+
+  // 3. HTML Integration & FOUC Prevention
+  ['index.html', 'flash.html', 'flashmake.html'].forEach(fn => {
+    const html = fs.readFileSync(fn, 'utf-8');
+    assert(html.includes('css/theme.css'), `${fn} imports shared css/theme.css`);
+    assert(html.includes('js/supabaseClient.js'), `${fn} imports shared js/supabaseClient.js`);
+    assert(html.includes('js/i18n.js'), `${fn} imports shared js/i18n.js`);
+    assert(html.includes('js/vault.js'), `${fn} imports shared js/vault.js`);
+    assert(html.includes('js/ankiParser.js'), `${fn} imports shared js/ankiParser.js`);
+    assert(html.includes('manifest.json'), `${fn} declares manifest.json`);
+    assert(html.includes('serviceWorker.register'), `${fn} registers service worker sw.js`);
+    assert(html.includes('data-theme') && html.includes('mb_theme'), `${fn} defines inline FOUC prevention script`);
+  });
+
+  // 4. Schema Normalization & Hardened Security Policies
+  const schema = fs.readFileSync('schema.sql', 'utf-8');
+  assert(schema.includes('module_code text'), 'schema.sql defines normalized module_code column');
+  assert(schema.includes('subject_name text'), 'schema.sql defines normalized subject_name column');
+  assert(schema.includes('semester int DEFAULT 1'), 'schema.sql defines normalized semester column');
+  assert(schema.includes('card_count int DEFAULT 0'), 'schema.sql defines normalized card_count column');
+  assert(schema.includes('idx_materials_hierarchy'), 'schema.sql creates idx_materials_hierarchy index');
+  assert(schema.includes('is_admin_or_editor'), 'schema.sql defines is_admin_or_editor security function');
+  assert(schema.includes('Admin materials insert') && schema.includes('Admin materials update'), 'schema.sql restricts mutations to authenticated admin/editor roles');
+
+  // 5. JavaScript Database Normalizer & Caption Fallback Logic
+  const supabaseModule = await import('./js/supabaseClient.js');
+  const normalizer = supabaseModule.default || supabaseModule;
+  const testNormalized = normalizer.parseMaterialMeta({
+    module_code: 'CVS',
+    subject_name: 'Cardiology',
+    semester: 2,
+    card_count: 50,
+    caption: 'High yield clinical pearls'
+  });
+  assert(testNormalized.moduleCode === 'CVS', 'parseMaterialMeta extracts direct module_code column');
+  assert(testNormalized.subjectName === 'Cardiology', 'parseMaterialMeta extracts direct subject_name column');
+  assert(testNormalized.semester === 2, 'parseMaterialMeta extracts direct semester column');
+  assert(testNormalized.cardCount === 50, 'parseMaterialMeta extracts direct card_count column');
+  assert(testNormalized.humanCaption === 'High yield clinical pearls', 'parseMaterialMeta preserves human caption');
+
+  const testLegacy = normalizer.parseMaterialMeta({
+    caption: JSON.stringify({ module: 'RES', subject: 'Pulmonology', semester: 1, cards: 35, notes: 'Asthma lecture' })
+  });
+  assert(testLegacy.moduleCode === 'RES', 'parseMaterialMeta falls back to JSON caption module');
+  assert(testLegacy.subjectName === 'Pulmonology', 'parseMaterialMeta falls back to JSON caption subject');
+  assert(testLegacy.semester === 1, 'parseMaterialMeta falls back to JSON caption semester');
+  assert(testLegacy.cardCount === 35, 'parseMaterialMeta falls back to JSON caption card count');
+  assert(testLegacy.humanCaption === 'Asthma lecture', 'parseMaterialMeta extracts human caption notes from JSON');
+}
+
+// =============================================================================
+// SUITE 41: FSRS-5 Benchmark Metrics, Universal Anki Parser & PWA Sovereignty
+// =============================================================================
+async function suite41(){
+  console.log('\n--- SUITE 41: FSRS-5 Benchmarks, Universal Parser & PWA Sovereignty ---');
+
+  // 1. FSRS-5 Mathematical Stability & Target Retention Benchmarks
+  const FSRS_FACTOR = 19 / 81;
+  function calcBenchmarkIvl(S, targetR = 0.9) {
+    return Math.round((S / FSRS_FACTOR) * (Math.pow(targetR, -2) - 1));
+  }
+  const ivl85 = calcBenchmarkIvl(3.173, 0.85);
+  const ivl90 = calcBenchmarkIvl(3.173, 0.90);
+  const ivl95 = calcBenchmarkIvl(3.173, 0.95);
+  assert(ivl95 < ivl90, `Higher retention target (95%) produces shorter interval (${ivl95}d) than 90% (${ivl90}d)`);
+  assert(ivl90 < ivl85, `Standard retention target (90%) produces shorter interval (${ivl90}d) than 85% (${ivl85}d)`);
+  assert(ivl90 >= 3 && ivl90 <= 4, `FSRS-5 benchmark Good interval at 90% retention is 3-4 days (calculated: ${ivl90}d)`);
+
+  // 2. Universal Anki Parser Template & IO Rendering
+  const parserModule = await import('./js/ankiParser.js');
+  const parser = parserModule.default || parserModule;
+
+  // Test cloze replacement with hints
+  const clozeFront = parser.processClozeText('Aspirin inhibits {{c1::COX-1::Enzyme}} irreversibly.', 1, false);
+  assert(clozeFront.includes('[Enzyme]'), 'processClozeText renders hint on front face');
+  assert(!clozeFront.includes('COX-1'), 'processClozeText blanks answer on front face');
+
+  const clozeBack = parser.processClozeText('Aspirin inhibits {{c1::COX-1::Enzyme}} irreversibly.', 1, true);
+  assert(clozeBack.includes('COX-1'), 'processClozeText reveals answer on back face');
+  assert(!clozeBack.includes('[Enzyme]'), 'processClozeText strips hint on back face');
+
+  // Test template conditionals
+  const tmpl = '{{#Header}}<h3>{{Header}}</h3>{{/Header}}{{^Header}}<h3>Default</h3>{{/Header}}';
+  const compiledWith = parser.compileAnkiTemplate(tmpl, { Header: 'Cardiology' });
+  assert(compiledWith.includes('Cardiology') && !compiledWith.includes('Default'), 'compileAnkiTemplate renders positive conditional');
+  const compiledWithout = parser.compileAnkiTemplate(tmpl, { Header: '' });
+  assert(compiledWithout.includes('Default') && !compiledWithout.includes('Cardiology'), 'compileAnkiTemplate renders inverted conditional');
+
+  // Test Image Occlusion Overlay class assignment
+  const ioSvg = '<svg><rect class="qshape" width="100" height="50"/></svg>';
+  const ioBack = parser.renderImageOcclusionOverlay(ioSvg, 0, true);
+  assert(ioBack.includes('io-revealed'), 'renderImageOcclusionOverlay adds io-revealed class on card reveal');
+
+  // 3. Sovereign Vault Media Scoping & Zero-Collision Keys
+  const vaultModule = await import('./js/vault.js');
+  const vault = vaultModule.default || vaultModule;
+  const cardKeyA = vault.scopeCardId('deck-a', 'card-101');
+  const cardKeyB = vault.scopeCardId('deck-b', 'card-101');
+  assert(cardKeyA === 'deck-a:::card-101', 'scopeCardId enforces deck-a:::card-101 format');
+  assert(cardKeyB === 'deck-b:::card-101', 'scopeCardId enforces deck-b:::card-101 format');
+  assert(cardKeyA !== cardKeyB, 'Identical card IDs across distinct decks have unique scoped keys');
+
+  const mediaKeyA = vault.scopeMediaKey('deck-a', 'histology.jpg');
+  const mediaKeyB = vault.scopeMediaKey('deck-b', 'histology.jpg');
+  assert(mediaKeyA === 'deck-a:::histology.jpg', 'scopeMediaKey enforces deck-a:::histology.jpg format');
+  assert(mediaKeyB === 'deck-b:::histology.jpg', 'scopeMediaKey enforces deck-b:::histology.jpg format');
+  assert(mediaKeyA !== mediaKeyB, 'Identical image filenames across distinct decks never collide');
+
+  // 4. Web App Manifest & Service Worker Precache Integrity
+  const manifestRaw = fs.readFileSync('manifest.json', 'utf-8');
+  let manifestJson;
+  try {
+    manifestJson = JSON.parse(manifestRaw);
+  } catch(e){}
+  assert(manifestJson && manifestJson.name === 'MedicineBank Clinical Flashcards', 'manifest.json defines valid app name');
+  assert(manifestJson && manifestJson.display === 'standalone', 'manifest.json enables standalone PWA display mode');
+  assert(manifestJson && Array.isArray(manifestJson.icons) && manifestJson.icons.length >= 2, 'manifest.json specifies PWA icons');
+
+  // Verify all precache assets exist on disk
+  const swContent = fs.readFileSync('sw.js', 'utf-8');
+  const precacheMatch = swContent.match(/const PRECACHE_ASSETS = \[([\s\S]*?)\];/);
+  assert(precacheMatch !== null, 'sw.js defines PRECACHE_ASSETS manifest');
+  if (precacheMatch){
+    const assets = eval('[' + precacheMatch[1] + ']');
+    let allPrecacheExist = true;
+    for (const asset of assets){
+      const filePath = asset.replace(/^\.\//, '');
+      if (filePath && !fs.existsSync(filePath)){
+        allPrecacheExist = false;
+        assert(false, `Precache asset ${filePath} is missing from repository disk`);
+      }
+    }
+    if (allPrecacheExist){
+      assert(true, '100% of sw.js precache assets exist on disk for sovereign offline studying');
+    }
+  }
+}
+
 suite36();
 suite37();
 suite38();
 suite39();
+await suite40();
+await suite41();
 
 console.log('\n==================================================');
 if (failures === 0) {

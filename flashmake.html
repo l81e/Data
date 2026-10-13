@@ -7,6 +7,21 @@
 <link rel="icon" type="image/png" href="favicon.png" />
 <link rel="icon" type="image/x-icon" href="favicon.ico" />
 <link rel="apple-touch-icon" href="favicon.png" />
+<link rel="manifest" href="manifest.json" />
+<script>
+  (function(){
+    try {
+      var t = localStorage.getItem('mb_theme');
+      if (t && t !== 'dark') document.documentElement.setAttribute('data-theme', t);
+      var l = localStorage.getItem('mb_lang');
+      if (l === 'ar') {
+        document.documentElement.setAttribute('lang', 'ar');
+        document.documentElement.setAttribute('dir', 'rtl');
+      }
+    } catch(e){}
+  })();
+</script>
+<link rel="stylesheet" href="css/theme.css" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
@@ -15,6 +30,10 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.2/jszip.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sql.js@1.10.3/dist/sql-wasm.js"></script>
+<script src="js/supabaseClient.js"></script>
+<script src="js/i18n.js"></script>
+<script src="js/vault.js"></script>
+<script src="js/ankiParser.js"></script>
 <style>
   *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 
@@ -986,7 +1005,13 @@
       const line = raw.trim();
       if (!line) continue;
       let q = '', a = '';
-      if (line.includes('\t')){
+      if (line.startsWith('|') && line.endsWith('|')){
+        const parts = line.split('|').map(s => s.trim()).filter(Boolean);
+        if (parts.length >= 2 && !parts[0].includes('---')){
+          q = parts[0];
+          a = parts.slice(1).join(' - ');
+        }
+      } else if (line.includes('\t')){
         const parts = line.split('\t');
         q = parts[0].trim();
         a = parts.slice(1).join('\t').trim();
@@ -998,6 +1023,10 @@
         const parts = line.split(' - ');
         q = parts[0].trim();
         a = parts.slice(1).join(' - ').trim();
+      } else if (line.includes(',')){
+        const parts = line.split(',');
+        q = parts[0].trim();
+        a = parts.slice(1).join(',').trim();
       } else {
         q = line;
         a = 'Review';
@@ -1223,11 +1252,12 @@
     if (!back){ document.getElementById('backErr').classList.add('show'); ok = false; }
     if (!ok) return;
 
-    const isDualEl = document.getElementById('cardIsDualInput');
+    const isDual = !!(isDualEl && isDualEl.checked);
+    const sharedNoteId = uid();
     const cardData = {
       front,
       back,
-      isDual: !!(isDualEl && isDualEl.checked),
+      isDual,
       imageFile: pendingImage ? pendingImage.file : null,
       imageDataUrl: pendingImage ? pendingImage.dataUrl : null,
       imageName: pendingImage ? pendingImage.name : null
@@ -1235,9 +1265,29 @@
 
     if (editingCardId){
       const idx = deck.cards.findIndex(c => c.id === editingCardId);
-      if (idx !== -1) deck.cards[idx] = { id: editingCardId, ...cardData };
+      if (idx !== -1) deck.cards[idx] = { id: editingCardId, noteId: deck.cards[idx].noteId || sharedNoteId, ord: 0, ...cardData };
     } else {
-      deck.cards.push({ id: uid(), ...cardData });
+      if (isDual) {
+        deck.cards.push({
+          id: uid(),
+          noteId: sharedNoteId,
+          ord: 0,
+          ...cardData
+        });
+        deck.cards.push({
+          id: uid(),
+          noteId: sharedNoteId,
+          ord: 1,
+          front: back,
+          back: front,
+          isDual: true,
+          imageFile: cardData.imageFile,
+          imageDataUrl: cardData.imageDataUrl,
+          imageName: cardData.imageName
+        });
+      } else {
+        deck.cards.push({ id: uid(), noteId: sharedNoteId, ord: 0, ...cardData });
+      }
     }
 
     editingCardId = null;
@@ -1829,6 +1879,14 @@
     renderStep();
   })();
 })();
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(err => {
+      console.warn('SW registration warning:', err);
+    });
+  });
+}
 </script>
 </body>
 </html>
