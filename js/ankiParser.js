@@ -127,22 +127,100 @@
     });
 
     // 5. Image Occlusion (IO) Enhanced & Native Overlays
-    // If template renders an image occlusion card with SVG rect masks
-    if (out.includes('qshape') || out.includes('image-occlusion')) {
-      out = renderImageOcclusionOverlay(out, cardOrd, isBack);
+    if (out.includes('qshape') || out.includes('ashape') || out.includes('image-occlusion') || out.includes('io-wrapper')) {
+      out = renderImageOcclusionOverlay(out, cardOrd, isBack, fieldMap);
     }
 
     return out;
   }
 
   /**
-   * Enhances Image Occlusion SVGs with interactive touch/reveal classes.
+   * Universal Image Occlusion parser supporting:
+   * 1. Anki 23.10+ / 24+ Native Image Occlusion notes with {{c1::image-occlusion:rect:...}} and <canvas id="image-occlusion-canvas">
+   * 2. Anki 2.0 / AnKing SVG overlay notes (<svg><rect class="qshape">...</svg>)
    */
-  function renderImageOcclusionOverlay(html, cardOrd, isBack) {
+  function renderImageOcclusionOverlay(html, cardOrd, isBack, fieldMap = {}) {
     if (!html) return '';
     let res = html;
 
-    // Ensure responsive SVG scaling: if svg has width and height attributes but no viewBox, inject viewBox
+    // 1. Native Anki Image Occlusion (Anki 23.10+ / 24+)
+    const occlusionField = (fieldMap && typeof getFieldValue === 'function' ? getFieldValue(fieldMap, 'Occlusion') : (fieldMap ? fieldMap['Occlusion'] : '')) || '';
+    if (occlusionField && /image-occlusion:rect/i.test(occlusionField)) {
+      const clozeRegex = /{{c(\d+)::(image-occlusion:[^}]+)}}/g;
+      let m;
+      const rects = [];
+      while ((m = clozeRegex.exec(occlusionField)) !== null) {
+        rects.push({ cNum: parseInt(m[1], 10), spec: m[2] });
+      }
+
+      if (rects.length > 0) {
+        const targetNum = cardOrd + 1;
+        const rectSvgElements = [];
+
+        for (const { cNum, spec } of rects) {
+          const parts = spec.split(':');
+          const props = {};
+          for (let i = 2; i < parts.length; i++) {
+            const eqIdx = parts[i].indexOf('=');
+            if (eqIdx !== -1) {
+              const k = parts[i].substring(0, eqIdx);
+              const v = parseFloat(parts[i].substring(eqIdx + 1));
+              if (!isNaN(v)) props[k] = v;
+            }
+          }
+
+          const x = (props.left !== undefined ? props.left : 0) * 1000;
+          const y = (props.top !== undefined ? props.top : 0) * 1000;
+          const w = (props.width !== undefined ? props.width : 0) * 1000;
+          const h = (props.height !== undefined ? props.height : 0) * 1000;
+
+          let transformAttr = '';
+          if (props.angle !== undefined) {
+            let deg = props.angle;
+            if (deg > 360) deg = deg / 100;
+            const cx = x + w / 2;
+            const cy = y + h / 2;
+            transformAttr = ` transform="rotate(${deg} ${cx.toFixed(1)} ${cy.toFixed(1)})"`;
+          }
+
+          const isTarget = cNum === targetNum;
+          let cls = 'ashape';
+          if (isTarget) {
+            cls = isBack ? 'qshape io-box io-revealed' : 'qshape io-box';
+          }
+          rectSvgElements.push(
+            `<rect class="${cls}" x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${w.toFixed(1)}" height="${h.toFixed(1)}" rx="6"${transformAttr} />`
+          );
+        }
+
+        const overlaySvg = `<svg viewBox="0 0 1000 1000" preserveAspectRatio="none" style="position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none;" role="img" aria-label="Anatomical Image Occlusion Overlay">${rectSvgElements.join('')}</svg>`;
+
+        if (res.includes('image-occlusion-wrapper') || res.includes('Anatomical Image Occlusion Overlay')) {
+          // Overlay already synthesized from {{FrontSide}}
+          if (isBack) {
+            res = res.replace(/class=["']([^"']*\b(?:qshape|io-box)\b[^"']*)["']/gi, 'class="$1 io-revealed"');
+          }
+        } else if (res.includes('image-occlusion-container')) {
+          res = res.replace(/<div\b[^>]*\bid=["']image-occlusion-container["'][^>]*>/i, '<div id="image-occlusion-wrapper" class="image-occlusion-wrap">');
+          res = res.replace(/<canvas\b[^>]*\bid=["']image-occlusion-canvas["'][^>]*><\/canvas>/i, overlaySvg);
+        } else if (res.includes('image-occlusion-canvas')) {
+          res = res.replace(/<canvas\b[^>]*\bid=["']image-occlusion-canvas["'][^>]*><\/canvas>/i, overlaySvg);
+        } else if (/<img\b/i.test(res)) {
+          res = res.replace(/(<img\b[^>]*>)/i, `<div id="image-occlusion-wrapper" class="image-occlusion-wrap">$1${overlaySvg}</div>`);
+        }
+
+        res = res.replace(/<div id="err"[^>]*>[\s\S]*?<\/div>/gi, '');
+        res = res.replace(/<canvas\b[^>]*>[\s\S]*?<\/canvas>/gi, '');
+
+        if (res.includes('id="toggle"') || res.includes('id=\'toggle\'')) {
+          res = res.replace(/<button\b[^>]*\bid=["']toggle["'][^>]*>([\s\S]*?)<\/button>/gi, '<button type="button" id="toggle" class="io-toggle-masks-btn">$1</button>');
+        }
+
+        return res;
+      }
+    }
+
+    // 2. Legacy / AnKing SVG Overlay Image Occlusion
     res = res.replace(/<svg\b([^>]*?)>/gi, (match, attrs) => {
       if (!/viewBox=/i.test(attrs)) {
         const wMatch = attrs.match(/\bwidth=["']?(\d+(?:\.\d+)?)/i);
@@ -156,7 +234,7 @@
 
     // If on back face, reveal target occlusion box
     if (isBack) {
-      res = res.replace(/class=["']([^"']*\b(?:qshape|ashape|io-box)\b[^"']*)["']/gi, 'class="$1 io-revealed"');
+      res = res.replace(/class=["']([^"']*\b(?:qshape|io-box)\b[^"']*)["']/gi, 'class="$1 io-revealed"');
     }
     return res;
   }

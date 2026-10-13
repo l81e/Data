@@ -1214,14 +1214,14 @@ function suite36() {
   assert(freshResult.newCount === 40, 'Fresh unstudied deck has 40 new cards in total');
 
   // Case B: Deck with 5 cards due for review, 2 in learning, 15 new cards, 10 future reviews
-  const now = Date.now();
+  const now = new Date().setHours(12, 0, 0, 0);
   const mixedCards = [
     ...Array.from({ length: 5 }, (_, i) => ({ id: `due-rev-${i}`, reps: 3, stability: 5, due: now - 3600000 })), // due reviews
     ...Array.from({ length: 2 }, (_, i) => ({ id: `learn-${i}`, reps: 1, stability: 0.1, due: now + 600000 })), // learning (due in 10m today)
     ...Array.from({ length: 15 }, (_, i) => ({ id: `new-${i}`, reps: 0 })), // new cards
     ...Array.from({ length: 10 }, (_, i) => ({ id: `future-${i}`, reps: 4, stability: 12, due: now + 86400000 * 3 })) // future reviews
   ];
-  const mixedResult = computeAnkiDueWorkload(mixedCards, 20);
+  const mixedResult = computeAnkiDueWorkload(mixedCards, 20, now);
   assert(mixedResult.reviewDueCount === 5, 'Mixed deck identifies exactly 5 review cards due today');
   assert(mixedResult.learningCount === 2, 'Mixed deck identifies exactly 2 learning cards due today');
   assert(mixedResult.newCount === 15, 'Mixed deck identifies 15 new cards');
@@ -1713,12 +1713,110 @@ async function suite41(){
   }
 }
 
+async function suite42() {
+  console.log('\n--- SUITE 42: Native Anki 23.10+ Image Occlusion & Zstd Decompression ---');
+  const parserModule = await import('./js/ankiParser.js');
+  const parser = parserModule.default || parserModule;
+
+  // 1. Native Anki Image Occlusion with {{c1::image-occlusion:rect:...}}
+  const qfmt = `{{#Image}}
+<div id="image-occlusion-container">
+  {{Image}}
+  <canvas id="image-occlusion-canvas"></canvas>
+</div>
+{{/Image}}
+<div id="err"></div>`;
+
+  const afmt = `{{FrontSide}}
+<div id="image-occlusion-answer">
+  <button id="toggle">Toggle Masks</button>
+  <div id="answer">{{Answer}}</div>
+</div>`;
+
+  const fieldMap = {
+    Image: '<img src="norma_verticalis.png">',
+    Occlusion: '{{c1::image-occlusion:rect:left=.4521:top=.3994:width=.1280:height=.1474:angle=9666}} {{c2::image-occlusion:rect:left=.2500:top=.3000:width=.1000:height=.1000}}',
+    Answer: 'Bregma'
+  };
+
+  const frontHtml = parser.compileAnkiTemplate(qfmt, fieldMap, '', 0, false);
+  assert(frontHtml.includes('id="image-occlusion-wrapper"'), 'Native IO container converted to #image-occlusion-wrapper');
+  assert(!frontHtml.includes('<canvas'), 'Native IO <canvas> replaced by SVG overlay');
+  assert(!frontHtml.includes('<div id="err">'), 'Error placeholder div stripped');
+  assert(frontHtml.includes('viewBox="0 0 1000 1000"'), 'SVG overlay generated with viewBox 0 0 1000 1000');
+  assert(frontHtml.includes('x="452.1" y="399.4" width="128.0" height="147.4"'), 'Normalized coordinates correctly scaled x1000');
+  assert(frontHtml.includes('transform="rotate(96.6'), 'Rotated occlusion mask angle scaled by 1/100 and applied');
+  assert(frontHtml.includes('class="qshape io-box"'), 'Active target mask assigned qshape io-box class');
+  assert(frontHtml.includes('class="ashape"'), 'Non-target mask assigned ashape class');
+
+  // Back face compilation
+  const backHtml = parser.compileAnkiTemplate(afmt, fieldMap, frontHtml, 0, true);
+  assert(backHtml.includes('class="qshape io-box io-revealed"'), 'Active target mask on back face is revealed (.io-revealed)');
+  assert(!backHtml.includes('class="ashape io-revealed"'), 'Non-target ashape masks remain unrevealed amber');
+  assert(backHtml.includes('class="io-toggle-masks-btn"'), 'Toggle masks button assigned .io-toggle-masks-btn class');
+  assert((backHtml.match(/id="image-occlusion-wrapper"/g) || []).length === 1, 'Back face does not double-wrap or duplicate image-occlusion-wrapper');
+  assert((backHtml.match(/<svg/g) || []).length === 1, 'Back face does not duplicate SVG overlay');
+
+  // 2. Zstandard Decompression and Header Verification
+  const fzstdModule = await import('./fzstd.min.js');
+  const fzstd = fzstdModule.default || fzstdModule;
+  const isZstdHeader = (u8) => u8 && u8.length >= 4 && u8[0] === 0x28 && u8[1] === 0xb5 && u8[2] === 0x2f && u8[3] === 0xfd;
+
+  const mockZstdHeader = new Uint8Array([0x28, 0xb5, 0x2f, 0xfd, 0x00, 0x00]);
+  assert(isZstdHeader(mockZstdHeader), 'Zstandard magic header bytes (0x28 0xB5 0x2F 0xFD) detected accurately');
+
+  // 3. Self-contained authentic Anki Zstandard payload decompression test
+  const authenticZstdBase64 = 'KLUv/QBYtQsAtBQKPAogU2NyZWVuc2hvdCAyMDI1LTEyLTIxIDA2MDcyNS5wbmcQ2sIhGhT5M5bPXgCAzYUjsiI4aTic2N1tzTU1MDQyicsQGhRXqi9g46HXuyCeE5B5RAiXenrjpzYwMTM2nrIXGhS9yB3mG7/MI9dx02DPHdTEoT2S/TU1MzEz8KITGhSx31iuassXdJuvP/GhI1SpDpNicTYxNjQxioAeGhQ6xjCq9iBH4SzQk4KAPEB1IssqqDI0MjSdoB8aFABTGvFSAuqRDfZg9l7694XGS47NNTQ1Mjby1RkaFNlVREIP0aLjFo4jsj8R7Qjs9TJBNjE0MzGHnRUaFBd6P05rx+y4l4ycAinFXjp/dSxINTU3NTmm2xIaFLQxr2XL4CDN0ncqj7rsYNpS9j1xNjM0NTbw/B0aFDgYJwsoAbMWq8AQnu5NYLFMEmP5EgBA0IEwgPACAQPhBQIGwgsEDIQc4AGuFwgYCC8QMBBeIGAQngdh2AM=';
+  const compressedStream = Buffer.from(authenticZstdBase64, 'base64');
+  assert(isZstdHeader(compressedStream), 'Authentic Anki Zstandard payload begins with valid 0x28 0xB5 0x2F 0xFD magic bytes');
+  const decompressedStream = fzstd.decompress(compressedStream);
+  assert(decompressedStream && decompressedStream.length === 620, `fzstd decompress restored authentic Anki media manifest (${compressedStream.length}b -> ${decompressedStream.length}b)`);
+  const decodedText = new TextDecoder().decode(decompressedStream);
+  assert(decodedText.includes('Screenshot'), 'Decompressed manifest text accurately recovers original filenames');
+
+  // Test decompressing an authentic Zstd file from test-deck.apkg if present
+  if (fs.existsSync('test-deck.apkg')) {
+    const buf = fs.readFileSync('test-deck.apkg');
+    let offset = 0;
+    let verifiedZstdEntries = 0;
+    while (offset < buf.length - 30) {
+      if (buf[offset] === 0x50 && buf[offset+1] === 0x4B && buf[offset+2] === 0x03 && buf[offset+3] === 0x04) {
+        const compMethod = buf.readUInt16LE(offset + 8);
+        const compSize = buf.readUInt32LE(offset + 18);
+        const fnameLen = buf.readUInt16LE(offset + 26);
+        const extraLen = buf.readUInt16LE(offset + 28);
+        const fname = buf.toString('utf8', offset + 30, offset + 30 + fnameLen);
+        const dataStart = offset + 30 + fnameLen + extraLen;
+        const rawData = buf.subarray(dataStart, dataStart + compSize);
+        
+        if (fname === 'collection.anki21b' || fname === '0') {
+          assert(isZstdHeader(rawData), `Entry ${fname} has authentic Zstd magic header (0x28 0xB5 0x2F 0xFD)`);
+          const decomp = fzstd.decompress(rawData);
+          if (fname === 'collection.anki21b') {
+            const isSqlite = decomp[0] === 83 && decomp[1] === 81 && decomp[2] === 76 && decomp[3] === 105;
+            assert(isSqlite, 'collection.anki21b decompressed to valid SQLite database');
+          } else if (fname === '0') {
+            const isPng = decomp[0] === 137 && decomp[1] === 80 && decomp[2] === 78 && decomp[3] === 71;
+            assert(isPng, 'Media entry 0 decompressed to valid PNG image (\\x89PNG header)');
+          }
+          verifiedZstdEntries++;
+        }
+        offset = dataStart + compSize;
+      } else {
+        offset++;
+      }
+    }
+    assert(verifiedZstdEntries >= 2, 'Verified real Anki 23.10+ Zstandard decompression on authentic .apkg archive');
+  }
+}
+
 suite36();
 suite37();
 suite38();
 suite39();
 await suite40();
 await suite41();
+await suite42();
 
 console.log('\n==================================================');
 if (failures === 0) {

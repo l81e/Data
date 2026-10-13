@@ -285,7 +285,7 @@ html[data-theme="brown"] {
   width: 100% !important;
   height: 100% !important;
   max-height: none !important;
-  pointer-events: auto !important;
+  pointer-events: none !important;
 }
 
 /* Question Occlusion Mask (Active Target) - High-Yield Medical Red */
@@ -295,6 +295,7 @@ html[data-theme="brown"] {
   stroke: #ff1744 !important;
   stroke-width: 2px !important;
   cursor: pointer !important;
+  pointer-events: auto !important;
   transition: fill-opacity 0.2s ease, stroke 0.2s ease, fill 0.2s ease !important;
 }
 
@@ -305,25 +306,58 @@ html[data-theme="brown"] {
   stroke: #d97706 !important;
   stroke-width: 1.5px !important;
   cursor: pointer !important;
+  pointer-events: auto !important;
 }
 
 /* Revealed Answer Mask - Crisp Medical Translucent Emerald with Dashed Outline */
 .io-revealed,
 .flip-face.face-back .io-box,
 .flip-face.face-back .qshape,
-.flip-face.face-back rect[class*="qshape"],
-.flip-face.face-back .ashape,
-.flip-face.face-back rect[class*="ashape"] {
+.flip-face.face-back rect[class*="qshape"] {
   fill: rgba(16, 185, 129, 0.12) !important;
   fill-opacity: 0.12 !important;
   stroke: #10b981 !important;
   stroke-width: 2px !important;
   stroke-dasharray: 4 2 !important;
   cursor: pointer !important;
+  pointer-events: auto !important;
 }
 
 /* Tap-to-Peek hover & active responsiveness */
 .io-box:hover, .qshape:hover {
   filter: brightness(1.15) !important;
+}
+
+/* Image Occlusion Toggle Masks Button */
+#toggle,
+.io-toggle-masks-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin: 12px auto 6px !important;
+  padding: 6px 16px !important;
+  font-size: 0.76rem !important;
+  font-weight: 600 !important;
+  color: var(--text-sub) !important;
+  background: var(--panel-hi) !important;
+  border: 1px solid var(--line) !important;
+  border-radius: 8px !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+  user-select: none !important;
+}
+
+#toggle:hover,
+.io-toggle-masks-btn:hover {
+  background: var(--accent-soft) !important;
+  color: var(--accent) !important;
+  border-color: var(--accent) !important;
+}
+
+/* Toggle masks state */
+#image-occlusion-wrapper.io-masks-hidden .ashape,
+.image-occlusion-wrap.io-masks-hidden .ashape {
+  opacity: 0 !important;
+  pointer-events: none !important;
 }
 

@@ -774,9 +774,7 @@
   .io-revealed,
   .flip-face.face-back .io-box,
   .flip-face.face-back .qshape,
-  .flip-face.face-back rect[class*="qshape"],
-  .flip-face.face-back .ashape,
-  .flip-face.face-back rect[class*="ashape"] {
+  .flip-face.face-back rect[class*="qshape"] {
     fill: rgba(16, 185, 129, 0.12) !important;
     fill-opacity: 0.12 !important;
     stroke: #10b981 !important;
@@ -2317,6 +2315,52 @@
     const inMemoryMediaCache = new Map();
     let currentActiveDeckId = '';
 
+    function decompressZstdIfNeeded(bytes){
+      if (!bytes || bytes.length < 4) return bytes;
+      if (bytes[0] === 0x28 && bytes[1] === 0xb5 && bytes[2] === 0x2f && bytes[3] === 0xfd){
+        const dec = (typeof fzstd !== 'undefined' && fzstd.decompress) ? fzstd.decompress :
+                    (typeof window !== 'undefined' && window.fzstd && window.fzstd.decompress) ? window.fzstd.decompress : null;
+        if (dec){
+          return dec(bytes);
+        } else {
+          console.warn('Zstandard data detected but fzstd is not yet available in runtime.');
+        }
+      }
+      return bytes;
+    }
+
+    function getMimeTypeFromFilename(fn){
+      if (!fn) return 'application/octet-stream';
+      const ext = fn.split('.').pop().toLowerCase();
+      switch(ext){
+        case 'png': return 'image/png';
+        case 'jpg': case 'jpeg': return 'image/jpeg';
+        case 'gif': return 'image/gif';
+        case 'webp': return 'image/webp';
+        case 'svg': return 'image/svg+xml';
+        case 'mp3': return 'audio/mpeg';
+        case 'ogg': return 'audio/ogg';
+        case 'wav': return 'audio/wav';
+        case 'm4a': return 'audio/mp4';
+        default: return 'application/octet-stream';
+      }
+    }
+
+    async function ensureDecompressedBlob(blob, filename){
+      if (!blob || blob.size < 4) return blob;
+      try {
+        const headBuf = await blob.slice(0, 4).arrayBuffer();
+        const head = new Uint8Array(headBuf);
+        if (head[0] === 0x28 && head[1] === 0xb5 && head[2] === 0x2f && head[3] === 0xfd){
+          const fullBuf = await blob.arrayBuffer();
+          const decompU8 = decompressZstdIfNeeded(new Uint8Array(fullBuf));
+          const mime = getMimeTypeFromFilename(filename);
+          return new Blob([decompU8], { type: mime });
+        }
+      } catch(e){}
+      return blob;
+    }
+
     function revokeAndClearMediaCache(){
       for (const [key, url] of inMemoryMediaCache.entries()){
         if (typeof url === 'string' && url.startsWith('blob:')){
@@ -2443,7 +2487,8 @@
         const reqScoped = store.get(scopedKey);
         const resScoped = await new Promise(r => { reqScoped.onsuccess = () => r(reqScoped.result); reqScoped.onerror = () => r(null); });
         if (resScoped && resScoped.blob){
-          const url = URL.createObjectURL(resScoped.blob);
+          const finalBlob = await ensureDecompressedBlob(resScoped.blob, clean);
+          const url = URL.createObjectURL(finalBlob);
           inMemoryMediaCache.set(scopedKey, url);
           inMemoryMediaCache.set(scopedKeyLower, url);
           return url;
@@ -2453,7 +2498,8 @@
         const reqScopedLower = store.get(scopedKeyLower);
         const resScopedLower = await new Promise(r => { reqScopedLower.onsuccess = () => r(reqScopedLower.result); reqScopedLower.onerror = () => r(null); });
         if (resScopedLower && resScopedLower.blob){
-          const url = URL.createObjectURL(resScopedLower.blob);
+          const finalBlob = await ensureDecompressedBlob(resScopedLower.blob, clean);
+          const url = URL.createObjectURL(finalBlob);
           inMemoryMediaCache.set(scopedKey, url);
           inMemoryMediaCache.set(scopedKeyLower, url);
           return url;
@@ -2568,7 +2614,7 @@
         currentActiveDeckId = deckId;
         const db = await openVault();
         const tx = db.transaction(['decks', 'cards', 'media'], 'readwrite');
-        tx.objectStore('decks').put({ id: deckId, ...meta, timestamp: Date.now(), version: 4, mediaCount: Object.keys(mediaMap || {}).length });
+        tx.objectStore('decks').put({ id: deckId, ...meta, timestamp: Date.now(), version: 5, mediaCount: Object.keys(mediaMap || {}).length });
         const cardStore = tx.objectStore('cards');
         cards.forEach(c => {
           const origId = c.originalId || c.id;
@@ -2614,7 +2660,8 @@
             try {
               const pureName = item.fileName || (item.name.startsWith(prefix) ? item.name.slice(prefix.length) : item.name);
               const cleanPure = decodeURIComponent(pureName).trim().replace(/^.*[\\\/]/, '');
-              const url = URL.createObjectURL(item.blob);
+              const decompBlob = await ensureDecompressedBlob(item.blob, cleanPure);
+              const url = URL.createObjectURL(decompBlob);
               inMemoryMediaCache.set(`${deckId}:::${cleanPure}`, url);
               inMemoryMediaCache.set(`${deckId}:::${cleanPure.toLowerCase()}`, url);
             } catch(err){}
@@ -3251,7 +3298,7 @@
 
       // Reveal Image Occlusion target masks
       try {
-        flipCard.querySelectorAll('.qshape, .io-box, .ashape, rect[class*="qshape"], rect[class*="ashape"], [data-cloze]').forEach(box => {
+        flipCard.querySelectorAll('.qshape, .io-box, rect[class*="qshape"], [data-cloze].active-mask').forEach(box => {
           box.classList.add('io-revealed');
         });
       } catch(e){}
@@ -3494,6 +3541,16 @@
 
       // Tap-to-flip support on front face when gestures are not dragging
       flipCard.addEventListener('click', (e) => {
+        // Toggle Masks Button Click
+        const toggleBtn = e.target.closest('#toggle, .io-toggle-masks-btn');
+        if (toggleBtn){
+          e.stopPropagation();
+          flipCard.querySelectorAll('#image-occlusion-wrapper, .image-occlusion-wrap, #image-occlusion-container').forEach(w => {
+            w.classList.toggle('io-masks-hidden');
+          });
+          return;
+        }
+
         // Image Occlusion Interactive Tap-to-Peek: tapping a mask toggles it
         const ioBox = e.target.closest('.qshape, .io-box, .ashape, rect[class*="shape"], rect[class*="io"]');
         if (ioBox){
@@ -4525,10 +4582,15 @@
         const f = zip.file(num);
         if (!f) return;
         try {
-          const blob = await f.async('blob');
+          let u8 = await f.async('uint8array');
+          if (u8 && u8.length >= 4 && u8[0] === 0x28 && u8[1] === 0xb5 && u8[2] === 0x2f && u8[3] === 0xfd){
+            u8 = decompressZstdIfNeeded(u8);
+          }
+          const cleanName = decodeURIComponent(realName);
+          const mime = getMimeTypeFromFilename(cleanName);
+          const blob = new Blob([u8], { type: mime });
           mediaBlobMap[realName] = blob;
           const url = URL.createObjectURL(blob);
-          const cleanName = decodeURIComponent(realName);
           mediaUrlMap[realName] = url;
           mediaUrlMap[cleanName] = url;
           mediaUrlMap[realName.toLowerCase()] = url;
@@ -4550,7 +4612,12 @@
         const baseName = fname.replace(/^.*[\\\/]/, '');
         if (!mediaBlobMap[baseName] && /\.(png|jpe?g|gif|webp|svg|bmp|mp3|wav|ogg|m4a)$/i.test(fname)) {
           try {
-            const blob = await zip.files[fname].async('blob');
+            let u8 = await zip.files[fname].async('uint8array');
+            if (u8 && u8.length >= 4 && u8[0] === 0x28 && u8[1] === 0xb5 && u8[2] === 0x2f && u8[3] === 0xfd){
+              u8 = decompressZstdIfNeeded(u8);
+            }
+            const mime = getMimeTypeFromFilename(baseName);
+            const blob = new Blob([u8], { type: mime });
             mediaBlobMap[baseName] = blob;
             const url = URL.createObjectURL(blob);
             mediaUrlMap[baseName] = url;
@@ -4860,6 +4927,109 @@
         });
       }
 
+      // Universal Image Occlusion parser supporting:
+      // 1. Anki 23.10+ / 24+ Native Image Occlusion notes with {{c1::image-occlusion:rect:...}} and <canvas id="image-occlusion-canvas">
+      // 2. Anki 2.0 / AnKing SVG overlay notes (<svg><rect class="qshape">...</svg>)
+      function renderImageOcclusionOverlay(html, cardOrd, isBack, fieldMap = {}){
+        if (!html) return '';
+        let res = html;
+
+        // 1. Native Anki Image Occlusion (Anki 23.10+ / 24+)
+        const occlusionField = (fieldMap && typeof getFieldValue === 'function' ? getFieldValue(fieldMap, 'Occlusion') : (fieldMap ? fieldMap['Occlusion'] : '')) || '';
+        if (occlusionField && /image-occlusion:rect/i.test(occlusionField)){
+          const clozeRegex = /{{c(\d+)::(image-occlusion:[^}]+)}}/g;
+          let m;
+          const rects = [];
+          while ((m = clozeRegex.exec(occlusionField)) !== null){
+            rects.push({ cNum: parseInt(m[1], 10), spec: m[2] });
+          }
+
+          if (rects.length > 0){
+            const targetNum = cardOrd + 1;
+            const rectSvgElements = [];
+
+            for (const { cNum, spec } of rects){
+              const parts = spec.split(':');
+              const props = {};
+              for (let i = 2; i < parts.length; i++){
+                const eqIdx = parts[i].indexOf('=');
+                if (eqIdx !== -1){
+                  const k = parts[i].substring(0, eqIdx);
+                  const v = parseFloat(parts[i].substring(eqIdx + 1));
+                  if (!isNaN(v)) props[k] = v;
+                }
+              }
+
+              const x = (props.left !== undefined ? props.left : 0) * 1000;
+              const y = (props.top !== undefined ? props.top : 0) * 1000;
+              const w = (props.width !== undefined ? props.width : 0) * 1000;
+              const h = (props.height !== undefined ? props.height : 0) * 1000;
+
+              let transformAttr = '';
+              if (props.angle !== undefined){
+                let deg = props.angle;
+                if (deg > 360) deg = deg / 100;
+                const cx = x + w / 2;
+                const cy = y + h / 2;
+                transformAttr = ` transform="rotate(${deg} ${cx.toFixed(1)} ${cy.toFixed(1)})"`;
+              }
+
+              const isTarget = cNum === targetNum;
+              let cls = 'ashape';
+              if (isTarget){
+                cls = isBack ? 'qshape io-box io-revealed' : 'qshape io-box';
+              }
+              rectSvgElements.push(
+                `<rect class="${cls}" x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${w.toFixed(1)}" height="${h.toFixed(1)}" rx="6"${transformAttr} />`
+              );
+            }
+
+            const overlaySvg = `<svg viewBox="0 0 1000 1000" preserveAspectRatio="none" style="position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none;" role="img" aria-label="Anatomical Image Occlusion Overlay">${rectSvgElements.join('')}</svg>`;
+
+            if (res.includes('image-occlusion-wrapper') || res.includes('Anatomical Image Occlusion Overlay')){
+              // Overlay already synthesized from {{FrontSide}}
+              if (isBack){
+                res = res.replace(/class=["']([^"']*\b(?:qshape|io-box)\b[^"']*)["']/gi, 'class="$1 io-revealed"');
+              }
+            } else if (res.includes('image-occlusion-container')){
+              res = res.replace(/<div\b[^>]*\bid=["']image-occlusion-container["'][^>]*>/i, '<div id="image-occlusion-wrapper" class="image-occlusion-wrap">');
+              res = res.replace(/<canvas\b[^>]*\bid=["']image-occlusion-canvas["'][^>]*><\/canvas>/i, overlaySvg);
+            } else if (res.includes('image-occlusion-canvas')){
+              res = res.replace(/<canvas\b[^>]*\bid=["']image-occlusion-canvas["'][^>]*><\/canvas>/i, overlaySvg);
+            } else if (/<img\b/i.test(res)){
+              res = res.replace(/(<img\b[^>]*>)/i, `<div id="image-occlusion-wrapper" class="image-occlusion-wrap">$1${overlaySvg}</div>`);
+            }
+
+            res = res.replace(/<div id="err"[^>]*>[\s\S]*?<\/div>/gi, '');
+            res = res.replace(/<canvas\b[^>]*>[\s\S]*?<\/canvas>/gi, '');
+
+            if (res.includes('id="toggle"') || res.includes('id=\'toggle\'')){
+              res = res.replace(/<button\b[^>]*\bid=["']toggle["'][^>]*>([\s\S]*?)<\/button>/gi, '<button type="button" id="toggle" class="io-toggle-masks-btn">$1</button>');
+            }
+
+            return res;
+          }
+        }
+
+        // 2. Legacy / AnKing SVG Overlay Image Occlusion
+        res = res.replace(/<svg\b([^>]*?)>/gi, (match, attrs) => {
+          if (!/viewBox=/i.test(attrs)){
+            const wMatch = attrs.match(/\bwidth=["']?(\d+(?:\.\d+)?)/i);
+            const hMatch = attrs.match(/\bheight=["']?(\d+(?:\.\d+)?)/i);
+            if (wMatch && hMatch){
+              return `<svg ${attrs} viewBox="0 0 ${wMatch[1]} ${hMatch[1]}" preserveAspectRatio="xMidYMid meet">`;
+            }
+          }
+          return match;
+        });
+
+        // If on back face, reveal target occlusion box
+        if (isBack){
+          res = res.replace(/class=["']([^"']*\b(?:qshape|io-box)\b[^"']*)["']/gi, 'class="$1 io-revealed"');
+        }
+        return res;
+      }
+
       // Universal Anki Template Compiler supporting conditionals, spaces, filters & cleanups
       function compileAnkiTemplate(templateStr, fieldMap, defaultFront = '', cardOrd = 0, isBack = false){
         if (!templateStr) return '';
@@ -4950,12 +5120,8 @@
         out = out.replace(/{{(?![c\d]+::)[^}]+}}/g, '');
 
         // 7. Image Occlusion (IO) Enhanced & Native Overlays
-        if (out.includes('qshape') || out.includes('ashape') || out.includes('image-occlusion') || out.includes('io-wrapper')) {
-          if (typeof renderImageOcclusionOverlay === 'function') {
-            out = renderImageOcclusionOverlay(out, cardOrd, isBack);
-          } else if (isBack) {
-            out = out.replace(/class=["']([^"']*\b(?:qshape|ashape|io-box)\b[^"']*)["']/gi, 'class="$1 io-revealed"');
-          }
+        if (out.includes('qshape') || out.includes('ashape') || out.includes('image-occlusion') || out.includes('io-wrapper') || (fieldMap && (fieldMap['Occlusion'] || fieldMap['occlusion']))) {
+          out = renderImageOcclusionOverlay(out, cardOrd, isBack, fieldMap);
         }
 
         return out;
@@ -5296,12 +5462,15 @@
       });
       // Check if cache was generated by old schema parser where Memo+ lost PDF Reference
       const hasStaleEmptyImages = cached && cached.cards && cached.cards.length > 50 && !cached.cards.some(c => ((c.front || '') + (c.back || '')).includes('<img'));
-      // Self-healing check: does the cached deck expect images but has ZERO live media blobs in vault?
       const deckExpectsImages = cached && cached.cards && cached.cards.some(c => ((c.front || '') + (c.back || '')).includes('<img'));
       const hasMissingMediaBlobs = deckExpectsImages && inMemoryMediaCache.size === 0 && Boolean(targetUrl);
-      const isLegacyUnscopedVersion = cached && cached.meta && (!cached.meta.version || cached.meta.version < 4) && deckExpectsImages && Boolean(targetUrl);
+      const isLegacyUnscopedVersion = cached && cached.meta && (!cached.meta.version || cached.meta.version < 5) && Boolean(targetUrl);
+      const hasUnrenderedIoCanvas = cached && cached.cards && cached.cards.some(c => 
+        (c.front && c.front.includes('image-occlusion-canvas')) || 
+        (c.back && c.back.includes('image-occlusion-canvas'))
+      );
 
-      if (cached && cached.cards && cached.cards.length && !hasCorruptedTags && !isDummyWarning && !hasUnresolvedImages && !hasStaleEmptyImages && !hasMissingMediaBlobs && !isLegacyUnscopedVersion){
+      if (cached && cached.cards && cached.cards.length && !hasCorruptedTags && !isDummyWarning && !hasUnresolvedImages && !hasStaleEmptyImages && !hasMissingMediaBlobs && !isLegacyUnscopedVersion && !hasUnrenderedIoCanvas){
         hideClinicalDeckLoader();
         deckTitle.textContent = deckTitleParam || cached.meta.title || targetTitle || 'Clinical Flashcards';
         deckSub.textContent = `${cached.cards.length} cards · Offline Synaptic Vault`;
