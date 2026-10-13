@@ -691,22 +691,78 @@
   }
 
   /* Image Occlusion (IO) Overlays */
-  .image-occlusion-wrap{
-    position:relative; display:inline-block; max-width:100%; margin:10px auto;
+  #image-occlusion-wrapper,
+  .image-occlusion-wrapper,
+  .image-occlusion-wrap,
+  #image-occlusion-container,
+  #io-wrapper,
+  .io-wrapper {
+    position: relative !important;
+    display: inline-block !important;
+    max-width: 100% !important;
+    margin: 10px auto !important;
+    line-height: 0 !important;
+    vertical-align: middle !important;
+    user-select: none !important;
+    -webkit-user-select: none !important;
   }
-  .io-box, .qshape {
-    fill: #ff5252 !important;
-    fill-opacity: 0.88 !important;
+  #image-occlusion-wrapper > img,
+  .image-occlusion-wrapper > img,
+  .image-occlusion-wrap > img,
+  #image-occlusion-container > img,
+  #io-wrapper > img,
+  .io-wrapper > img,
+  #io-original {
+    display: block !important;
+    max-width: 100% !important;
+    height: auto !important;
+    margin: 0 auto !important;
+    pointer-events: none !important;
+  }
+  #image-occlusion-wrapper > svg,
+  .image-occlusion-wrapper > svg,
+  .image-occlusion-wrap > svg,
+  #image-occlusion-container > svg,
+  #io-wrapper > svg,
+  .io-wrapper > svg,
+  #io-overlay svg {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    pointer-events: auto !important;
+  }
+  .io-box, .qshape, rect[class*="qshape"], [data-cloze].active-mask {
+    fill: #ff3b30 !important;
+    fill-opacity: 0.90 !important;
     stroke: #ff1744 !important;
     stroke-width: 2px !important;
-    cursor: pointer;
-    transition: all .2s ease;
+    cursor: pointer !important;
+    transition: fill-opacity .2s ease, stroke .2s ease, fill .2s ease !important;
   }
-  .io-revealed, .flip-face.face-back .io-box, .flip-face.face-back .qshape {
-    fill: #10b981 !important;
-    fill-opacity: 0.22 !important;
+  .ashape:not(.io-revealed), rect[class*="ashape"]:not(.io-revealed), .group-other {
+    fill: #f59e0b !important;
+    fill-opacity: 0.85 !important;
+    stroke: #d97706 !important;
+    stroke-width: 1.5px !important;
+    cursor: pointer !important;
+  }
+  .io-revealed,
+  .flip-face.face-back .io-box,
+  .flip-face.face-back .qshape,
+  .flip-face.face-back rect[class*="qshape"],
+  .flip-face.face-back .ashape,
+  .flip-face.face-back rect[class*="ashape"] {
+    fill: rgba(16, 185, 129, 0.12) !important;
+    fill-opacity: 0.12 !important;
     stroke: #10b981 !important;
-    stroke-dasharray: 4 2;
+    stroke-width: 2px !important;
+    stroke-dasharray: 4 2 !important;
+    cursor: pointer !important;
+  }
+  .io-box:hover, .qshape:hover {
+    filter: brightness(1.15) !important;
   }
   /* Audio Scrubber Visual Player Bar */
   .clinical-audio-player {
@@ -3116,7 +3172,7 @@
 
       // Reveal Image Occlusion target masks
       try {
-        flipCard.querySelectorAll('.qshape, .io-box').forEach(box => {
+        flipCard.querySelectorAll('.qshape, .io-box, .ashape, rect[class*="qshape"], rect[class*="ashape"], [data-cloze]').forEach(box => {
           box.classList.add('io-revealed');
         });
       } catch(e){}
@@ -3359,6 +3415,13 @@
 
       // Tap-to-flip support on front face when gestures are not dragging
       flipCard.addEventListener('click', (e) => {
+        // Image Occlusion Interactive Tap-to-Peek: tapping a mask toggles it
+        const ioBox = e.target.closest('.qshape, .io-box, .ashape, rect[class*="shape"], rect[class*="io"]');
+        if (ioBox){
+          e.stopPropagation();
+          ioBox.classList.toggle('io-revealed');
+          return;
+        }
         if (isDragging) return;
         if (e.target.closest('button, audio, a, input, select, summary, .anki-hint-details, .clinical-diagram-img')) return;
         if (!isFlipped){
@@ -4806,6 +4869,15 @@
 
         // 6. Final pass: remove any stray unparsed {{...}} tags that are not cloze markers
         out = out.replace(/{{(?![c\d]+::)[^}]+}}/g, '');
+
+        // 7. Image Occlusion (IO) Enhanced & Native Overlays
+        if (out.includes('qshape') || out.includes('ashape') || out.includes('image-occlusion') || out.includes('io-wrapper')) {
+          if (typeof renderImageOcclusionOverlay === 'function') {
+            out = renderImageOcclusionOverlay(out, cardOrd, isBack);
+          } else if (isBack) {
+            out = out.replace(/class=["']([^"']*\b(?:qshape|ashape|io-box)\b[^"']*)["']/gi, 'class="$1 io-revealed"');
+          }
+        }
 
         return out;
       }

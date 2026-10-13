@@ -216,3 +216,91 @@ html[data-theme="brown"] {
     scroll-behavior: auto !important;
   }
 }
+
+/* =============================================================================
+   UNIVERSAL IMAGE OCCLUSION (IO) STYLING & POSITIONING ENGINE
+   ============================================================================= */
+#image-occlusion-wrapper,
+.image-occlusion-wrapper,
+.image-occlusion-wrap,
+#image-occlusion-container,
+#io-wrapper,
+.io-wrapper {
+  position: relative !important;
+  display: inline-block !important;
+  max-width: 100% !important;
+  margin: 10px auto !important;
+  line-height: 0 !important;
+  vertical-align: middle !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+}
+
+#image-occlusion-wrapper > img,
+.image-occlusion-wrapper > img,
+.image-occlusion-wrap > img,
+#image-occlusion-container > img,
+#io-wrapper > img,
+.io-wrapper > img,
+#io-original {
+  display: block !important;
+  max-width: 100% !important;
+  height: auto !important;
+  margin: 0 auto !important;
+  pointer-events: none !important;
+}
+
+#image-occlusion-wrapper > svg,
+.image-occlusion-wrapper > svg,
+.image-occlusion-wrap > svg,
+#image-occlusion-container > svg,
+#io-wrapper > svg,
+.io-wrapper > svg,
+#io-overlay svg {
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  pointer-events: auto !important;
+}
+
+/* Question Occlusion Mask (Active Target) - High-Yield Medical Red */
+.io-box, .qshape, rect[class*="qshape"], [data-cloze].active-mask {
+  fill: #ff3b30 !important;
+  fill-opacity: 0.90 !important;
+  stroke: #ff1744 !important;
+  stroke-width: 2px !important;
+  cursor: pointer !important;
+  transition: fill-opacity 0.2s ease, stroke 0.2s ease, fill 0.2s ease !important;
+}
+
+/* Other Masks in 'Hide All, Guess One' Mode - Medical Amber */
+.ashape:not(.io-revealed), rect[class*="ashape"]:not(.io-revealed), .group-other {
+  fill: #f59e0b !important;
+  fill-opacity: 0.85 !important;
+  stroke: #d97706 !important;
+  stroke-width: 1.5px !important;
+  cursor: pointer !important;
+}
+
+/* Revealed Answer Mask - Crisp Medical Translucent Emerald with Dashed Outline */
+.io-revealed,
+.flip-face.face-back .io-box,
+.flip-face.face-back .qshape,
+.flip-face.face-back rect[class*="qshape"],
+.flip-face.face-back .ashape,
+.flip-face.face-back rect[class*="ashape"] {
+  fill: rgba(16, 185, 129, 0.12) !important;
+  fill-opacity: 0.12 !important;
+  stroke: #10b981 !important;
+  stroke-width: 2px !important;
+  stroke-dasharray: 4 2 !important;
+  cursor: pointer !important;
+}
+
+/* Tap-to-Peek hover & active responsiveness */
+.io-box:hover, .qshape:hover {
+  filter: brightness(1.15) !important;
+}
+

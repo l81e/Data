@@ -140,11 +140,25 @@
    */
   function renderImageOcclusionOverlay(html, cardOrd, isBack) {
     if (!html) return '';
+    let res = html;
+
+    // Ensure responsive SVG scaling: if svg has width and height attributes but no viewBox, inject viewBox
+    res = res.replace(/<svg\b([^>]*?)>/gi, (match, attrs) => {
+      if (!/viewBox=/i.test(attrs)) {
+        const wMatch = attrs.match(/\bwidth=["']?(\d+(?:\.\d+)?)/i);
+        const hMatch = attrs.match(/\bheight=["']?(\d+(?:\.\d+)?)/i);
+        if (wMatch && hMatch) {
+          return `<svg ${attrs} viewBox="0 0 ${wMatch[1]} ${hMatch[1]}" preserveAspectRatio="xMidYMid meet">`;
+        }
+      }
+      return match;
+    });
+
     // If on back face, reveal target occlusion box
     if (isBack) {
-      return html.replace(/class=["']([^"']*\bqshape\b[^"']*)["']/gi, 'class="$1 io-revealed"');
+      res = res.replace(/class=["']([^"']*\b(?:qshape|ashape|io-box)\b[^"']*)["']/gi, 'class="$1 io-revealed"');
     }
-    return html;
+    return res;
   }
 
   /**

@@ -1659,10 +1659,14 @@ async function suite41(){
   const compiledWithout = parser.compileAnkiTemplate(tmpl, { Header: '' });
   assert(compiledWithout.includes('Default') && !compiledWithout.includes('Cardiology'), 'compileAnkiTemplate renders inverted conditional');
 
-  // Test Image Occlusion Overlay class assignment
+  // Test Image Occlusion Overlay class assignment and CSS positioning
   const ioSvg = '<svg><rect class="qshape" width="100" height="50"/></svg>';
   const ioBack = parser.renderImageOcclusionOverlay(ioSvg, 0, true);
   assert(ioBack.includes('io-revealed'), 'renderImageOcclusionOverlay adds io-revealed class on card reveal');
+  const themeCss = fs.readFileSync('css/theme.css', 'utf-8');
+  assert(themeCss.includes('#image-occlusion-wrapper') && themeCss.includes('position: relative !important'), 'theme.css enforces relative positioning for IO wrapper');
+  assert(themeCss.includes('#image-occlusion-wrapper > svg') && themeCss.includes('position: absolute !important'), 'theme.css enforces absolute overlay for IO SVG on top of image');
+  assert(flashHtml.includes('Image Occlusion Interactive Tap-to-Peek'), 'flash.html supports interactive tap-to-peek mask toggling');
 
   // 3. Sovereign Vault Media Scoping & Zero-Collision Keys
   const vaultModule = await import('./js/vault.js');
