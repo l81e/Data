@@ -227,11 +227,12 @@ html[data-theme="brown"] {
 #io-wrapper,
 .io-wrapper {
   position: relative !important;
-  display: inline-block !important;
-  max-width: 100% !important;
+  display: block !important;
+  width: 100% !important;
+  max-width: 540px !important;
   margin: 10px auto !important;
   line-height: 0 !important;
-  vertical-align: middle !important;
+  text-align: center !important;
   user-select: none !important;
   -webkit-user-select: none !important;
 }
@@ -250,23 +251,45 @@ html[data-theme="brown"] {
   pointer-events: none !important;
 }
 
+/* Standalone SVG (no img sibling): stays in normal flow with responsive sizing */
 #image-occlusion-wrapper > svg,
 .image-occlusion-wrapper > svg,
 .image-occlusion-wrap > svg,
 #image-occlusion-container > svg,
 #io-wrapper > svg,
-.io-wrapper > svg,
+.io-wrapper > svg {
+  position: relative !important;
+  display: block !important;
+  width: 100% !important;
+  max-width: 520px !important;
+  max-height: 280px !important;
+  height: auto !important;
+  margin: 0 auto !important;
+  pointer-events: auto !important;
+}
+
+/* Overlaid SVG (when an <img> exists): overlays strictly on top of the base image */
+#image-occlusion-wrapper > img ~ svg,
+.image-occlusion-wrapper > img ~ svg,
+.image-occlusion-wrap > img ~ svg,
+#image-occlusion-container > img ~ svg,
+#io-wrapper > img ~ svg,
+.io-wrapper > img ~ svg,
+#image-occlusion-wrapper:has(> img) > svg,
+.image-occlusion-wrapper:has(> img) > svg,
+.image-occlusion-wrap:has(> img) > svg,
 #io-overlay svg {
   position: absolute !important;
   top: 0 !important;
   left: 0 !important;
   width: 100% !important;
   height: 100% !important;
+  max-height: none !important;
   pointer-events: auto !important;
 }
 
 /* Question Occlusion Mask (Active Target) - High-Yield Medical Red */
-.io-box, .qshape, rect[class*="qshape"], [data-cloze].active-mask {
+.io-box:not(.io-revealed), .qshape:not(.io-revealed), rect[class*="qshape"]:not(.io-revealed), [data-cloze].active-mask:not(.io-revealed) {
   fill: #ff3b30 !important;
   fill-opacity: 0.90 !important;
   stroke: #ff1744 !important;
