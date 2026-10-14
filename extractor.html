@@ -3,18 +3,20 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>PDF Image Extractor</title>
+<title>PDF Image Extractor + AI</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://js.puter.com/v2/"></script>
 <style>
   :root {
+    color-scheme: light dark;
     --bg: #f6f7f9; --card: #ffffff; --text: #1c2430; --muted: #6b7684;
-    --accent: #2563eb; --border: #dfe3e8;
+    --accent: #2563eb; --border: #dfe3e8; --danger: #dc2626; --success: #16a34a; --warn: #d97706;
   }
   @media (prefers-color-scheme: dark) {
     :root {
       --bg: #111418; --card: #1b2027; --text: #e8ecf1; --muted: #93a0ae;
-      --accent: #5b8cff; --border: #2c343f;
+      --accent: #5b8cff; --border: #2c343f; --danger: #f06a6a; --success: #4cc27a; --warn: #f0a24a;
     }
   }
   * { box-sizing: border-box; }
@@ -22,7 +24,7 @@
     margin: 0; padding: 20px; background: var(--bg); color: var(--text);
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
   }
-  main { max-width: 900px; margin: 0 auto; }
+  main { max-width: 980px; margin: 0 auto; }
   h1 { margin: 0 0 4px; font-size: 24px; }
   .sub { margin: 0 0 20px; color: var(--muted); font-size: 14px; }
   .drop {
@@ -35,13 +37,13 @@
   .drop strong { display: block; font-size: 16px; margin-bottom: 4px; }
   .drop span { color: var(--muted); font-size: 13px; word-break: break-all; }
   .options {
-    display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
     gap: 12px; margin: 16px 0;
   }
   label.opt { font-size: 13px; color: var(--muted); display: flex; flex-direction: column; gap: 6px; }
-  select, input[type=number] {
+  select, input[type=number], input[type=text], input[type=password] {
     padding: 10px; border-radius: 10px; border: 1px solid var(--border);
-    background: var(--card); color: var(--text); font-size: 15px;
+    background: var(--card); color: var(--text); font-size: 15px; width: 100%;
   }
   .actions { display: flex; gap: 10px; flex-wrap: wrap; }
   button {
@@ -49,33 +51,75 @@
     background: var(--accent); color: #fff; cursor: pointer;
   }
   button.secondary { background: var(--card); color: var(--text); border: 1px solid var(--border); }
+  button.danger { background: var(--danger); color: #fff; }
+  button.sm { padding: 7px 10px; font-size: 12px; border-radius: 8px; }
   button:disabled { opacity: .5; cursor: not-allowed; }
   progress { width: 100%; height: 8px; margin-top: 16px; display: none; }
   #status { margin-top: 10px; font-size: 14px; color: var(--muted); min-height: 20px; }
-  #status.error { color: #dc2626; }
+  #status.error { color: var(--danger); }
+
+  .panel {
+    background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+    padding: 14px 16px; margin-top: 18px;
+  }
+  .panel summary { cursor: pointer; font-weight: 600; font-size: 15px; }
+  .checks { display: flex; flex-direction: column; gap: 9px; margin: 6px 0 14px; font-size: 14px; }
+  .checks label { display: flex; gap: 8px; align-items: flex-start; cursor: pointer; }
+  .checks input { margin-top: 3px; }
+  .hint { font-size: 12px; color: var(--muted); line-height: 1.5; margin: 10px 0 0; }
+  .hint a { color: var(--accent); }
+
+  .toolbar {
+    display: none; flex-wrap: wrap; gap: 10px 14px; align-items: center;
+    justify-content: space-between; margin-top: 20px;
+  }
+  .toolbar .left, .toolbar .right { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  #summary { font-size: 14px; font-weight: 600; }
+  .toolbar select { width: auto; padding: 8px 10px; font-size: 14px; }
+  .toolbar label.inline { font-size: 13px; color: var(--muted); display: flex; gap: 6px; align-items: center; cursor: pointer; }
+
   .grid {
-    display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-    gap: 12px; margin-top: 18px;
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+    gap: 12px; margin-top: 14px;
   }
   .card {
-    background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+    background: var(--card); border: 2px solid var(--border); border-radius: 12px;
     padding: 10px; display: flex; flex-direction: column; gap: 8px;
   }
+  .card.flagged { border-color: var(--danger); }
+  .card.removed { opacity: .45; }
   .card img {
-    width: 100%; height: 130px; object-fit: contain; border-radius: 8px;
+    width: 100%; height: 140px; object-fit: contain; border-radius: 8px;
     background: repeating-conic-gradient(#8883 0% 25%, transparent 0% 50%) 50% / 14px 14px;
   }
-  .cap { font-size: 12px; color: var(--muted); word-break: break-all; }
-  .card a {
-    text-align: center; padding: 8px; border-radius: 8px; font-size: 13px; font-weight: 600;
-    background: var(--accent); color: #fff; text-decoration: none;
+  .badge {
+    align-self: flex-start; font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 99px;
   }
+  .b-ok { background: color-mix(in srgb, var(--success) 18%, transparent); color: var(--success); }
+  .b-bad { background: color-mix(in srgb, var(--danger) 18%, transparent); color: var(--danger); }
+  .b-info { background: color-mix(in srgb, var(--accent) 18%, transparent); color: var(--accent); }
+  .b-muted { background: #8883; color: var(--muted); }
+  .label-input { padding: 7px 9px; font-size: 13px; border-radius: 8px; }
+  .reason { font-size: 12px; color: var(--muted); line-height: 1.45; }
+  .reason.err { color: var(--danger); }
+  .cap { font-size: 11px; color: var(--muted); word-break: break-all; }
+  .btns { display: flex; flex-wrap: wrap; gap: 6px; }
+
+  #toast {
+    position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%);
+    background: var(--card); color: var(--text); border: 1px solid var(--border);
+    padding: 11px 16px; border-radius: 10px; font-size: 14px; max-width: 90vw;
+    box-shadow: 0 8px 28px rgba(0,0,0,.3); display: none; z-index: 50;
+  }
+  #toast.show { display: block; }
+  #toast.error { border-left: 4px solid var(--danger); }
+  #toast.success { border-left: 4px solid var(--success); }
 </style>
 </head>
 <body>
 <main>
-  <h1>PDF Image Extractor</h1>
-  <p class="sub">Runs entirely in your browser. Your PDF is never uploaded.</p>
+  <h1>PDF Image Extractor + AI</h1>
+  <p class="sub">Extraction runs in your browser. Images are only sent anywhere if you use the AI tools.</p>
 
   <label class="drop" id="drop">
     <input type="file" id="file" accept="application/pdf,.pdf">
@@ -104,42 +148,101 @@
 
   <div class="actions">
     <button id="runBtn" disabled>Extract</button>
-    <button id="zipBtn" class="secondary" disabled>Download all (ZIP)</button>
+    <button id="zipBtn" class="secondary" disabled>Download kept (ZIP)</button>
   </div>
 
   <progress id="bar" value="0" max="1"></progress>
   <div id="status"></div>
+
+  <details class="panel" id="aiPanel" open>
+    <summary>AI tools</summary>
+    <div class="options">
+      <label class="opt">Provider
+        <select id="aiProvider">
+          <option value="puter" selected>Puter.js (no key needed)</option>
+          <option value="openrouter">OpenRouter (bring your own key)</option>
+        </select>
+      </label>
+      <label class="opt" id="modelFieldPuter">Model via Puter.js
+        <select id="aiModelPuter">
+          <option value="anthropic/claude-opus-4-8">Claude Opus 4.8</option>
+          <option value="anthropic/claude-sonnet-4-6" selected>Claude Sonnet 4.6</option>
+          <option value="openai/gpt-5.5">GPT-5.5</option>
+          <option value="google/gemini-3.5-flash">Gemini 3.5 Flash</option>
+          <option value="deepseek/deepseek-v4-pro">DeepSeek V4 Pro</option>
+        </select>
+      </label>
+      <label class="opt" id="modelFieldOpenrouter" style="display:none">Model via OpenRouter
+        <select id="aiModelOpenrouter">
+          <option value="~openai/gpt-latest" selected>GPT (latest)</option>
+          <option value="~anthropic/claude-sonnet-latest">Claude Sonnet (latest)</option>
+          <option value="anthropic/claude-opus-4.8">Claude Opus 4.8</option>
+          <option value="google/gemini-3.5-flash">Gemini 3.5 Flash</option>
+          <option value="deepseek/deepseek-v4-pro">DeepSeek V4 Pro</option>
+          <option value="meta-llama/llama-3.1-8b-instruct:free">Llama 3.1 8B Instruct (free, rate-limited)</option>
+          <option value="meta-llama/llama-3.1-8b-instruct">Llama 3.1 8B Instruct (cheap)</option>
+          <option value="deepseek/deepseek-v4-flash">DeepSeek V4 Flash (cheap, fast)</option>
+          <option value="google/gemini-2.5-flash-lite">Gemini 2.5 Flash-Lite (cheap, no reasoning overhead)</option>
+        </select>
+      </label>
+      <label class="opt" id="keyFieldOpenrouter" style="display:none">OpenRouter API Key
+        <input id="orKey" type="password" placeholder="sk-or-v1-..." autocomplete="off">
+      </label>
+    </div>
+
+    <div class="checks">
+      <label><input type="checkbox" id="optLabel" checked><span>Suggest a topic label for each image</span></label>
+      <label><input type="checkbox" id="optSlides" checked><span>Flag images that are a whole slide pasted as a picture (suggest removal)</span></label>
+      <label><input type="checkbox" id="optDecor"><span>Also flag logos / decorative images (suggest removal)</span></label>
+      <label><input type="checkbox" id="optContext" checked><span>Send the page's text to the AI as extra context</span></label>
+    </div>
+
+    <div class="actions">
+      <button id="analyzeBtn" disabled>Analyze all with AI</button>
+      <button id="stopBtn" class="secondary" style="display:none">Stop</button>
+    </div>
+    <p class="hint">The AI only <strong>suggests</strong>. Flagged images get a red border, and nothing is removed until you tap Remove (or "Remove all flagged"). Removed images can be restored from the filter menu. Pick a model that can read images (Claude, GPT, Gemini). DeepSeek and small Llama models may fail on images. Puter may ask you to sign in the first time. OpenRouter key: <a href="https://openrouter.ai/keys" target="_blank" rel="noopener">openrouter.ai/keys</a> (saved only in this browser).</p>
+  </details>
+
+  <div class="toolbar" id="toolbar">
+    <div class="left">
+      <span id="summary"></span>
+      <select id="filter">
+        <option value="active">Show: all kept</option>
+        <option value="flagged">Show: flagged by AI</option>
+        <option value="removed">Show: removed</option>
+      </select>
+    </div>
+    <div class="right">
+      <label class="inline"><input type="checkbox" id="useLabels" checked> Name files using AI labels</label>
+      <button id="removeFlaggedBtn" class="danger sm" disabled>Remove all flagged</button>
+    </div>
+  </div>
+
   <div class="grid" id="grid"></div>
 </main>
+<div id="toast"></div>
 
 <script>
 const BASE = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/";
+const OPENROUTER_ENDPOINT = "https://openrouter.ai/api/v1/chat/completions";
 const $ = id => document.getElementById(id);
+
 let file = null, results = [], workerPromise = null;
+let isAnalyzing = false, stopFlag = false, toastTimer = null;
 
-/* ---------- UI wiring ---------- */
-$("file").addEventListener("change", e => setFile(e.target.files[0]));
-$("mode").addEventListener("change", () => {
-  const pages = $("mode").value === "pages";
-  $("minWrap").style.display = pages ? "none" : "";
-  $("scaleWrap").style.display = pages ? "" : "none";
-});
-const drop = $("drop");
-["dragenter", "dragover"].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add("over"); }));
-["dragleave", "drop"].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove("over"); }));
-drop.addEventListener("drop", e => setFile(e.dataTransfer.files[0]));
-$("runBtn").addEventListener("click", run);
-$("zipBtn").addEventListener("click", downloadZip);
+/* ---------- Tiny helpers ---------- */
+function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const pad = (n, len = 3) => String(n).padStart(len, "0");
+const baseName = () => file ? file.name.replace(/\.pdf$/i, "") : "pdf";
+const toBlob = c => new Promise(res => c.toBlob(res, "image/png"));
 
-function setFile(f) {
-  if (!f) return;
-  if (f.type !== "application/pdf" && !f.name.toLowerCase().endsWith(".pdf")) {
-    return setStatus("Please choose a PDF file.", true);
-  }
-  file = f;
-  $("fileName").textContent = f.name;
-  $("runBtn").disabled = false;
-  setStatus("");
+function slug(s) {
+  const out = String(s).toLowerCase().normalize("NFKD")
+    .replace(/[^\p{L}\p{N}]+/gu, "-").replace(/^-+|-+$/g, "").slice(0, 60);
+  return out || "image";
 }
 function setStatus(msg, isError) {
   const s = $("status");
@@ -150,6 +253,78 @@ function setProgress(v) {
   const b = $("bar");
   b.style.display = v == null ? "none" : "block";
   if (v != null) b.value = v;
+}
+function toast(msg, type) {
+  const el = $("toast");
+  el.textContent = msg;
+  el.className = "show " + (type || "");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { el.className = ""; }, 3500);
+}
+function triggerDownload(url, name) {
+  const a = document.createElement("a");
+  a.href = url; a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+}
+
+/* ---------- UI wiring ---------- */
+(function init() {
+  const k = lsGet("patholytica_or_key"); if (k) $("orKey").value = k;
+  const p = lsGet("patholytica_ai_provider");
+  if (p === "openrouter" || p === "puter") $("aiProvider").value = p;
+  setSelectIfValid($("aiModelPuter"), lsGet("pdfx_model_puter"));
+  setSelectIfValid($("aiModelOpenrouter"), lsGet("pdfx_model_or"));
+  updateProviderVisibility();
+
+  $("orKey").addEventListener("change", e => lsSet("patholytica_or_key", e.target.value.trim()));
+  $("aiProvider").addEventListener("change", e => { lsSet("patholytica_ai_provider", e.target.value); updateProviderVisibility(); });
+  $("aiModelPuter").addEventListener("change", e => lsSet("pdfx_model_puter", e.target.value));
+  $("aiModelOpenrouter").addEventListener("change", e => lsSet("pdfx_model_or", e.target.value));
+
+  $("file").addEventListener("change", e => setFile(e.target.files[0]));
+  $("mode").addEventListener("change", () => {
+    const pages = $("mode").value === "pages";
+    $("minWrap").style.display = pages ? "none" : "";
+    $("scaleWrap").style.display = pages ? "" : "none";
+  });
+  const drop = $("drop");
+  ["dragenter", "dragover"].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add("over"); }));
+  ["dragleave", "drop"].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove("over"); }));
+  drop.addEventListener("drop", e => setFile(e.dataTransfer.files[0]));
+
+  $("runBtn").addEventListener("click", run);
+  $("zipBtn").addEventListener("click", downloadZip);
+  $("analyzeBtn").addEventListener("click", analyzeAll);
+  $("stopBtn").addEventListener("click", () => { stopFlag = true; setStatus("Stopping after the current image…"); });
+  $("removeFlaggedBtn").addEventListener("click", removeFlagged);
+  $("filter").addEventListener("change", applyFilter);
+  $("optSlides").addEventListener("change", repaintAll);
+  $("optDecor").addEventListener("change", repaintAll);
+  $("useLabels").addEventListener("change", repaintAll);
+})();
+
+function setSelectIfValid(sel, val) {
+  if (val && [...sel.options].some(o => o.value === val)) sel.value = val;
+}
+function updateProviderVisibility() {
+  const isOR = $("aiProvider").value === "openrouter";
+  $("modelFieldPuter").style.display = isOR ? "none" : "flex";
+  $("modelFieldOpenrouter").style.display = isOR ? "flex" : "none";
+  $("keyFieldOpenrouter").style.display = isOR ? "flex" : "none";
+}
+function getActiveModel() {
+  return $("aiProvider").value === "openrouter" ? $("aiModelOpenrouter").value : $("aiModelPuter").value;
+}
+
+function setFile(f) {
+  if (!f) return;
+  if (f.type !== "application/pdf" && !f.name.toLowerCase().endsWith(".pdf")) {
+    return setStatus("Please choose a PDF file.", true);
+  }
+  file = f;
+  $("fileName").textContent = f.name;
+  $("runBtn").disabled = false;
+  setStatus("");
 }
 
 /* ---------- PDF.js worker (loaded via blob so it works from a local file) ---------- */
@@ -165,35 +340,143 @@ function initWorker() {
   return workerPromise;
 }
 
-/* ---------- Helpers ---------- */
-const pad = (n, len = 3) => String(n).padStart(len, "0");
-const baseName = () => file.name.replace(/\.pdf$/i, "");
-const toBlob = c => new Promise(res => c.toBlob(res, "image/png"));
-
+/* ---------- Results + cards ---------- */
 function clearResults() {
   results.forEach(r => URL.revokeObjectURL(r.url));
   results = [];
   $("grid").innerHTML = "";
   $("zipBtn").disabled = true;
+  $("analyzeBtn").disabled = true;
+  $("toolbar").style.display = "none";
 }
 
-function addResult(name, blob, dims) {
-  const url = URL.createObjectURL(blob);
-  results.push({ name, blob, url });
+function isFlagged(r) {
+  if (r.removed || r.dismissed) return false;
+  return (r.category === "slide_screenshot" && $("optSlides").checked) ||
+         (r.category === "decorative" && $("optDecor").checked);
+}
 
+function fileNameFor(r) {
+  if ($("useLabels").checked && r.label) return r.base + "-" + pad(r.n) + "-" + slug(r.label) + ".png";
+  return r.base + "-" + (r.kind === "page" ? "page" : "img") + "-" + pad(r.n) + ".png";
+}
+
+function addResult(info) {
+  const r = Object.assign({
+    id: results.length + 1, label: "", category: null, reason: "",
+    state: "idle", error: null, removed: false, dismissed: false
+  }, info);
+  r.url = URL.createObjectURL(r.blob);
+  results.push(r);
+  createCard(r);
+}
+
+function mkBtn(text, cls, handler) {
+  const b = document.createElement("button");
+  b.className = cls; b.textContent = text;
+  b.addEventListener("click", handler);
+  return b;
+}
+
+function createCard(r) {
   const card = document.createElement("div");
-  card.className = "card";
   const im = new Image();
-  im.src = url; im.alt = name;
+  im.src = r.url; im.alt = "image " + r.n;
+
+  const badge = document.createElement("div");
+  const label = document.createElement("input");
+  label.type = "text"; label.className = "label-input";
+  label.placeholder = "Label (AI or type your own)";
+  label.addEventListener("input", () => { r.label = label.value.trim(); paintCard(r); });
+
+  const reason = document.createElement("div");
   const cap = document.createElement("div");
   cap.className = "cap";
-  cap.textContent = name + " · " + dims;
-  const a = document.createElement("a");
-  a.href = url; a.download = name; a.textContent = "Download";
-  card.append(im, cap, a);
+
+  const row = document.createElement("div");
+  row.className = "btns";
+  const bDl = mkBtn("Download", "secondary sm", () => triggerDownload(r.url, fileNameFor(r)));
+  const bAI = mkBtn("✨ AI", "secondary sm", async () => {
+    if (!checkAIReady(r)) return;
+    const ok = await analyzeOne(r);
+    if (!ok && r.error) toast("AI error: " + r.error, "error");
+  });
+  const bKeep = mkBtn("Keep", "secondary sm", () => { r.dismissed = true; paintCard(r); refreshAll(); });
+  const bRm = mkBtn("Remove", "danger sm", () => { r.removed = !r.removed; paintCard(r); refreshAll(); });
+  row.append(bDl, bAI, bKeep, bRm);
+
+  card.append(im, badge, label, reason, cap, row);
+  r.el = card;
+  r.refs = { badge, label, reason, cap, bAI, bKeep, bRm };
   $("grid").appendChild(card);
+  paintCard(r);
 }
 
+function paintCard(r) {
+  const f = isFlagged(r);
+  r.el.className = "card" + (r.removed ? " removed" : "") + (f ? " flagged" : "");
+  const R = r.refs;
+
+  // badge
+  let text = "", cls = "badge b-muted";
+  const catName = r.category === "slide_screenshot" ? "Slide screenshot" : r.category === "decorative" ? "Logo / decoration" : "";
+  if (r.removed) { text = "Removed"; }
+  else if (r.state === "analyzing") { text = "Analyzing…"; cls = "badge b-info"; }
+  else if (r.state === "error") { text = "AI error"; cls = "badge b-bad"; }
+  else if (f) { text = "Likely " + catName.toLowerCase(); cls = "badge b-bad"; }
+  else if (r.dismissed && catName) { text = "Kept"; cls = "badge b-ok"; }
+  else if (r.category === "figure") { text = "Real figure"; cls = "badge b-ok"; }
+  else if (catName) { text = catName; }
+  else if (r.state === "done") { text = "Labeled"; cls = "badge b-ok"; }
+  R.badge.textContent = text;
+  R.badge.className = cls;
+  R.badge.style.display = text ? "" : "none";
+
+  // reason / error
+  if (r.error) { R.reason.textContent = r.error; R.reason.className = "reason err"; }
+  else { R.reason.textContent = r.reason || ""; R.reason.className = "reason"; }
+  R.reason.style.display = R.reason.textContent ? "" : "none";
+
+  if (R.label.value !== r.label) R.label.value = r.label;
+  R.cap.textContent = fileNameFor(r) + " · " + r.w + "×" + r.h + (r.kind === "embedded" ? " · page " + r.page : "");
+
+  R.bAI.disabled = r.state === "analyzing" || r.removed;
+  R.bKeep.style.display = f ? "" : "none";
+  R.bRm.textContent = r.removed ? "Restore" : "Remove";
+  R.bRm.className = (r.removed ? "secondary" : "danger") + " sm";
+}
+
+function repaintAll() { results.forEach(paintCard); refreshAll(); }
+
+function applyFilter() {
+  const f = $("filter").value;
+  results.forEach(r => {
+    const show = f === "removed" ? r.removed
+               : f === "flagged" ? (!r.removed && isFlagged(r))
+               : !r.removed;
+    r.el.style.display = show ? "" : "none";
+  });
+}
+
+function updateSummary() {
+  const active = results.filter(r => !r.removed).length;
+  const flagged = results.filter(isFlagged).length;
+  const removed = results.filter(r => r.removed).length;
+  $("summary").textContent = active + " kept · " + flagged + " flagged · " + removed + " removed";
+  $("removeFlaggedBtn").disabled = flagged === 0;
+  $("removeFlaggedBtn").textContent = "Remove all flagged" + (flagged ? " (" + flagged + ")" : "");
+  $("zipBtn").disabled = active === 0;
+}
+function refreshAll() { updateSummary(); applyFilter(); }
+
+function removeFlagged() {
+  let n = 0;
+  results.forEach(r => { if (isFlagged(r)) { r.removed = true; n++; paintCard(r); } });
+  refreshAll();
+  toast("Removed " + n + " flagged image" + (n === 1 ? "" : "s") + ". Restore them from the filter menu if needed.", "success");
+}
+
+/* ---------- Image conversion ---------- */
 function getObj(page, name) {
   const store = name.startsWith("g_") ? page.commonObjs : page.objs;
   const p = new Promise(res => {
@@ -240,9 +523,16 @@ async function imageToBlob(img) {
   return toBlob(c);
 }
 
-/* ---------- Main ---------- */
+async function pageText(page) {
+  try {
+    const tc = await page.getTextContent();
+    return tc.items.map(i => i.str).join(" ").replace(/\s+/g, " ").trim().slice(0, 700);
+  } catch (e) { return ""; }
+}
+
+/* ---------- Main extraction ---------- */
 async function run() {
-  if (!file) return;
+  if (!file || isAnalyzing) return;
   $("runBtn").disabled = true;
   clearResults();
   setProgress(0);
@@ -257,8 +547,11 @@ async function run() {
     else await extractEmbedded(pdf);
 
     if (results.length) {
-      $("zipBtn").disabled = false;
-      setStatus("Done. " + results.length + " image" + (results.length === 1 ? "" : "s") + " found.");
+      $("toolbar").style.display = "flex";
+      $("analyzeBtn").disabled = false;
+      $("filter").value = "active";
+      refreshAll();
+      setStatus("Done. " + results.length + " image" + (results.length === 1 ? "" : "s") + " found. Use the AI tools above to label them or flag slide screenshots.");
     } else {
       setStatus("No embedded images found. Try the “Render each page as an image” mode.");
     }
@@ -275,6 +568,7 @@ async function extractEmbedded(pdf) {
   const OPS = pdfjsLib.OPS;
   const minSize = Math.max(0, parseInt($("minSize").value, 10) || 0);
   const seen = new Set();
+  const base = baseName();
   let n = 0;
 
   for (let i = 1; i <= pdf.numPages; i++) {
@@ -283,6 +577,7 @@ async function extractEmbedded(pdf) {
 
     const page = await pdf.getPage(i);
     const ops = await page.getOperatorList();
+    let txt = null;
 
     for (let k = 0; k < ops.fnArray.length; k++) {
       const fn = ops.fnArray[k];
@@ -303,8 +598,9 @@ async function extractEmbedded(pdf) {
       const blob = await imageToBlob(img);
       if (!blob) continue;
 
+      if (txt === null) txt = await pageText(page);
       n++;
-      addResult(baseName() + "-img-" + pad(n) + ".png", blob, img.width + "×" + img.height + " (page " + i + ")");
+      addResult({ blob, w: img.width, h: img.height, page: i, kind: "embedded", n, base, pageText: txt });
     }
     page.cleanup();
   }
@@ -312,6 +608,7 @@ async function extractEmbedded(pdf) {
 
 async function renderPages(pdf) {
   const scale = parseFloat($("scale").value) || 2;
+  const base = baseName();
   for (let i = 1; i <= pdf.numPages; i++) {
     setStatus("Rendering page " + i + " of " + pdf.numPages + "…");
     setProgress((i - 1) / pdf.numPages);
@@ -324,31 +621,274 @@ async function renderPages(pdf) {
     await page.render({ canvasContext: c.getContext("2d"), viewport: vp }).promise;
 
     const blob = await toBlob(c);
-    addResult(baseName() + "-page-" + pad(i) + ".png", blob, c.width + "×" + c.height);
+    const txt = await pageText(page);
+    addResult({ blob, w: c.width, h: c.height, page: i, kind: "page", n: i, base, pageText: txt });
     page.cleanup();
   }
 }
 
 async function downloadZip() {
-  if (!results.length) return;
+  const keep = results.filter(r => !r.removed);
+  if (!keep.length) return;
   $("zipBtn").disabled = true;
   setStatus("Building ZIP…");
   try {
     const zip = new JSZip();
-    results.forEach(r => zip.file(r.name, r.blob));
+    keep.forEach(r => zip.file(fileNameFor(r), r.blob));
     const blob = await zip.generateAsync({ type: "blob" });
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = baseName() + "-images.zip";
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setStatus("ZIP ready.");
+    const url = URL.createObjectURL(blob);
+    triggerDownload(url, baseName() + "-images.zip");
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+    setStatus("ZIP ready (" + keep.length + " images).");
   } catch (err) {
     setStatus("Could not build ZIP: " + err.message, true);
   } finally {
-    $("zipBtn").disabled = false;
+    updateSummary();
   }
+}
+
+/* ======================================================================
+   AI  (same approach as Patholytica Tag Tools: Puter.js or OpenRouter)
+   ====================================================================== */
+
+// Both providers accept the OpenAI-style multimodal content array.
+function buildMessageContent(prompt, imageUrl) {
+  if (!imageUrl) return prompt;
+  return [
+    { type: "text", text: prompt },
+    { type: "image_url", image_url: { url: imageUrl } }
+  ];
+}
+
+async function callPuter(prompt, model, imageUrl) {
+  const content = buildMessageContent(prompt, imageUrl);
+  const response = await puter.ai.chat(content, { model: model });
+  let raw = "";
+  if (typeof response === "string") {
+    raw = response;
+  } else if (response && response.message && response.message.content) {
+    raw = Array.isArray(response.message.content)
+      ? response.message.content.map(c => c.text || "").join("")
+      : response.message.content;
+  } else {
+    raw = JSON.stringify(response);
+  }
+  return raw;
+}
+
+async function requestOpenRouter(apiKey, model, content, useJsonMode) {
+  const body = {
+    model: model,
+    messages: [{ role: "user", content: content }],
+    max_tokens: 300
+  };
+  if (useJsonMode) body.response_format = { type: "json_object" };
+
+  const res = await fetch(OPENROUTER_ENDPOINT, {
+    method: "POST",
+    headers: {
+      "Authorization": "Bearer " + apiKey,
+      "Content-Type": "application/json",
+      "X-OpenRouter-Title": "Patholytica PDF Image Extractor"
+    },
+    body: JSON.stringify(body)
+  });
+  const data = await res.json();
+  return { ok: res.ok, status: res.status, data: data };
+}
+
+async function callOpenRouter(prompt, model, imageUrl) {
+  const apiKey = $("orKey").value.trim();
+  if (!apiKey) throw new Error("Enter an OpenRouter API key first");
+  const content = buildMessageContent(prompt, imageUrl);
+
+  let result = await requestOpenRouter(apiKey, model, content, true);
+  if (!result.ok) {
+    const errMsg = (result.data && result.data.error && result.data.error.message) || "";
+    if (/response_format|json_object|json_schema/i.test(errMsg)) {
+      result = await requestOpenRouter(apiKey, model, content, false);
+    }
+  }
+  if (!result.ok) {
+    const msg = (result.data && result.data.error && result.data.error.message)
+      ? result.data.error.message : ("OpenRouter request failed (" + result.status + ")");
+    throw new Error(msg);
+  }
+  const rc = result.data && result.data.choices && result.data.choices[0] && result.data.choices[0].message
+    ? result.data.choices[0].message.content : null;
+  if (!rc) throw new Error("OpenRouter returned no content");
+  return rc;
+}
+
+/* ---------- Image → small JPEG data URL (keeps requests light) ---------- */
+function loadImg(url) {
+  return new Promise((res, rej) => {
+    const im = new Image();
+    im.onload = () => res(im);
+    im.onerror = () => rej(new Error("Could not read the image"));
+    im.src = url;
+  });
+}
+async function toDataUrl(url, maxDim) {
+  const im = await loadImg(url);
+  const s = Math.min(1, maxDim / Math.max(im.naturalWidth, im.naturalHeight));
+  const c = document.createElement("canvas");
+  c.width = Math.max(1, Math.round(im.naturalWidth * s));
+  c.height = Math.max(1, Math.round(im.naturalHeight * s));
+  const ctx = c.getContext("2d");
+  ctx.fillStyle = "#fff";
+  ctx.fillRect(0, 0, c.width, c.height);
+  ctx.drawImage(im, 0, 0, c.width, c.height);
+  return c.toDataURL("image/jpeg", 0.85);
+}
+
+/* ---------- Prompt + parsing ---------- */
+function getWants(r) {
+  return {
+    label: $("optLabel").checked,
+    cat: ($("optSlides").checked || $("optDecor").checked) && r.kind === "embedded"
+  };
+}
+
+function buildPrompt(r, wantLabel, wantCat, useContext) {
+  const p = [];
+  p.push("You are helping organize images extracted from medical lecture PDFs (slides, handouts, textbooks).");
+  if (r.kind === "page") p.push("The attached image is page " + r.page + " of the PDF, rendered as a picture.");
+  else p.push("The attached image was embedded on page " + r.page + " of the PDF. Its size is " + r.w + "x" + r.h + " px.");
+  if (useContext) {
+    p.push(r.pageText
+      ? 'Selectable text found on that same page (may be partial or unrelated): "' + r.pageText + '"'
+      : "There is no selectable text on that page.");
+  }
+  p.push("");
+  p.push("Reply with a JSON object containing these keys:");
+  const keys = [];
+  if (wantLabel) {
+    p.push('- "label": a short topic label (2 to 6 words, lowercase) naming what the image shows or teaches, e.g. "glomerulus histology", "ecg atrial fibrillation", "nephron anatomy diagram". For a text-heavy slide, name the slide topic from its title.');
+    keys.push('"label":"glomerulus histology"');
+  }
+  if (wantCat) {
+    p.push('- "category": exactly one of:');
+    p.push('   "figure" = a genuine standalone image: clinical or gross photo, histology/microscopy, radiograph/CT/MRI/ultrasound, ECG, anatomical or mechanism diagram, chart/graph, flowchart. A figure that has only a short title or caption still counts as "figure".');
+    p.push('   "slide_screenshot" = a screenshot or picture of an ENTIRE slide or page where text dominates (a title plus bullet points or paragraphs, often with a slide template such as header bar, logo, footer or slide number). The content could simply have been typed as text instead of pasted as an image.');
+    p.push('   "decorative" = logo, icon, background, banner, watermark, divider, university branding, or a blank or solid-color image.');
+    p.push('- "reason": one short sentence explaining your category choice.');
+    keys.push('"category":"figure"', '"reason":"short explanation"');
+  }
+  p.push("Return ONLY the JSON object, for example {" + keys.join(",") + "} with no explanation, no markdown and no code fence.");
+  return p.join("\n");
+}
+
+function parseJsonObject(raw) {
+  const m = String(raw).match(/\{[\s\S]*\}/);
+  if (!m) throw new Error("AI did not return a JSON object");
+  try { return JSON.parse(m[0]); }
+  catch (e) { throw new Error("AI returned invalid JSON"); }
+}
+
+/* ---------- Running the analysis ---------- */
+function checkAIReady(r) {
+  const wants = getWants(r);
+  if (!wants.label && !wants.cat) {
+    toast(r.kind === "page"
+      ? "Page images can only be labeled. Tick “Suggest a topic label”."
+      : "Tick at least one AI option first.", "error");
+    return false;
+  }
+  if ($("aiProvider").value === "openrouter" && !$("orKey").value.trim()) {
+    toast("Enter an OpenRouter API key first", "error");
+    return false;
+  }
+  return true;
+}
+
+async function analyzeOne(r) {
+  const wants = getWants(r);
+  const provider = $("aiProvider").value;
+  const model = getActiveModel();
+
+  r.state = "analyzing"; r.error = null; r.dismissed = false;
+  paintCard(r);
+
+  try {
+    const dataUrl = await toDataUrl(r.url, 1280);
+    const prompt = buildPrompt(r, wants.label, wants.cat, $("optContext").checked);
+    const raw = provider === "openrouter"
+      ? await callOpenRouter(prompt, model, dataUrl)
+      : await callPuter(prompt, model, dataUrl);
+    const obj = parseJsonObject(raw);
+
+    if (wants.label) {
+      const l = String(obj.label || "").trim().toLowerCase().slice(0, 80);
+      if (l) r.label = l;
+    }
+    if (wants.cat) {
+      const c = String(obj.category || "").trim().toLowerCase().replace(/[\s-]+/g, "_");
+      if (!["figure", "slide_screenshot", "decorative"].includes(c)) {
+        throw new Error("AI gave an unrecognized category");
+      }
+      r.category = c;
+      r.reason = String(obj.reason || "").trim();
+    }
+    r.state = "done";
+  } catch (err) {
+    console.error("AI error:", err);
+    r.state = "error";
+    r.error = err.message || String(err);
+  }
+  paintCard(r);
+  refreshAll();
+  return r.state === "done";
+}
+
+function needsAnalysis(r) {
+  const w = getWants(r);
+  if (!w.label && !w.cat) return false;
+  if (r.state !== "done") return true;
+  if (w.label && !r.label) return true;
+  if (w.cat && !r.category) return true;
+  return false;
+}
+
+async function analyzeAll() {
+  if (isAnalyzing || !results.length) return;
+
+  const first = results.find(r => !r.removed);
+  if (!first || !checkAIReady(first)) return;
+
+  const todo = results.filter(r => !r.removed && needsAnalysis(r));
+  if (!todo.length) { toast("Nothing left to analyze with these options.", "success"); return; }
+
+  isAnalyzing = true; stopFlag = false;
+  $("analyzeBtn").disabled = true;
+  $("runBtn").disabled = true;
+  $("stopBtn").style.display = "";
+
+  let ok = 0, failed = 0;
+  for (let i = 0; i < todo.length; i++) {
+    if (stopFlag) break;
+    setStatus("AI is analyzing image " + (i + 1) + " of " + todo.length + "…");
+    setProgress(i / todo.length);
+    const good = await analyzeOne(todo[i]);
+    good ? ok++ : failed++;
+    await sleep(800);
+  }
+
+  setProgress(null);
+  isAnalyzing = false;
+  $("analyzeBtn").disabled = false;
+  $("runBtn").disabled = !file;
+  $("stopBtn").style.display = "none";
+
+  const flagged = results.filter(isFlagged).length;
+  setStatus((stopFlag ? "Stopped. " : "Finished. ") + ok + " analyzed" +
+    (failed ? ", " + failed + " failed (tap ✨ AI on a card to retry)" : "") +
+    ". " + flagged + " flagged for removal.");
+  toast(flagged
+    ? flagged + " image" + (flagged === 1 ? "" : "s") + " flagged. Review them, then tap “Remove all flagged”."
+    : "AI finished. Nothing was flagged.", "success");
+  if (flagged) $("filter").value = "flagged";
+  refreshAll();
 }
 </script>
 </body>
