@@ -1,1 +1,1934 @@
-pending
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PDF Image Studio</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+<script src="https://js.puter.com/v2/"></script>
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: #f6f7f9; --card: #ffffff; --text: #1c2430; --muted: #6b7684;
+    --accent: #2563eb; --border: #dfe3e8; --danger: #dc2626; --success: #16a34a; --amber: #d97706;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #111418; --card: #1b2027; --text: #e8ecf1; --muted: #93a0ae;
+      --accent: #5b8cff; --border: #2c343f; --danger: #f06a6a; --success: #4cc27a; --amber: #f0a24a;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 20px; background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  }
+  main { max-width: 980px; margin: 0 auto; }
+  h1 { margin: 0 0 4px; font-size: 24px; }
+  h2 { margin: 26px 0 10px; font-size: 18px; }
+  .sub { margin: 0 0 16px; color: var(--muted); font-size: 14px; line-height: 1.5; }
+  .hidden { display: none !important; }
+
+  .tabs { display: flex; gap: 8px; margin: 18px 0 14px; }
+  .tab {
+    flex: 1; background: var(--card); color: var(--muted); border: 1px solid var(--border);
+    padding: 12px 8px; font-size: 14px;
+  }
+  .tab.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .tab span { opacity: .85; font-weight: 500; }
+
+  .drop {
+    display: block; padding: 26px 16px; text-align: center; cursor: pointer;
+    background: var(--card); border: 2px dashed var(--border); border-radius: 14px;
+    transition: border-color .15s;
+  }
+  .drop.over { border-color: var(--accent); }
+  .drop input { display: none; }
+  .drop strong { display: block; font-size: 16px; margin-bottom: 4px; }
+  .drop span { color: var(--muted); font-size: 13px; word-break: break-all; }
+  .options {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    gap: 12px; margin: 16px 0;
+  }
+  label.opt { font-size: 13px; color: var(--muted); display: flex; flex-direction: column; gap: 6px; }
+  select, input[type=number], input[type=text], input[type=password] {
+    padding: 10px; border-radius: 10px; border: 1px solid var(--border);
+    background: var(--card); color: var(--text); font-size: 15px; width: 100%;
+  }
+  .actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  button {
+    padding: 12px 18px; border: 0; border-radius: 10px; font-size: 15px; font-weight: 600;
+    background: var(--accent); color: #fff; cursor: pointer;
+  }
+  button.secondary { background: var(--card); color: var(--text); border: 1px solid var(--border); }
+  button.danger { background: var(--danger); color: #fff; }
+  button.dangerline { background: var(--card); color: var(--danger); border: 1px solid var(--border); }
+  button.sm { padding: 7px 10px; font-size: 12px; border-radius: 8px; }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  progress { width: 100%; height: 8px; margin-top: 16px; display: none; }
+  .status { margin-top: 10px; font-size: 14px; color: var(--muted); min-height: 20px; line-height: 1.5; }
+  .status.error { color: var(--danger); }
+
+  .panel {
+    background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+    padding: 14px 16px; margin-top: 16px;
+  }
+  .panel summary { cursor: pointer; font-weight: 600; font-size: 15px; }
+  .checks { display: flex; flex-direction: column; gap: 9px; margin: 12px 0 14px; font-size: 14px; }
+  .checks label { display: flex; gap: 8px; align-items: flex-start; cursor: pointer; }
+  .checks input { margin-top: 3px; }
+  .hint { font-size: 12px; color: var(--muted); line-height: 1.5; margin: 10px 0 0; }
+  .hint a { color: var(--accent); }
+
+  .toolbar {
+    display: none; flex-wrap: wrap; gap: 10px 14px; align-items: center;
+    justify-content: space-between; margin-top: 20px;
+  }
+  .toolbar .left, .toolbar .right { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .toolbar select { width: auto; padding: 8px 10px; font-size: 14px; }
+  .toolbar label.inline { font-size: 13px; color: var(--muted); display: flex; gap: 6px; align-items: center; cursor: pointer; }
+  .sumline { font-size: 14px; font-weight: 600; }
+
+  .grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+    gap: 12px; margin-top: 14px;
+  }
+  .card {
+    background: var(--card); border: 2px solid var(--border); border-radius: 12px;
+    padding: 10px; display: flex; flex-direction: column; gap: 8px;
+  }
+  .card.flagged { border-color: var(--danger); }
+  .card.removed { opacity: .45; }
+  .card img {
+    width: 100%; height: 140px; object-fit: contain; border-radius: 8px;
+    background: repeating-conic-gradient(#8883 0% 25%, transparent 0% 50%) 50% / 14px 14px;
+  }
+  .badge { align-self: flex-start; font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 99px; }
+  .b-ok { background: color-mix(in srgb, var(--success) 18%, transparent); color: var(--success); }
+  .b-bad { background: color-mix(in srgb, var(--danger) 18%, transparent); color: var(--danger); }
+  .b-warn { background: color-mix(in srgb, var(--amber) 20%, transparent); color: var(--amber); }
+  .b-info { background: color-mix(in srgb, var(--accent) 18%, transparent); color: var(--accent); }
+  .b-muted { background: #8883; color: var(--muted); }
+  .label-input { padding: 7px 9px; font-size: 13px; border-radius: 8px; }
+  .reason { font-size: 12px; color: var(--muted); line-height: 1.45; }
+  .reason.err { color: var(--danger); }
+  .cap { font-size: 11px; color: var(--muted); word-break: break-all; }
+  .btns { display: flex; flex-wrap: wrap; gap: 6px; }
+
+  #docSummary { font-size: 20px; margin: 0 0 4px; }
+  .pages-line { color: var(--muted); font-size: 14px; margin-bottom: 14px; }
+  .slot {
+    display: flex; gap: 12px; align-items: flex-start; flex-wrap: wrap;
+    background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+    padding: 10px 12px; margin-bottom: 10px;
+  }
+  .slot.has { border-color: var(--success); }
+  .slot.lowconf { border-color: var(--amber); }
+  .thumb {
+    width: 76px; height: 76px; border-radius: 8px; flex-shrink: 0; overflow: hidden;
+    display: flex; align-items: center; justify-content: center;
+    background: repeating-conic-gradient(#8883 0% 25%, transparent 0% 50%) 50% / 14px 14px;
+  }
+  .thumb img { width: 100%; height: 100%; object-fit: contain; }
+  .thumb .sq { width: 46px; height: 46px; background: #00c853; border-radius: 4px; }
+  .slot-info { flex: 1; min-width: 180px; }
+  .slot-title { font-weight: 700; font-size: 16px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .slot-meta { font-size: 12px; color: var(--muted); margin-top: 3px; word-break: break-all; line-height: 1.5; }
+  .slot-note { font-size: 12px; color: var(--muted); margin-top: 4px; line-height: 1.45; font-style: italic; }
+  .slot details { margin-top: 6px; font-size: 12px; color: var(--muted); }
+  .slot details summary { cursor: pointer; }
+  .slot details div { margin-top: 4px; line-height: 1.5; white-space: pre-wrap; }
+  .slot-btns { display: flex; gap: 6px; flex-wrap: wrap; }
+
+  .pagebox { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 10px; margin-bottom: 14px; }
+  .pagehead { font-size: 14px; font-weight: 700; margin-bottom: 8px; }
+  .pagehead span { color: var(--muted); font-weight: 400; }
+  .pagewrap { position: relative; line-height: 0; }
+  .pagewrap img { width: 100%; height: auto; display: block; border-radius: 4px; }
+  .pagewrap canvas { position: absolute; left: 0; top: 0; width: 100%; height: 100%; cursor: pointer; }
+
+  .modal-backdrop {
+    position: fixed; inset: 0; background: rgba(0,0,0,.6); display: flex;
+    align-items: center; justify-content: center; z-index: 100; padding: 16px;
+  }
+  .modal {
+    background: var(--bg); border: 1px solid var(--border); border-radius: 14px;
+    width: 100%; max-width: 760px; max-height: 88vh; display: flex; flex-direction: column; padding: 14px; gap: 10px;
+  }
+  .modal-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+  .mgrid { overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; }
+  .mcard {
+    background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 8px;
+    cursor: pointer; display: flex; flex-direction: column; gap: 5px;
+  }
+  .mcard:hover { border-color: var(--accent); }
+  .mcard img {
+    width: 100%; height: 90px; object-fit: contain; border-radius: 6px;
+    background: repeating-conic-gradient(#8883 0% 25%, transparent 0% 50%) 50% / 12px 12px;
+  }
+  .mlabel { font-size: 12px; line-height: 1.35; word-break: break-word; }
+  .mused { font-size: 11px; color: var(--amber); }
+
+  #toast {
+    position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%);
+    background: var(--card); color: var(--text); border: 1px solid var(--border);
+    padding: 11px 16px; border-radius: 10px; font-size: 14px; max-width: 90vw;
+    box-shadow: 0 8px 28px rgba(0,0,0,.3); display: none; z-index: 200;
+  }
+  #toast.show { display: block; }
+  #toast.error { border-left: 4px solid var(--danger); }
+  #toast.success { border-left: 4px solid var(--success); }
+</style>
+</head>
+<body>
+<main>
+  <h1>PDF Image Studio</h1>
+  <p class="sub">Step 1: pull the images out of a lecture PDF and let AI label them. Step 2: open a text PDF with green placeholders and let AI put the right image into each one. Everything runs in your browser.</p>
+
+  <details class="panel" id="aiPanel" open>
+    <summary>AI settings (used by both steps)</summary>
+    <div class="options">
+      <label class="opt">Provider
+        <select id="aiProvider">
+          <option value="puter" selected>Puter.js (no key needed)</option>
+          <option value="openrouter">OpenRouter (bring your own key)</option>
+        </select>
+      </label>
+      <label class="opt" id="modelFieldPuter">Model via Puter.js
+        <select id="aiModelPuter">
+          <option value="anthropic/claude-opus-4-8">Claude Opus 4.8</option>
+          <option value="anthropic/claude-sonnet-4-6" selected>Claude Sonnet 4.6</option>
+          <option value="openai/gpt-5.5">GPT-5.5</option>
+          <option value="google/gemini-3.5-flash">Gemini 3.5 Flash</option>
+          <option value="deepseek/deepseek-v4-pro">DeepSeek V4 Pro</option>
+        </select>
+      </label>
+      <label class="opt" id="modelFieldOpenrouter" style="display:none">Model via OpenRouter
+        <select id="aiModelOpenrouter">
+          <option value="~openai/gpt-latest" selected>GPT (latest)</option>
+          <option value="~anthropic/claude-sonnet-latest">Claude Sonnet (latest)</option>
+          <option value="anthropic/claude-opus-4.8">Claude Opus 4.8</option>
+          <option value="google/gemini-3.5-flash">Gemini 3.5 Flash</option>
+          <option value="deepseek/deepseek-v4-pro">DeepSeek V4 Pro</option>
+          <option value="meta-llama/llama-3.1-8b-instruct:free">Llama 3.1 8B Instruct (free, rate-limited)</option>
+          <option value="meta-llama/llama-3.1-8b-instruct">Llama 3.1 8B Instruct (cheap)</option>
+          <option value="deepseek/deepseek-v4-flash">DeepSeek V4 Flash (cheap, fast)</option>
+          <option value="google/gemini-2.5-flash-lite">Gemini 2.5 Flash-Lite (cheap, no reasoning overhead)</option>
+        </select>
+      </label>
+      <label class="opt" id="keyFieldOpenrouter" style="display:none">OpenRouter API Key
+        <input id="orKey" type="password" placeholder="sk-or-v1-..." autocomplete="off">
+      </label>
+    </div>
+    <p class="hint">Labeling images needs a model that can read images (Claude, GPT, Gemini). DeepSeek and small Llama models may fail on images. Matching images to placeholders only uses text, so any model works for that. Puter may ask you to sign in the first time. OpenRouter key: <a href="https://openrouter.ai/keys" target="_blank" rel="noopener">openrouter.ai/keys</a> (saved only in this browser).</p>
+  </details>
+
+  <div class="tabs">
+    <button class="tab active" id="tabBtnImages">1 · Images <span id="tabImgCount"></span></button>
+    <button class="tab" id="tabBtnDoc">2 · Document + AI fill <span id="tabSlotCount"></span></button>
+  </div>
+
+  <!-- ================= TAB 1: IMAGES ================= -->
+  <section id="tabImages">
+    <label class="drop" id="srcDrop">
+      <input type="file" id="srcFile" accept="application/pdf,.pdf">
+      <strong>Tap to choose the source PDF (the one with the images)</strong>
+      <span id="srcFileName">or drag and drop it here</span>
+    </label>
+
+    <div class="options">
+      <label class="opt">Mode
+        <select id="mode">
+          <option value="embedded">Extract embedded images</option>
+          <option value="pages">Render each page as an image</option>
+        </select>
+      </label>
+      <label class="opt" id="minWrap">Ignore images smaller than (px)
+        <input type="number" id="minSize" value="50" min="0" step="10">
+      </label>
+      <label class="opt" id="scaleWrap" style="display:none">Page image quality
+        <select id="scale">
+          <option value="1">Normal (1x)</option>
+          <option value="2" selected>High (2x)</option>
+          <option value="3">Very high (3x)</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="actions">
+      <button id="runBtn" disabled>Extract</button>
+      <button id="zipBtn" class="secondary" disabled>Download kept (ZIP)</button>
+    </div>
+    <progress id="bar1" value="0" max="1"></progress>
+    <div class="status" id="status1"></div>
+
+    <details class="panel" open>
+      <summary>AI actions for these images</summary>
+      <div class="checks">
+        <label><input type="checkbox" id="optLabel" checked><span>Suggest a topic label for each image</span></label>
+        <label><input type="checkbox" id="optSlides" checked><span>Flag images that are a whole slide pasted as a picture (suggest removal)</span></label>
+        <label><input type="checkbox" id="optDecor"><span>Also flag logos / decorative images (suggest removal)</span></label>
+        <label><input type="checkbox" id="optContext" checked><span>Send the page's text to the AI as extra context</span></label>
+      </div>
+      <div class="actions">
+        <button id="analyzeBtn" disabled>Analyze all with AI</button>
+        <button id="stopBtn" class="secondary hidden">Stop</button>
+      </div>
+      <p class="hint">The AI only <strong>suggests</strong>. Flagged images get a red border, and nothing is removed until you tap Remove (or "Remove all flagged"). Removed images can be restored from the filter menu. Images that are removed or flagged are not used in Step 2.</p>
+    </details>
+
+    <div class="toolbar" id="imgToolbar">
+      <div class="left">
+        <span class="sumline" id="imgSummary"></span>
+        <select id="imgFilter">
+          <option value="active">Show: all kept</option>
+          <option value="flagged">Show: flagged by AI</option>
+          <option value="removed">Show: removed</option>
+        </select>
+      </div>
+      <div class="right">
+        <label class="inline"><input type="checkbox" id="useLabels" checked> Name files using AI labels</label>
+        <button id="removeFlaggedBtn" class="danger sm" disabled>Remove all flagged</button>
+      </div>
+    </div>
+    <div class="grid" id="imgGrid"></div>
+  </section>
+
+  <!-- ================= TAB 2: DOCUMENT ================= -->
+  <section id="tabDoc" class="hidden">
+    <label class="drop" id="docDrop">
+      <input type="file" id="docFile" accept="application/pdf,.pdf">
+      <strong>Tap to choose the document PDF (text with green placeholders)</strong>
+      <span id="docFileName">or drag and drop it here</span>
+    </label>
+    <div class="actions" style="margin-top:12px">
+      <button id="sampleBtn" class="secondary sm">Download a sample test PDF</button>
+    </div>
+
+    <div class="options">
+      <label class="opt">Green strength
+        <select id="strength">
+          <option value="strong">Strong greens only (e.g. #00FF00)</option>
+          <option value="normal" selected>Normal</option>
+          <option value="pale">Include pale greens</option>
+        </select>
+      </label>
+      <label class="opt">Ignore shapes smaller than
+        <select id="minPt">
+          <option value="8">Very small (8 pt)</option>
+          <option value="15" selected>Normal (15 pt)</option>
+          <option value="30">Large only (30 pt)</option>
+        </select>
+      </label>
+    </div>
+    <div class="actions">
+      <button id="scanBtn" disabled>Scan for green placeholders</button>
+    </div>
+    <progress id="bar2" value="0" max="1"></progress>
+    <div class="status" id="status2"></div>
+
+    <section id="docResults" class="hidden">
+      <h2 id="docSummary"></h2>
+      <div class="pages-line" id="pagesLine"></div>
+
+      <details class="panel" open>
+        <summary>✨ AI auto-fill</summary>
+        <p class="hint" style="margin-top:8px">The AI reads the text inside and around each green square, then picks the best image from the ones you extracted in Step 1 (using their labels). Images without a label are labeled first.</p>
+        <div class="checks">
+          <label><input type="checkbox" id="onlyEmpty" checked><span>Only fill empty placeholders (keep my manual choices)</span></label>
+          <label><input type="checkbox" id="allowReuse"><span>Allow the same image in more than one place</span></label>
+          <label><input type="checkbox" id="matchSrcText" checked><span>Also send the text from each image's source page to help matching</span></label>
+        </div>
+        <div class="options" style="margin:0 0 12px">
+          <label class="opt">Only place matches with at least this confidence
+            <select id="minConf">
+              <option value="low">Low (place everything the AI suggests)</option>
+              <option value="medium" selected>Medium</option>
+              <option value="high">High (only very sure matches)</option>
+            </select>
+          </label>
+        </div>
+        <div class="actions">
+          <button id="aiFillBtn">✨ Auto-fill with AI</button>
+          <button id="stopFillBtn" class="secondary hidden">Stop</button>
+        </div>
+      </details>
+
+      <div class="options">
+        <label class="opt">How images fit inside a square
+          <select id="fitMode">
+            <option value="contain" selected>Fit inside (keep whole image)</option>
+            <option value="cover">Fill the square (crop edges)</option>
+            <option value="stretch">Stretch to the square</option>
+          </select>
+        </label>
+        <label class="check" style="align-self:end; display:flex; gap:8px; align-items:center; font-size:14px; cursor:pointer">
+          <input type="checkbox" id="hideEmpty"> Hide green squares that have no image
+        </label>
+      </div>
+
+      <div class="actions" style="margin-bottom:14px">
+        <button id="bulkBtn" class="secondary">Upload several images in order</button>
+        <button id="exportBtn" disabled>Export PDF</button>
+      </div>
+
+      <div id="slotList"></div>
+
+      <h2>Page previews</h2>
+      <div class="sub" style="margin-top:-4px">Red dashed boxes are empty placeholders. Tap one to upload an image to it.</div>
+      <div id="pageList"></div>
+    </section>
+  </section>
+</main>
+
+<!-- library picker modal -->
+<div class="modal-backdrop hidden" id="modal">
+  <div class="modal">
+    <div class="modal-head">
+      <strong id="modalTitle">Choose an image</strong>
+      <button id="modalClose" class="secondary sm">Close</button>
+    </div>
+    <input type="text" id="modalSearch" placeholder="Search labels…">
+    <div class="mgrid" id="modalGrid"></div>
+  </div>
+</div>
+
+<input type="file" id="picker" accept="image/*" class="hidden">
+<input type="file" id="bulkPicker" accept="image/*" multiple class="hidden">
+<div id="toast"></div>
+
+<script>
+const PDFJS_BASE = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/";
+const OPENROUTER_ENDPOINT = "https://openrouter.ai/api/v1/chat/completions";
+const SCAN_SCALE = 1.5;
+const MAX_IMG_DIM = 3000;
+const PAD_PT = 1.5;
+const MATCH_CHUNK = 12;
+const $ = id => document.getElementById(id);
+
+let workerPromise = null, toastTimer = null;
+// Step 1 state
+let srcFile = null, images = [], imgSeq = 0, isAnalyzing = false, stopFlag = false;
+// Step 2 state
+let docFile = null, docBytes = null, scanning = false, slots = [], pageInfo = {};
+let nextSlotId = 1, pickTarget = null, selectedId = null, selTimer = null;
+let isFilling = false, stopFill = false;
+
+/* ======================================================================
+   SHARED HELPERS
+   ====================================================================== */
+function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const pad = (n, len = 3) => String(n).padStart(len, "0");
+const toBlob = c => new Promise(res => c.toBlob(res, "image/png"));
+const ptToCm = pt => (pt / 72 * 2.54).toFixed(1);
+
+function slug(s) {
+  const out = String(s).toLowerCase().normalize("NFKD")
+    .replace(/[^\p{L}\p{N}]+/gu, "-").replace(/^-+|-+$/g, "").slice(0, 60);
+  return out || "image";
+}
+function setStatus(n, msg, isError) {
+  const s = $("status" + n);
+  s.textContent = msg;
+  s.className = "status" + (isError ? " error" : "");
+}
+function setProgress(n, v) {
+  const b = $("bar" + n);
+  b.style.display = v == null ? "none" : "block";
+  if (v != null) b.value = v;
+}
+function toast(msg, type) {
+  const el = $("toast");
+  el.textContent = msg;
+  el.className = "show " + (type || "");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { el.className = ""; }, 4000);
+}
+function el(tag, cls, text) {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text != null) e.textContent = text;
+  return e;
+}
+function triggerDownload(url, name) {
+  const a = document.createElement("a");
+  a.href = url; a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+}
+function downloadBlob(blob, name) {
+  const url = URL.createObjectURL(blob);
+  triggerDownload(url, name);
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
+}
+function loadImg(url) {
+  return new Promise((res, rej) => {
+    const im = new Image();
+    im.onload = () => res(im);
+    im.onerror = () => rej(new Error("Could not read this image. Use a JPG or PNG (HEIC is not supported)."));
+    im.src = url;
+  });
+}
+function setSelectIfValid(sel, val) {
+  if (val && [...sel.options].some(o => o.value === val)) sel.value = val;
+}
+
+function initWorker() {
+  if (!workerPromise) {
+    workerPromise = (async () => {
+      const r = await fetch(PDFJS_BASE + "pdf.worker.min.js");
+      if (!r.ok) throw new Error("Could not load the PDF engine. Check your internet connection.");
+      const blob = new Blob([await r.text()], { type: "text/javascript" });
+      pdfjsLib.GlobalWorkerOptions.workerSrc = URL.createObjectURL(blob);
+    })().catch(err => { workerPromise = null; throw err; });
+  }
+  return workerPromise;
+}
+
+/* ---------- Tabs ---------- */
+function showTab(t) {
+  $("tabImages").classList.toggle("hidden", t !== "images");
+  $("tabDoc").classList.toggle("hidden", t !== "doc");
+  $("tabBtnImages").classList.toggle("active", t === "images");
+  $("tabBtnDoc").classList.toggle("active", t === "doc");
+}
+function updateTabCounts() {
+  const usable = candidatePool().length;
+  $("tabImgCount").textContent = images.length ? "(" + usable + ")" : "";
+  const filled = slots.filter(s => s.assigned).length;
+  $("tabSlotCount").textContent = slots.length ? "(" + filled + "/" + slots.length + ")" : "";
+}
+
+/* ======================================================================
+   AI  (shared: Puter.js or OpenRouter, same models as Tag Tools)
+   ====================================================================== */
+function updateProviderVisibility() {
+  const isOR = $("aiProvider").value === "openrouter";
+  $("modelFieldPuter").style.display = isOR ? "none" : "flex";
+  $("modelFieldOpenrouter").style.display = isOR ? "flex" : "none";
+  $("keyFieldOpenrouter").style.display = isOR ? "flex" : "none";
+}
+function getActiveModel() {
+  return $("aiProvider").value === "openrouter" ? $("aiModelOpenrouter").value : $("aiModelPuter").value;
+}
+function aiReady() {
+  if ($("aiProvider").value === "openrouter" && !$("orKey").value.trim()) {
+    toast("Enter an OpenRouter API key first", "error");
+    return false;
+  }
+  return true;
+}
+
+function buildMessageContent(prompt, imageUrl) {
+  if (!imageUrl) return prompt;
+  return [
+    { type: "text", text: prompt },
+    { type: "image_url", image_url: { url: imageUrl } }
+  ];
+}
+
+async function callPuter(prompt, model, imageUrl) {
+  const content = buildMessageContent(prompt, imageUrl);
+  const response = await puter.ai.chat(content, { model: model });
+  let raw = "";
+  if (typeof response === "string") {
+    raw = response;
+  } else if (response && response.message && response.message.content) {
+    raw = Array.isArray(response.message.content)
+      ? response.message.content.map(c => c.text || "").join("")
+      : response.message.content;
+  } else {
+    raw = JSON.stringify(response);
+  }
+  return raw;
+}
+
+async function requestOpenRouter(apiKey, model, content, useJsonMode, maxTokens) {
+  const body = {
+    model: model,
+    messages: [{ role: "user", content: content }],
+    max_tokens: maxTokens
+  };
+  if (useJsonMode) body.response_format = { type: "json_object" };
+
+  const res = await fetch(OPENROUTER_ENDPOINT, {
+    method: "POST",
+    headers: {
+      "Authorization": "Bearer " + apiKey,
+      "Content-Type": "application/json",
+      "X-OpenRouter-Title": "Patholytica PDF Image Studio"
+    },
+    body: JSON.stringify(body)
+  });
+  const data = await res.json();
+  return { ok: res.ok, status: res.status, data: data };
+}
+
+async function callOpenRouter(prompt, model, imageUrl, maxTokens) {
+  const apiKey = $("orKey").value.trim();
+  if (!apiKey) throw new Error("Enter an OpenRouter API key first");
+  const content = buildMessageContent(prompt, imageUrl);
+
+  let result = await requestOpenRouter(apiKey, model, content, true, maxTokens);
+  if (!result.ok) {
+    const errMsg = (result.data && result.data.error && result.data.error.message) || "";
+    if (/response_format|json_object|json_schema/i.test(errMsg)) {
+      result = await requestOpenRouter(apiKey, model, content, false, maxTokens);
+    }
+  }
+  if (!result.ok) {
+    const msg = (result.data && result.data.error && result.data.error.message)
+      ? result.data.error.message : ("OpenRouter request failed (" + result.status + ")");
+    throw new Error(msg);
+  }
+  const rc = result.data && result.data.choices && result.data.choices[0] && result.data.choices[0].message
+    ? result.data.choices[0].message.content : null;
+  if (!rc) throw new Error("OpenRouter returned no content");
+  return rc;
+}
+
+function callAI(prompt, imageUrl, maxTokens) {
+  const model = getActiveModel();
+  return $("aiProvider").value === "openrouter"
+    ? callOpenRouter(prompt, model, imageUrl, maxTokens || 300)
+    : callPuter(prompt, model, imageUrl);
+}
+
+function parseJsonObject(raw) {
+  const m = String(raw).match(/\{[\s\S]*\}/);
+  if (!m) throw new Error("AI did not return a JSON object");
+  try { return JSON.parse(m[0]); }
+  catch (e) { throw new Error("AI returned invalid JSON"); }
+}
+
+async function toDataUrl(url, maxDim) {
+  const im = await loadImg(url);
+  const s = Math.min(1, maxDim / Math.max(im.naturalWidth, im.naturalHeight));
+  const c = document.createElement("canvas");
+  c.width = Math.max(1, Math.round(im.naturalWidth * s));
+  c.height = Math.max(1, Math.round(im.naturalHeight * s));
+  const ctx = c.getContext("2d");
+  ctx.fillStyle = "#fff";
+  ctx.fillRect(0, 0, c.width, c.height);
+  ctx.drawImage(im, 0, 0, c.width, c.height);
+  return c.toDataURL("image/jpeg", 0.85);
+}
+
+/* ======================================================================
+   INIT / WIRING
+   ====================================================================== */
+(function init() {
+  const k = lsGet("patholytica_or_key"); if (k) $("orKey").value = k;
+  const p = lsGet("patholytica_ai_provider");
+  if (p === "openrouter" || p === "puter") $("aiProvider").value = p;
+  setSelectIfValid($("aiModelPuter"), lsGet("pdfx_model_puter"));
+  setSelectIfValid($("aiModelOpenrouter"), lsGet("pdfx_model_or"));
+  updateProviderVisibility();
+
+  $("orKey").addEventListener("change", e => lsSet("patholytica_or_key", e.target.value.trim()));
+  $("aiProvider").addEventListener("change", e => { lsSet("patholytica_ai_provider", e.target.value); updateProviderVisibility(); });
+  $("aiModelPuter").addEventListener("change", e => lsSet("pdfx_model_puter", e.target.value));
+  $("aiModelOpenrouter").addEventListener("change", e => lsSet("pdfx_model_or", e.target.value));
+
+  $("tabBtnImages").addEventListener("click", () => showTab("images"));
+  $("tabBtnDoc").addEventListener("click", () => showTab("doc"));
+
+  // Step 1
+  $("srcFile").addEventListener("change", e => setSrcFile(e.target.files[0]));
+  $("mode").addEventListener("change", () => {
+    const pages = $("mode").value === "pages";
+    $("minWrap").style.display = pages ? "none" : "";
+    $("scaleWrap").style.display = pages ? "" : "none";
+  });
+  setupDrop($("srcDrop"), setSrcFile);
+  $("runBtn").addEventListener("click", runExtract);
+  $("zipBtn").addEventListener("click", downloadZip);
+  $("analyzeBtn").addEventListener("click", analyzeAll);
+  $("stopBtn").addEventListener("click", () => { stopFlag = true; setStatus(1, "Stopping after the current image…"); });
+  $("removeFlaggedBtn").addEventListener("click", removeFlagged);
+  $("imgFilter").addEventListener("change", applyImgFilter);
+  $("optSlides").addEventListener("change", repaintAllImages);
+  $("optDecor").addEventListener("change", repaintAllImages);
+  $("useLabels").addEventListener("change", repaintAllImages);
+
+  // Step 2
+  $("docFile").addEventListener("change", e => setDocFile(e.target.files[0]));
+  setupDrop($("docDrop"), setDocFile);
+  $("scanBtn").addEventListener("click", () => scanDoc(false));
+  $("sampleBtn").addEventListener("click", makeSample);
+  $("exportBtn").addEventListener("click", exportPdf);
+  $("aiFillBtn").addEventListener("click", aiFill);
+  $("stopFillBtn").addEventListener("click", () => { stopFill = true; setStatus(2, "Stopping after the current step…"); });
+  $("bulkBtn").addEventListener("click", () => { $("bulkPicker").value = ""; $("bulkPicker").click(); });
+  $("fitMode").addEventListener("change", redrawAllOverlays);
+
+  $("picker").addEventListener("change", async e => {
+    const f = e.target.files[0];
+    if (f && pickTarget && await assignUpload(pickTarget, f)) refreshAfterAssign(pickTarget);
+  });
+  $("bulkPicker").addEventListener("change", onBulkPicked);
+
+  $("modalClose").addEventListener("click", closeModal);
+  $("modal").addEventListener("click", e => { if (e.target.id === "modal") closeModal(); });
+  $("modalSearch").addEventListener("input", renderModalGrid);
+})();
+
+function setupDrop(drop, handler) {
+  ["dragenter", "dragover"].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add("over"); }));
+  ["dragleave", "drop"].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove("over"); }));
+  drop.addEventListener("drop", e => handler(e.dataTransfer.files[0]));
+}
+function isPdf(f) { return f && (f.type === "application/pdf" || f.name.toLowerCase().endsWith(".pdf")); }
+
+/* ======================================================================
+   STEP 1 — EXTRACT + LABEL IMAGES
+   ====================================================================== */
+function setSrcFile(f) {
+  if (!f) return;
+  if (!isPdf(f)) return setStatus(1, "Please choose a PDF file.", true);
+  srcFile = f;
+  $("srcFileName").textContent = f.name;
+  $("runBtn").disabled = false;
+  setStatus(1, "");
+}
+
+function clearImages() {
+  images.forEach(r => URL.revokeObjectURL(r.url));
+  images = [];
+  $("imgGrid").innerHTML = "";
+  $("zipBtn").disabled = true;
+  $("analyzeBtn").disabled = true;
+  $("imgToolbar").style.display = "none";
+  // placeholders that used an extracted image lose it
+  let lost = 0;
+  slots.forEach(s => { if (s.assigned && !s.assigned.owned) { s.assigned = null; lost++; } });
+  if (slots.length) { renderSlots(); redrawAllOverlays(); }
+  updateTabCounts();
+  return lost;
+}
+
+function isFlagged(r) {
+  if (r.removed || r.dismissed) return false;
+  return (r.category === "slide_screenshot" && $("optSlides").checked) ||
+         (r.category === "decorative" && $("optDecor").checked);
+}
+function candidatePool() { return images.filter(r => !r.removed && !isFlagged(r)); }
+
+function fileNameFor(r) {
+  if ($("useLabels").checked && r.label) return r.base + "-" + pad(r.n) + "-" + slug(r.label) + ".png";
+  return r.base + "-" + (r.kind === "page" ? "page" : "img") + "-" + pad(r.n) + ".png";
+}
+
+function addImage(info) {
+  const r = Object.assign({
+    id: ++imgSeq, label: "", category: null, reason: "",
+    state: "idle", error: null, removed: false, dismissed: false
+  }, info);
+  r.url = URL.createObjectURL(r.blob);
+  images.push(r);
+  createCard(r);
+}
+
+function mkBtn(text, cls, handler) {
+  const b = document.createElement("button");
+  b.className = cls; b.textContent = text;
+  b.addEventListener("click", handler);
+  return b;
+}
+
+function createCard(r) {
+  const card = document.createElement("div");
+  const im = new Image();
+  im.src = r.url; im.alt = "image " + r.n;
+
+  const badge = document.createElement("div");
+  const label = document.createElement("input");
+  label.type = "text"; label.className = "label-input";
+  label.placeholder = "Label (AI or type your own)";
+  label.addEventListener("input", () => { r.label = label.value.trim(); paintCard(r); });
+
+  const reason = document.createElement("div");
+  const cap = document.createElement("div");
+  cap.className = "cap";
+
+  const row = document.createElement("div");
+  row.className = "btns";
+  const bDl = mkBtn("Download", "secondary sm", () => triggerDownload(r.url, fileNameFor(r)));
+  const bAI = mkBtn("✨ AI", "secondary sm", async () => {
+    if (!checkAIReady(r)) return;
+    const ok = await analyzeOne(r);
+    if (!ok && r.error) toast("AI error: " + r.error, "error");
+  });
+  const bKeep = mkBtn("Keep", "secondary sm", () => { r.dismissed = true; paintCard(r); refreshImages(); });
+  const bRm = mkBtn("Remove", "danger sm", () => { r.removed = !r.removed; paintCard(r); refreshImages(); });
+  row.append(bDl, bAI, bKeep, bRm);
+
+  card.append(im, badge, label, reason, cap, row);
+  r.el = card;
+  r.refs = { badge, label, reason, cap, bAI, bKeep, bRm };
+  $("imgGrid").appendChild(card);
+  paintCard(r);
+}
+
+function paintCard(r) {
+  const f = isFlagged(r);
+  r.el.className = "card" + (r.removed ? " removed" : "") + (f ? " flagged" : "");
+  const R = r.refs;
+
+  let text = "", cls = "badge b-muted";
+  const catName = r.category === "slide_screenshot" ? "Slide screenshot" : r.category === "decorative" ? "Logo / decoration" : "";
+  if (r.removed) { text = "Removed"; }
+  else if (r.state === "analyzing") { text = "Analyzing…"; cls = "badge b-info"; }
+  else if (r.state === "error") { text = "AI error"; cls = "badge b-bad"; }
+  else if (f) { text = "Likely " + catName.toLowerCase(); cls = "badge b-bad"; }
+  else if (r.dismissed && catName) { text = "Kept"; cls = "badge b-ok"; }
+  else if (r.category === "figure") { text = "Real figure"; cls = "badge b-ok"; }
+  else if (catName) { text = catName; }
+  else if (r.state === "done") { text = "Labeled"; cls = "badge b-ok"; }
+  R.badge.textContent = text;
+  R.badge.className = cls;
+  R.badge.style.display = text ? "" : "none";
+
+  if (r.error) { R.reason.textContent = r.error; R.reason.className = "reason err"; }
+  else { R.reason.textContent = r.reason || ""; R.reason.className = "reason"; }
+  R.reason.style.display = R.reason.textContent ? "" : "none";
+
+  if (R.label.value !== r.label) R.label.value = r.label;
+  R.cap.textContent = fileNameFor(r) + " · " + r.w + "×" + r.h + (r.kind === "embedded" ? " · page " + r.page : "");
+
+  R.bAI.disabled = r.state === "analyzing" || r.removed;
+  R.bKeep.style.display = f ? "" : "none";
+  R.bRm.textContent = r.removed ? "Restore" : "Remove";
+  R.bRm.className = (r.removed ? "secondary" : "danger") + " sm";
+}
+
+function repaintAllImages() { images.forEach(paintCard); refreshImages(); }
+
+function applyImgFilter() {
+  const f = $("imgFilter").value;
+  images.forEach(r => {
+    const show = f === "removed" ? r.removed
+               : f === "flagged" ? (!r.removed && isFlagged(r))
+               : !r.removed;
+    r.el.style.display = show ? "" : "none";
+  });
+}
+
+function updateImgSummary() {
+  const active = images.filter(r => !r.removed).length;
+  const flagged = images.filter(isFlagged).length;
+  const removed = images.filter(r => r.removed).length;
+  $("imgSummary").textContent = active + " kept · " + flagged + " flagged · " + removed + " removed";
+  $("removeFlaggedBtn").disabled = flagged === 0;
+  $("removeFlaggedBtn").textContent = "Remove all flagged" + (flagged ? " (" + flagged + ")" : "");
+  $("zipBtn").disabled = active === 0;
+}
+function refreshImages() { updateImgSummary(); applyImgFilter(); updateTabCounts(); }
+
+function removeFlagged() {
+  let n = 0;
+  images.forEach(r => { if (isFlagged(r)) { r.removed = true; n++; paintCard(r); } });
+  refreshImages();
+  toast("Removed " + n + " flagged image" + (n === 1 ? "" : "s") + ". Restore them from the filter menu if needed.", "success");
+}
+
+/* ---------- Image conversion ---------- */
+function getObj(page, name) {
+  const store = name.startsWith("g_") ? page.commonObjs : page.objs;
+  const p = new Promise(res => {
+    try { store.get(name, o => res(o)); } catch (e) { res(null); }
+  });
+  const timeout = new Promise(res => setTimeout(() => res(null), 5000));
+  return Promise.race([p, timeout]);
+}
+
+async function imageToBlob(img) {
+  const w = img.width, h = img.height;
+  const c = document.createElement("canvas");
+  c.width = w; c.height = h;
+  const ctx = c.getContext("2d");
+
+  if (img.bitmap) {
+    ctx.drawImage(img.bitmap, 0, 0);
+  } else if (img.data) {
+    const out = ctx.createImageData(w, h);
+    const d = out.data, s = img.data;
+    const K = pdfjsLib.ImageKind;
+    if (img.kind === K.RGBA_32BPP) {
+      d.set(s.subarray(0, w * h * 4));
+    } else if (img.kind === K.RGB_24BPP) {
+      for (let p = 0, q = 0; p < w * h * 3; p += 3, q += 4) {
+        d[q] = s[p]; d[q + 1] = s[p + 1]; d[q + 2] = s[p + 2]; d[q + 3] = 255;
+      }
+    } else if (img.kind === K.GRAYSCALE_1BPP) {
+      const rowBytes = (w + 7) >> 3;
+      for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+          const bit = (s[y * rowBytes + (x >> 3)] >> (7 - (x & 7))) & 1;
+          const v = bit ? 255 : 0, q = (y * w + x) * 4;
+          d[q] = d[q + 1] = d[q + 2] = v; d[q + 3] = 255;
+        }
+      }
+    } else {
+      return null;
+    }
+    ctx.putImageData(out, 0, 0);
+  } else {
+    return null;
+  }
+  return toBlob(c);
+}
+
+async function pageText(page) {
+  try {
+    const tc = await page.getTextContent();
+    return tc.items.map(i => i.str).join(" ").replace(/\s+/g, " ").trim().slice(0, 700);
+  } catch (e) { return ""; }
+}
+
+async function runExtract() {
+  if (!srcFile || isAnalyzing || isFilling) return;
+  $("runBtn").disabled = true;
+  const lost = clearImages();
+  if (lost) toast(lost + " placeholder image(s) from the old library were cleared.", "error");
+  setProgress(1, 0);
+  setStatus(1, "Loading PDF…");
+
+  try {
+    await initWorker();
+    const buf = await srcFile.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+
+    if ($("mode").value === "pages") await renderPagesAsImages(pdf);
+    else await extractEmbedded(pdf);
+
+    if (images.length) {
+      $("imgToolbar").style.display = "flex";
+      $("analyzeBtn").disabled = false;
+      $("imgFilter").value = "active";
+      refreshImages();
+      setStatus(1, "Done. " + images.length + " image" + (images.length === 1 ? "" : "s") + " found. Use the AI actions to label them or flag slide screenshots, then go to tab 2.");
+    } else {
+      setStatus(1, "No embedded images found. Try the “Render each page as an image” mode.");
+    }
+  } catch (err) {
+    console.error(err);
+    setStatus(1, "Error: " + (err.message || err), true);
+  } finally {
+    setProgress(1, null);
+    $("runBtn").disabled = false;
+  }
+}
+
+async function extractEmbedded(pdf) {
+  const OPS = pdfjsLib.OPS;
+  const minSize = Math.max(0, parseInt($("minSize").value, 10) || 0);
+  const seen = new Set();
+  const base = srcFile.name.replace(/\.pdf$/i, "");
+  let n = 0;
+
+  for (let i = 1; i <= pdf.numPages; i++) {
+    setStatus(1, "Scanning page " + i + " of " + pdf.numPages + "…");
+    setProgress(1, (i - 1) / pdf.numPages);
+
+    const page = await pdf.getPage(i);
+    const ops = await page.getOperatorList();
+    let txt = null;
+
+    for (let k = 0; k < ops.fnArray.length; k++) {
+      const fn = ops.fnArray[k];
+      let img = null;
+
+      if (fn === OPS.paintImageXObject || fn === OPS.paintJpegXObject) {
+        const key = ops.argsArray[k][0];
+        if (seen.has(key)) continue;
+        seen.add(key);
+        img = await getObj(page, key);
+      } else if (fn === OPS.paintInlineImageXObject) {
+        img = ops.argsArray[k][0];
+      } else {
+        continue;
+      }
+
+      if (!img || img.width < minSize || img.height < minSize) continue;
+      const blob = await imageToBlob(img);
+      if (!blob) continue;
+
+      if (txt === null) txt = await pageText(page);
+      n++;
+      addImage({ blob, w: img.width, h: img.height, page: i, kind: "embedded", n, base, pageText: txt });
+    }
+    page.cleanup();
+  }
+}
+
+async function renderPagesAsImages(pdf) {
+  const scale = parseFloat($("scale").value) || 2;
+  const base = srcFile.name.replace(/\.pdf$/i, "");
+  for (let i = 1; i <= pdf.numPages; i++) {
+    setStatus(1, "Rendering page " + i + " of " + pdf.numPages + "…");
+    setProgress(1, (i - 1) / pdf.numPages);
+
+    const page = await pdf.getPage(i);
+    const vp = page.getViewport({ scale });
+    const c = document.createElement("canvas");
+    c.width = Math.floor(vp.width);
+    c.height = Math.floor(vp.height);
+    await page.render({ canvasContext: c.getContext("2d"), viewport: vp }).promise;
+
+    const blob = await toBlob(c);
+    const txt = await pageText(page);
+    addImage({ blob, w: c.width, h: c.height, page: i, kind: "page", n: i, base, pageText: txt });
+    page.cleanup();
+  }
+}
+
+async function downloadZip() {
+  const keep = images.filter(r => !r.removed);
+  if (!keep.length) return;
+  $("zipBtn").disabled = true;
+  setStatus(1, "Building ZIP…");
+  try {
+    const zip = new JSZip();
+    keep.forEach(r => zip.file(fileNameFor(r), r.blob));
+    const blob = await zip.generateAsync({ type: "blob" });
+    downloadBlob(blob, (keep[0].base || "images") + "-images.zip");
+    setStatus(1, "ZIP ready (" + keep.length + " images).");
+  } catch (err) {
+    setStatus(1, "Could not build ZIP: " + err.message, true);
+  } finally {
+    updateImgSummary();
+  }
+}
+
+/* ---------- Step 1 AI: labels + slide detection ---------- */
+function getWants(r) {
+  return {
+    label: $("optLabel").checked,
+    cat: ($("optSlides").checked || $("optDecor").checked) && r.kind === "embedded"
+  };
+}
+
+function buildPrompt(r, wantLabel, wantCat, useContext) {
+  const p = [];
+  p.push("You are helping organize images extracted from medical lecture PDFs (slides, handouts, textbooks).");
+  if (r.kind === "page") p.push("The attached image is page " + r.page + " of the PDF, rendered as a picture.");
+  else p.push("The attached image was embedded on page " + r.page + " of the PDF. Its size is " + r.w + "x" + r.h + " px.");
+  if (useContext) {
+    p.push(r.pageText
+      ? 'Selectable text found on that same page (may be partial or unrelated): "' + r.pageText + '"'
+      : "There is no selectable text on that page.");
+  }
+  p.push("");
+  p.push("Reply with a JSON object containing these keys:");
+  const keys = [];
+  if (wantLabel) {
+    p.push('- "label": a short topic label (2 to 6 words, lowercase) naming what the image shows or teaches, e.g. "glomerulus histology", "ecg atrial fibrillation", "nephron anatomy diagram". For a text-heavy slide, name the slide topic from its title.');
+    keys.push('"label":"glomerulus histology"');
+  }
+  if (wantCat) {
+    p.push('- "category": exactly one of:');
+    p.push('   "figure" = a genuine standalone image: clinical or gross photo, histology/microscopy, radiograph/CT/MRI/ultrasound, ECG, anatomical or mechanism diagram, chart/graph, flowchart. A figure that has only a short title or caption still counts as "figure".');
+    p.push('   "slide_screenshot" = a screenshot or picture of an ENTIRE slide or page where text dominates (a title plus bullet points or paragraphs, often with a slide template such as header bar, logo, footer or slide number). The content could simply have been typed as text instead of pasted as an image.');
+    p.push('   "decorative" = logo, icon, background, banner, watermark, divider, university branding, or a blank or solid-color image.');
+    p.push('- "reason": one short sentence explaining your category choice.');
+    keys.push('"category":"figure"', '"reason":"short explanation"');
+  }
+  p.push("Return ONLY the JSON object, for example {" + keys.join(",") + "} with no explanation, no markdown and no code fence.");
+  return p.join("\n");
+}
+
+function checkAIReady(r) {
+  const wants = getWants(r);
+  if (!wants.label && !wants.cat) {
+    toast(r.kind === "page"
+      ? "Page images can only be labeled. Tick “Suggest a topic label”."
+      : "Tick at least one AI option first.", "error");
+    return false;
+  }
+  return aiReady();
+}
+
+// forced = {label:true, cat:false} lets AI fill run label-only regardless of the checkboxes
+async function analyzeOne(r, forced) {
+  const wants = forced || getWants(r);
+  r.state = "analyzing"; r.error = null;
+  if (wants.cat) r.dismissed = false;
+  paintCard(r);
+
+  try {
+    const dataUrl = await toDataUrl(r.url, 1280);
+    const prompt = buildPrompt(r, wants.label, wants.cat, $("optContext").checked);
+    const raw = await callAI(prompt, dataUrl, 300);
+    const obj = parseJsonObject(raw);
+
+    if (wants.label) {
+      const l = String(obj.label || "").trim().toLowerCase().slice(0, 80);
+      if (l) r.label = l;
+    }
+    if (wants.cat) {
+      const c = String(obj.category || "").trim().toLowerCase().replace(/[\s-]+/g, "_");
+      if (!["figure", "slide_screenshot", "decorative"].includes(c)) {
+        throw new Error("AI gave an unrecognized category");
+      }
+      r.category = c;
+      r.reason = String(obj.reason || "").trim();
+    }
+    r.state = "done";
+  } catch (err) {
+    console.error("AI error:", err);
+    r.state = "error";
+    r.error = err.message || String(err);
+  }
+  paintCard(r);
+  refreshImages();
+  return r.state === "done";
+}
+
+function needsAnalysis(r) {
+  const w = getWants(r);
+  if (!w.label && !w.cat) return false;
+  if (r.state !== "done") return true;
+  if (w.label && !r.label) return true;
+  if (w.cat && !r.category) return true;
+  return false;
+}
+
+async function analyzeAll() {
+  if (isAnalyzing || isFilling || !images.length) return;
+  const first = images.find(r => !r.removed);
+  if (!first || !checkAIReady(first)) return;
+
+  const todo = images.filter(r => !r.removed && needsAnalysis(r));
+  if (!todo.length) { toast("Nothing left to analyze with these options.", "success"); return; }
+
+  isAnalyzing = true; stopFlag = false;
+  $("analyzeBtn").disabled = true;
+  $("runBtn").disabled = true;
+  $("stopBtn").classList.remove("hidden");
+
+  let ok = 0, failed = 0;
+  for (let i = 0; i < todo.length; i++) {
+    if (stopFlag) break;
+    setStatus(1, "AI is analyzing image " + (i + 1) + " of " + todo.length + "…");
+    setProgress(1, i / todo.length);
+    (await analyzeOne(todo[i])) ? ok++ : failed++;
+    await sleep(800);
+  }
+
+  setProgress(1, null);
+  isAnalyzing = false;
+  $("analyzeBtn").disabled = false;
+  $("runBtn").disabled = !srcFile;
+  $("stopBtn").classList.add("hidden");
+
+  const flagged = images.filter(isFlagged).length;
+  setStatus(1, (stopFlag ? "Stopped. " : "Finished. ") + ok + " analyzed" +
+    (failed ? ", " + failed + " failed (tap ✨ AI on a card to retry)" : "") +
+    ". " + flagged + " flagged for removal.");
+  toast(flagged
+    ? flagged + " image" + (flagged === 1 ? "" : "s") + " flagged. Review them, then tap “Remove all flagged”."
+    : "AI finished. Nothing was flagged.", "success");
+  if (flagged) $("imgFilter").value = "flagged";
+  refreshImages();
+}
+
+/* ======================================================================
+   STEP 2 — FIND GREEN PLACEHOLDERS
+   ====================================================================== */
+function dilate(src, w, h, r) {
+  const tmp = new Uint8Array(w * h), out = new Uint8Array(w * h);
+  for (let y = 0; y < h; y++) {
+    const row = y * w;
+    for (let x = 0; x < w; x++) {
+      if (src[row + x]) {
+        const a = Math.max(0, x - r), b = Math.min(w - 1, x + r);
+        for (let k = a; k <= b; k++) tmp[row + k] = 1;
+      }
+    }
+  }
+  for (let x = 0; x < w; x++) {
+    for (let y = 0; y < h; y++) {
+      if (tmp[y * w + x]) {
+        const a = Math.max(0, y - r), b = Math.min(h - 1, y + r);
+        for (let k = a; k <= b; k++) out[k * w + x] = 1;
+      }
+    }
+  }
+  return out;
+}
+
+function findGreenBoxes(img, w, h, sMin, minPx) {
+  const d = img.data, n = w * h, mask = new Uint8Array(n);
+  let any = false;
+  for (let i = 0, p = 0; i < n; i++, p += 4) {
+    const r = d[p], g = d[p + 1], b = d[p + 2];
+    if (g < r || g < b || g < 70) continue;
+    const delta = g - Math.min(r, b);
+    if (delta < 25) continue;
+    if (delta / g < sMin) continue;
+    const hue = 60 * (2 + (b - r) / delta);
+    if (hue < 70 || hue > 170) continue;
+    mask[i] = 1; any = true;
+  }
+  if (!any) return [];
+
+  const dil = dilate(mask, w, h, 2);
+  const visited = new Uint8Array(n), stack = new Int32Array(n), boxes = [];
+
+  for (let i = 0; i < n; i++) {
+    if (!dil[i] || visited[i]) continue;
+    let sp = 0;
+    stack[sp++] = i; visited[i] = 1;
+    let minx = w, maxx = -1, miny = h, maxy = -1, cnt = 0;
+    while (sp) {
+      const p = stack[--sp];
+      const x = p % w, y = (p - x) / w;
+      if (mask[p]) {
+        cnt++;
+        if (x < minx) minx = x; if (x > maxx) maxx = x;
+        if (y < miny) miny = y; if (y > maxy) maxy = y;
+      }
+      if (x > 0     && dil[p - 1] && !visited[p - 1]) { visited[p - 1] = 1; stack[sp++] = p - 1; }
+      if (x < w - 1 && dil[p + 1] && !visited[p + 1]) { visited[p + 1] = 1; stack[sp++] = p + 1; }
+      if (y > 0     && dil[p - w] && !visited[p - w]) { visited[p - w] = 1; stack[sp++] = p - w; }
+      if (y < h - 1 && dil[p + w] && !visited[p + w]) { visited[p + w] = 1; stack[sp++] = p + w; }
+    }
+    if (maxx < 0) continue;
+    const bw = maxx - minx + 1, bh = maxy - miny + 1;
+    if (bw < minPx || bh < minPx) continue;
+    if (cnt / (bw * bh) < 0.5) continue;
+    if (bw * bh > 0.85 * n) continue;
+    boxes.push({ x: minx, y: miny, w: bw, h: bh });
+  }
+  return boxes;
+}
+
+function readingOrder(boxes) {
+  boxes.sort((a, b) => a.y - b.y);
+  const out = []; let row = [];
+  const flush = () => { row.sort((p, q) => p.x - q.x); out.push(...row); row = []; };
+  boxes.forEach(b => {
+    if (row.length && b.y - row[0].y > Math.min(row[0].h, b.h) / 2) flush();
+    row.push(b);
+  });
+  flush();
+  return out;
+}
+
+/* ---------- Text around each placeholder (context for the AI) ---------- */
+async function getTextItems(page) {
+  try {
+    const tc = await page.getTextContent();
+    return tc.items
+      .filter(it => it.str && it.str.trim())
+      .map(it => ({ x: it.transform[4], y: it.transform[5], w: it.width || 0, h: it.height || Math.abs(it.transform[3]) || 10, s: it.str }));
+  } catch (e) { return []; }
+}
+
+function groupLines(arr) {
+  const sorted = [...arr].sort((a, b) => (b.y - a.y) || (a.x - b.x));
+  const lines = [];
+  sorted.forEach(it => {
+    const last = lines[lines.length - 1];
+    if (last && Math.abs(last.y - it.y) < 3) last.items.push(it);
+    else lines.push({ y: it.y, items: [it] });
+  });
+  lines.forEach(l => {
+    l.items.sort((a, b) => a.x - b.x);
+    l.text = l.items.map(i => i.s).join(" ").replace(/\s+/g, " ").trim();
+  });
+  return lines; // top to bottom
+}
+
+function buildContext(items, rect) {
+  const top = rect.y + rect.h, bottom = rect.y;
+  const x1 = rect.x - 40, x2 = rect.x + rect.w + 40;
+  const inside = [], above = [], below = [];
+  items.forEach(it => {
+    const cx = it.x + it.w / 2, cy = it.y + it.h / 2;
+    if (cx >= rect.x && cx <= rect.x + rect.w && cy >= bottom && cy <= top) { inside.push(it); return; }
+    if (!(it.x < x2 && it.x + it.w > x1)) return;
+    if (it.y >= top - 2) above.push(it);
+    else if (it.y + it.h <= bottom + 2) below.push(it);
+  });
+
+  const ins = groupLines(inside).map(l => l.text).join(" ").slice(0, 150);
+  const aboveLines = groupLines(above);            // nearest to the placeholder is the LAST
+  let before = "";
+  for (let k = aboveLines.length - 1; k >= 0; k--) {
+    before = aboveLines[k].text + " " + before;
+    if (before.length > 450) break;
+  }
+  const belowLines = groupLines(below);            // nearest to the placeholder is the FIRST
+  let after = "";
+  for (let k = 0; k < belowLines.length; k++) {
+    after += " " + belowLines[k].text;
+    if (after.length > 250) break;
+  }
+  return { inside: ins, before: before.trim().slice(-450), after: after.trim().slice(0, 250) };
+}
+
+function clearDoc() {
+  slots.forEach(s => { if (s.assigned && s.assigned.owned) URL.revokeObjectURL(s.assigned.url); });
+  Object.values(pageInfo).forEach(p => URL.revokeObjectURL(p.url));
+  slots = []; pageInfo = {};
+  $("slotList").innerHTML = "";
+  $("pageList").innerHTML = "";
+  $("docResults").classList.add("hidden");
+  $("exportBtn").disabled = true;
+  updateTabCounts();
+}
+
+async function setDocFile(f) {
+  if (!f) return;
+  if (!isPdf(f)) return setStatus(2, "Please choose a PDF file.", true);
+  if (slots.some(s => s.assigned) && !confirm("Opening a new document will clear the images placed in the current one. Continue?")) return;
+  docFile = f;
+  $("docFileName").textContent = f.name;
+  docBytes = new Uint8Array(await f.arrayBuffer());
+  $("scanBtn").disabled = false;
+  setStatus(2, "");
+  await scanDoc(true);
+}
+
+async function scanDoc(auto) {
+  if (!docBytes || scanning || isFilling) return;
+  if (!auto && slots.some(s => s.assigned) &&
+      !confirm("Rescanning will clear the images placed in the document. Continue?")) return;
+
+  scanning = true;
+  $("scanBtn").disabled = true;
+  $("exportBtn").disabled = true;
+  clearDoc();
+  setProgress(2, 0);
+  setStatus(2, "Loading PDF…");
+
+  try {
+    await initWorker();
+    const pdf = await pdfjsLib.getDocument({ data: docBytes.slice(0) }).promise;
+    const sMin = { strong: 0.6, normal: 0.35, pale: 0.15 }[$("strength").value];
+    const minPt = parseFloat($("minPt").value);
+    const rotated = [];
+
+    for (let i = 1; i <= pdf.numPages; i++) {
+      setStatus(2, "Scanning page " + i + " of " + pdf.numPages + "…");
+      setProgress(2, (i - 1) / pdf.numPages);
+
+      const page = await pdf.getPage(i);
+      let scale = SCAN_SCALE;
+      const v1 = page.getViewport({ scale: 1 });
+      if (v1.width * v1.height * scale * scale > 5e6) scale = Math.sqrt(5e6 / (v1.width * v1.height));
+      const vp = page.getViewport({ scale });
+
+      const c = document.createElement("canvas");
+      c.width = Math.floor(vp.width); c.height = Math.floor(vp.height);
+      const ctx = c.getContext("2d", { willReadFrequently: true });
+      ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, c.width, c.height);
+      await page.render({ canvasContext: ctx, viewport: vp }).promise;
+
+      const data = ctx.getImageData(0, 0, c.width, c.height);
+      const boxes = readingOrder(findGreenBoxes(data, c.width, c.height, sMin, Math.round(minPt * scale)));
+      if (page.rotate) rotated.push(i);
+
+      if (boxes.length) {
+        const items = await getTextItems(page);
+        const url = await new Promise(res => c.toBlob(b => res(URL.createObjectURL(b)), "image/jpeg", 0.85));
+        pageInfo[i] = { url, w: c.width, h: c.height, overlay: null };
+        boxes.forEach(b => {
+          const [x1, y1] = vp.convertToPdfPoint(b.x, b.y + b.h);
+          const [x2, y2] = vp.convertToPdfPoint(b.x + b.w, b.y);
+          const rect = { x: Math.min(x1, x2), y: Math.min(y1, y2), w: Math.abs(x2 - x1), h: Math.abs(y2 - y1) };
+          slots.push({
+            id: nextSlotId++, num: 0, page: i, px: b, pdf: rect,
+            context: buildContext(items, rect), assigned: null, aiNote: ""
+          });
+        });
+      }
+      page.cleanup();
+    }
+
+    setProgress(2, null);
+    if (!slots.length) {
+      setStatus(2, "No green placeholders found. Try “Include pale greens” or a smaller minimum size, then scan again.", true);
+    } else {
+      setStatus(2, rotated.length
+        ? "Done. Note: page(s) " + rotated.join(", ") + " are rotated, so images there may come out rotated."
+        : "Done.");
+      showDocResults();
+    }
+  } catch (err) {
+    console.error(err);
+    setProgress(2, null);
+    setStatus(2, "Error: " + (err.message || err), true);
+  } finally {
+    scanning = false;
+    $("scanBtn").disabled = false;
+  }
+}
+
+/* ======================================================================
+   STEP 2 — PLACEHOLDER UI
+   ====================================================================== */
+function showDocResults() {
+  $("docResults").classList.remove("hidden");
+  renderSlots();
+  renderPages();
+}
+function renumber() { slots.forEach((s, i) => { s.num = i + 1; }); }
+
+function updateDocSummary() {
+  const pages = [...new Set(slots.map(s => s.page))];
+  const filled = slots.filter(s => s.assigned).length;
+  $("docSummary").textContent = slots.length + " green placeholder" + (slots.length === 1 ? "" : "s") +
+    " on " + pages.length + " page" + (pages.length === 1 ? "" : "s");
+  $("pagesLine").textContent = "Pages: " + pages.join(", ") + "  ·  " + filled + " of " + slots.length + " filled";
+  $("exportBtn").disabled = filled === 0;
+  $("exportBtn").textContent = filled ? "Export PDF (" + filled + " image" + (filled === 1 ? "" : "s") + ")" : "Export PDF";
+  updateTabCounts();
+}
+
+function clearAssigned(s) {
+  if (s.assigned && s.assigned.owned) URL.revokeObjectURL(s.assigned.url);
+  s.assigned = null;
+  s.aiNote = "";
+}
+
+function renderSlots() {
+  renumber();
+  updateDocSummary();
+  const list = $("slotList");
+  list.innerHTML = "";
+
+  slots.forEach(s => {
+    const a = s.assigned;
+    const low = a && a.conf === "low";
+    const card = el("div", "slot" + (a ? (low ? " lowconf" : " has") : ""));
+
+    const thumb = el("div", "thumb");
+    if (a) { const im = new Image(); im.src = a.url; thumb.appendChild(im); }
+    else thumb.appendChild(el("div", "sq"));
+
+    const info = el("div", "slot-info");
+    const title = el("div", "slot-title", "#" + s.num + "  ·  Page " + s.page);
+    if (a && a.conf) title.appendChild(el("span", "badge " + (a.conf === "high" ? "b-ok" : a.conf === "medium" ? "b-info" : "b-warn"), "AI · " + a.conf));
+    info.appendChild(title);
+    info.appendChild(el("div", "slot-meta",
+      ptToCm(s.pdf.w) + " × " + ptToCm(s.pdf.h) + " cm  ·  " + (a ? a.name : "No image yet")));
+    const note = (a && a.note) ? a.note : s.aiNote;
+    if (note) info.appendChild(el("div", "slot-note", note));
+
+    const c = s.context || {};
+    const det = document.createElement("details");
+    det.appendChild(el("summary", null, "Text around this placeholder"));
+    det.appendChild(el("div", null,
+      "Inside: " + (c.inside || "(none)") + "\nBefore: " + (c.before || "(none)") + "\nAfter: " + (c.after || "(none)")));
+    info.appendChild(det);
+
+    const btns = el("div", "slot-btns");
+    const bLib = el("button", "sm", a ? "Change" : "Pick image");
+    bLib.title = "Choose from the images extracted in Step 1";
+    bLib.disabled = !images.length;
+    bLib.addEventListener("click", () => openLibrary(s));
+    btns.appendChild(bLib);
+
+    const bUp = el("button", "secondary sm", "Upload");
+    bUp.addEventListener("click", () => { pickTarget = s; $("picker").value = ""; $("picker").click(); });
+    btns.appendChild(bUp);
+
+    if (a) {
+      const bClr = el("button", "secondary sm", "Clear");
+      bClr.addEventListener("click", () => { clearAssigned(s); refreshAfterAssign(s); });
+      btns.appendChild(bClr);
+    }
+    const bLoc = el("button", "secondary sm", "Locate");
+    bLoc.addEventListener("click", () => locate(s));
+    btns.appendChild(bLoc);
+
+    const bIgn = el("button", "dangerline sm", "Ignore");
+    bIgn.title = "This is not a real placeholder. Remove it from the list.";
+    bIgn.addEventListener("click", () => ignoreSlot(s));
+    btns.appendChild(bIgn);
+
+    card.append(thumb, info, btns);
+    list.appendChild(card);
+  });
+}
+
+function renderPages() {
+  const list = $("pageList");
+  list.innerHTML = "";
+  const pageNums = [...new Set(slots.map(s => s.page))].sort((a, b) => a - b);
+
+  pageNums.forEach(pn => {
+    const info = pageInfo[pn];
+    const box = el("div", "pagebox");
+    box.id = "page-" + pn;
+
+    const head = el("div", "pagehead", "Page " + pn + "  ");
+    head.appendChild(el("span", null, "placeholders " + slots.filter(s => s.page === pn).map(s => "#" + s.num).join(", ")));
+
+    const wrap = el("div", "pagewrap");
+    const im = new Image(); im.src = info.url; im.alt = "Page " + pn;
+    const cv = document.createElement("canvas");
+    cv.width = info.w; cv.height = info.h;
+    info.overlay = cv;
+
+    cv.addEventListener("click", e => {
+      const r = cv.getBoundingClientRect();
+      const x = (e.clientX - r.left) * cv.width / r.width;
+      const y = (e.clientY - r.top) * cv.height / r.height;
+      const hit = slots.find(s => s.page === pn &&
+        x >= s.px.x && x <= s.px.x + s.px.w && y >= s.px.y && y <= s.px.y + s.px.h);
+      if (hit) { pickTarget = hit; $("picker").value = ""; $("picker").click(); }
+    });
+
+    wrap.append(im, cv);
+    box.append(head, wrap);
+    list.appendChild(box);
+    drawOverlay(pn);
+  });
+}
+
+function drawFit(ctx, img, x, y, w, h, fit) {
+  const nw = img.naturalWidth, nh = img.naturalHeight;
+  if (fit === "stretch") { ctx.drawImage(img, x, y, w, h); return; }
+  if (fit === "cover") {
+    const ia = nw / nh, ta = w / h;
+    let sx = 0, sy = 0, sw = nw, sh = nh;
+    if (ia > ta) { sw = nh * ta; sx = (nw - sw) / 2; } else { sh = nw / ta; sy = (nh - sh) / 2; }
+    ctx.drawImage(img, sx, sy, sw, sh, x, y, w, h);
+    return;
+  }
+  const sc = Math.min(w / nw, h / nh), dw = nw * sc, dh = nh * sc;
+  ctx.drawImage(img, x + (w - dw) / 2, y + (h - dh) / 2, dw, dh);
+}
+
+function drawOverlay(pn) {
+  const info = pageInfo[pn];
+  if (!info || !info.overlay) return;
+  const cv = info.overlay, ctx = cv.getContext("2d");
+  ctx.clearRect(0, 0, cv.width, cv.height);
+  const fit = $("fitMode").value;
+  const lw = Math.max(2, cv.width / 260);
+
+  slots.filter(s => s.page === pn).forEach(s => {
+    const { x, y, w, h } = s.px;
+    if (s.assigned) {
+      ctx.fillStyle = "#fff";
+      ctx.fillRect(x - 1, y - 1, w + 2, h + 2);
+      drawFit(ctx, s.assigned.img, x, y, w, h, fit);
+    }
+    const color = s.id === selectedId ? "#f5b400"
+      : (s.assigned ? (s.assigned.conf === "low" ? "#d97706" : "#16a34a") : "#e11d48");
+    ctx.lineWidth = s.id === selectedId ? lw * 2 : lw;
+    ctx.setLineDash(s.assigned ? [] : [lw * 3, lw * 2]);
+    ctx.strokeStyle = color;
+    ctx.strokeRect(x, y, w, h);
+    ctx.setLineDash([]);
+
+    const r = Math.min(Math.max(Math.min(w, h) * 0.2, cv.width / 70), cv.width / 28);
+    ctx.fillStyle = color;
+    ctx.beginPath(); ctx.arc(x + r * 1.1, y + r * 1.1, r, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = "#fff";
+    ctx.font = "bold " + Math.round(r * 1.15) + "px sans-serif";
+    ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.fillText(String(s.num), x + r * 1.1, y + r * 1.1 + r * 0.05);
+  });
+}
+function redrawAllOverlays() { Object.keys(pageInfo).forEach(p => drawOverlay(+p)); }
+
+function locate(s) {
+  selectedId = s.id;
+  drawOverlay(s.page);
+  const box = $("page-" + s.page);
+  if (box) box.scrollIntoView({ behavior: "smooth", block: "center" });
+  clearTimeout(selTimer);
+  selTimer = setTimeout(() => { selectedId = null; drawOverlay(s.page); }, 2000);
+}
+
+function ignoreSlot(s) {
+  clearAssigned(s);
+  slots = slots.filter(x => x.id !== s.id);
+  if (!slots.length) { clearDoc(); setStatus(2, "All detections were ignored. Scan again if needed.", true); return; }
+  renumber();
+  renderSlots();
+  renderPages();
+}
+
+function refreshAfterAssign(s) {
+  renderSlots();
+  const head = document.querySelector("#page-" + s.page + " .pagehead span");
+  if (head) head.textContent = "placeholders " + slots.filter(x => x.page === s.page).map(x => "#" + x.num).join(", ");
+  drawOverlay(s.page);
+}
+
+/* ---------- Assigning images ---------- */
+function imageDisplayName(r) {
+  return r.label ? r.label + " (img " + r.n + ")" : "image " + r.n + " (page " + r.page + ")";
+}
+
+async function assignLibrary(slot, r, meta) {
+  if (!r.imgEl) r.imgEl = await loadImg(r.url);
+  clearAssigned(slot);
+  slot.assigned = {
+    name: imageDisplayName(r), url: r.url, img: r.imgEl, blob: r.blob, mime: "image/png",
+    owned: false, imageId: r.id, conf: meta ? meta.conf : null, note: meta ? meta.note : ""
+  };
+}
+
+async function assignUpload(slot, file) {
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await loadImg(url);
+    clearAssigned(slot);
+    slot.assigned = {
+      name: file.name, url, img, blob: file, mime: file.type,
+      owned: true, imageId: null, conf: null, note: ""
+    };
+    return true;
+  } catch (e) {
+    URL.revokeObjectURL(url);
+    toast(file.name + ": " + e.message, "error");
+    return false;
+  }
+}
+
+async function onBulkPicked(e) {
+  const files = [...e.target.files].sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+  if (!files.length) return;
+  const empty = slots.filter(s => !s.assigned);
+  if (!empty.length) { toast("All placeholders already have images.", "error"); return; }
+  let used = 0;
+  for (let i = 0; i < files.length && i < empty.length; i++) {
+    if (await assignUpload(empty[i], files[i])) used++;
+  }
+  renderSlots();
+  redrawAllOverlays();
+  const extra = files.length - empty.length;
+  toast("Added " + used + " image" + (used === 1 ? "" : "s") + (extra > 0 ? ". " + extra + " extra file(s) had no empty square." : "."), "success");
+}
+
+/* ---------- Library picker (images from Step 1) ---------- */
+function openLibrary(slot) {
+  pickTarget = slot;
+  $("modalTitle").textContent = "Choose an image for #" + slot.num;
+  $("modalSearch").value = "";
+  renderModalGrid();
+  $("modal").classList.remove("hidden");
+}
+function closeModal() { $("modal").classList.add("hidden"); }
+
+function renderModalGrid() {
+  const q = $("modalSearch").value.trim().toLowerCase();
+  const grid = $("modalGrid");
+  grid.innerHTML = "";
+  const list = images.filter(r => !r.removed && (!q || (r.label || "").toLowerCase().includes(q)));
+  if (!list.length) { grid.appendChild(el("div", "sub", "No images match.")); return; }
+
+  list.forEach(r => {
+    const c = el("div", "mcard");
+    const im = new Image(); im.src = r.url;
+    c.append(im, el("div", "mlabel", r.label || ("image " + r.n + " (page " + r.page + ")")));
+    const used = slots.filter(s => s.assigned && s.assigned.imageId === r.id).map(s => "#" + s.num);
+    if (used.length) c.appendChild(el("div", "mused", "Used in " + used.join(", ")));
+    if (isFlagged(r)) c.appendChild(el("div", "mused", "AI flagged this"));
+    c.addEventListener("click", async () => {
+      const target = pickTarget;
+      closeModal();
+      if (!target) return;
+      await assignLibrary(target, r, null);
+      refreshAfterAssign(target);
+    });
+    grid.appendChild(c);
+  });
+}
+
+/* ======================================================================
+   STEP 2 — AI AUTO-FILL
+   ====================================================================== */
+const confRank = c => c === "high" ? 3 : c === "medium" ? 2 : c === "low" ? 1 : 0;
+const clean = s => String(s || "").replace(/"/g, "'").replace(/\s+/g, " ").trim();
+
+function buildMatchPrompt(chunk, pool, reuse, useSrcText) {
+  const p = [];
+  p.push("You are matching images to placeholders in a medical document.");
+  p.push("The document has numbered placeholders where an image must be inserted. For each placeholder you get the text found inside it and around it. Below the placeholders is a library of available images, each with an ID and a short label describing what it shows.");
+  p.push("");
+  p.push("PLACEHOLDERS:");
+  chunk.forEach(s => {
+    const c = s.context || {};
+    p.push("[P" + s.num + '] page ' + s.page + '. Text inside the placeholder: "' + (clean(c.inside) || "(none)") +
+      '". Text just before it: "' + (clean(c.before) || "(none)") +
+      '". Text just after it: "' + (clean(c.after) || "(none)") + '".');
+  });
+  p.push("");
+  p.push("IMAGES:");
+  pool.forEach(r => {
+    let line = "[I" + r.id + '] "' + clean(r.label) + '"';
+    if (useSrcText && r.pageText) line += ' (from a source page with text: "' + clean(r.pageText).slice(0, 160) + '")';
+    p.push(line);
+  });
+  p.push("");
+  p.push("Rules:");
+  p.push("- For each placeholder pick the single best image ID, or null if no image fits well. Do not force a match.");
+  p.push(reuse
+    ? "- The same image may be used for more than one placeholder if appropriate."
+    : "- Each image may be used for at most one placeholder.");
+  p.push('- "confidence" is "high", "medium" or "low".');
+  p.push('- "reason" is one short sentence.');
+  p.push('Return ONLY a JSON object like {"matches":[{"placeholder":1,"image":"I12","confidence":"high","reason":"short reason"}]} with one entry per placeholder, no explanation, no markdown, no code fence.');
+  return p.join("\n");
+}
+
+async function aiFill() {
+  if (isFilling || isAnalyzing || scanning) return;
+  if (!images.length) { toast("Step 1 first: extract images from a PDF.", "error"); showTab("images"); return; }
+  if (!slots.length) { toast("Scan a document with green placeholders first.", "error"); return; }
+  if (!aiReady()) return;
+
+  const onlyEmpty = $("onlyEmpty").checked, reuse = $("allowReuse").checked;
+  const minConf = $("minConf").value, useSrc = $("matchSrcText").checked;
+  const targets = slots.filter(s => !onlyEmpty || !s.assigned);
+  if (!targets.length) { toast("Every placeholder already has an image.", "success"); return; }
+
+  isFilling = true; stopFill = false;
+  $("aiFillBtn").disabled = true;
+  $("scanBtn").disabled = true;
+  $("stopFillBtn").classList.remove("hidden");
+
+  let placed = 0, failedChunks = 0, unlabeledLeft = 0;
+  try {
+    let pool = candidatePool();
+    if (!pool.length) { toast("No usable images: they are all removed or flagged.", "error"); return; }
+
+    // 1) make sure every candidate image has a label
+    const unl = pool.filter(r => !r.label);
+    for (let i = 0; i < unl.length; i++) {
+      if (stopFill) break;
+      setStatus(2, "AI is labeling image " + (i + 1) + " of " + unl.length + " (needed for matching)…");
+      setProgress(2, i / unl.length);
+      await analyzeOne(unl[i], { label: true, cat: false });
+      await sleep(600);
+    }
+    pool = pool.filter(r => r.label);
+    unlabeledLeft = unl.length - unl.filter(r => r.label).length;
+    if (!pool.length) throw new Error("No image could be labeled. Check your AI settings and try again.");
+
+    // 2) clear the targets if the user wants a full redo
+    if (!onlyEmpty) targets.forEach(clearAssigned);
+    const used = new Set(slots.filter(s => s.assigned && s.assigned.imageId != null).map(s => s.assigned.imageId));
+
+    // 3) match in chunks
+    for (let c = 0; c < targets.length; c += MATCH_CHUNK) {
+      if (stopFill) break;
+      const chunk = targets.slice(c, c + MATCH_CHUNK);
+      const avail = reuse ? pool : pool.filter(r => !used.has(r.id));
+      setStatus(2, "AI is matching placeholders " + (c + 1) + "–" + (c + chunk.length) + " of " + targets.length + "…");
+      setProgress(2, c / targets.length);
+
+      if (!avail.length) { chunk.forEach(s => { s.aiNote = "No unused images left."; }); continue; }
+
+      try {
+        const prompt = buildMatchPrompt(chunk, avail, reuse, useSrc);
+        const raw = await callAI(prompt, null, 4000);
+        const obj = parseJsonObject(raw);
+        const arr = Array.isArray(obj.matches) ? obj.matches : [];
+        const normConf = m => { const x = String(m.confidence || "").toLowerCase(); return ["high", "medium", "low"].includes(x) ? x : "low"; };
+        arr.sort((a, b) => confRank(normConf(b)) - confRank(normConf(a)));
+
+        const answered = new Set();
+        for (const m of arr) {
+          const num = Number(String(m.placeholder).replace(/\D/g, ""));
+          const s = chunk.find(x => x.num === num);
+          if (!s || answered.has(s.id)) continue;
+          answered.add(s.id);
+
+          const reason = String(m.reason || "").trim();
+          const conf = normConf(m);
+          const idDigits = m.image == null ? "" : String(m.image).replace(/\D/g, "");
+          const img = idDigits ? avail.find(r => String(r.id) === idDigits) : null;
+
+          if (!img) { s.aiNote = reason ? "No match: " + reason : "AI found no good match."; continue; }
+          if (confRank(conf) < confRank(minConf)) { s.aiNote = "Skipped (" + conf + " confidence): " + reason; continue; }
+          if (!reuse && used.has(img.id)) { s.aiNote = "Best image was already used elsewhere."; continue; }
+
+          await assignLibrary(s, img, { conf, note: reason });
+          used.add(img.id);
+          placed++;
+        }
+        chunk.forEach(s => { if (!answered.has(s.id)) s.aiNote = "AI gave no answer for this one."; });
+      } catch (err) {
+        console.error("Match error:", err);
+        failedChunks++;
+        chunk.forEach(s => { s.aiNote = "AI error: " + (err.message || err); });
+      }
+
+      renderSlots();
+      redrawAllOverlays();
+      await sleep(500);
+    }
+
+    const left = slots.filter(s => !s.assigned).length;
+    setStatus(2, (stopFill ? "Stopped. " : "Finished. ") + "Placed " + placed + " image" + (placed === 1 ? "" : "s") + ", " + left + " placeholder" + (left === 1 ? "" : "s") + " still empty." +
+      (failedChunks ? " " + failedChunks + " batch(es) failed. Run auto-fill again to retry." : "") +
+      (unlabeledLeft ? " " + unlabeledLeft + " image(s) could not be labeled and were skipped." : ""),
+      failedChunks > 0);
+    toast("AI placed " + placed + " image" + (placed === 1 ? "" : "s") + ". Review them, then export.", placed ? "success" : "error");
+  } catch (err) {
+    console.error(err);
+    setStatus(2, "AI fill failed: " + (err.message || err), true);
+    toast("AI fill failed: " + (err.message || err), "error");
+  } finally {
+    setProgress(2, null);
+    isFilling = false;
+    $("aiFillBtn").disabled = false;
+    $("scanBtn").disabled = !docBytes;
+    $("stopFillBtn").classList.add("hidden");
+    renderSlots();
+    redrawAllOverlays();
+    updateTabCounts();
+  }
+}
+
+/* ======================================================================
+   EXPORT
+   ====================================================================== */
+function canvasToBytes(canvas, type) {
+  return new Promise(res => {
+    canvas.toBlob(async b => res(new Uint8Array(await b.arrayBuffer())),
+      type === "jpg" ? "image/jpeg" : "image/png", 0.92);
+  });
+}
+
+async function prepareImage(a, aspect, fit) {
+  const img = a.img, nw = img.naturalWidth, nh = img.naturalHeight;
+  const isPng = a.mime === "image/png";
+  const isJpg = a.mime === "image/jpeg";
+
+  if (isPng && fit !== "cover" && Math.max(nw, nh) <= MAX_IMG_DIM) {
+    return { bytes: new Uint8Array(await a.blob.arrayBuffer()), type: "png" };
+  }
+
+  let sx = 0, sy = 0, sw = nw, sh = nh;
+  if (fit === "cover") {
+    const ia = nw / nh;
+    if (ia > aspect) { sw = nh * aspect; sx = (nw - sw) / 2; }
+    else { sh = nw / aspect; sy = (nh - sh) / 2; }
+  }
+  const scale = Math.min(1, MAX_IMG_DIM / Math.max(sw, sh));
+  const cw = Math.max(1, Math.round(sw * scale)), ch = Math.max(1, Math.round(sh * scale));
+  const c = document.createElement("canvas");
+  c.width = cw; c.height = ch;
+  const ctx = c.getContext("2d");
+  if (isJpg) { ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, cw, ch); }
+  ctx.drawImage(img, sx, sy, sw, sh, 0, 0, cw, ch);
+  const type = isJpg ? "jpg" : "png";
+  return { bytes: await canvasToBytes(c, type), type };
+}
+
+async function exportPdf() {
+  const filled = slots.filter(s => s.assigned);
+  if (!filled.length) return;
+  $("exportBtn").disabled = true;
+  setProgress(2, 0);
+
+  try {
+    setStatus(2, "Building PDF…");
+    const doc = await PDFLib.PDFDocument.load(docBytes.slice(0), { ignoreEncryption: true });
+    const pgs = doc.getPages();
+    const fit = $("fitMode").value;
+    const hideEmpty = $("hideEmpty").checked;
+    const white = PDFLib.rgb(1, 1, 1);
+
+    for (let i = 0; i < slots.length; i++) {
+      const s = slots[i];
+      setStatus(2, "Placing image " + (i + 1) + " of " + slots.length + "…");
+      setProgress(2, i / slots.length);
+
+      const page = pgs[s.page - 1];
+      const { x, y, w, h } = s.pdf;
+
+      if (s.assigned || hideEmpty) {
+        page.drawRectangle({ x: x - PAD_PT, y: y - PAD_PT, width: w + PAD_PT * 2, height: h + PAD_PT * 2, color: white });
+      }
+      if (!s.assigned) continue;
+
+      const prep = await prepareImage(s.assigned, w / h, fit);
+      const emb = prep.type === "png" ? await doc.embedPng(prep.bytes) : await doc.embedJpg(prep.bytes);
+
+      let dw = w, dh = h, dx = x, dy = y;
+      if (fit === "contain") {
+        const sc = Math.min(w / emb.width, h / emb.height);
+        dw = emb.width * sc; dh = emb.height * sc;
+        dx = x + (w - dw) / 2; dy = y + (h - dh) / 2;
+      }
+      page.drawImage(emb, { x: dx, y: dy, width: dw, height: dh });
+    }
+
+    setStatus(2, "Saving…");
+    const out = await doc.save();
+    const name = docFile.name.replace(/\.pdf$/i, "") + "-with-images.pdf";
+    downloadBlob(new Blob([out], { type: "application/pdf" }), name);
+    setStatus(2, "Exported " + filled.length + " image" + (filled.length === 1 ? "" : "s") + " into " + name);
+    toast("PDF exported", "success");
+  } catch (err) {
+    console.error(err);
+    setStatus(2, "Export failed: " + (err.message || err), true);
+  } finally {
+    setProgress(2, null);
+    updateDocSummary();
+  }
+}
+
+/* ======================================================================
+   SAMPLE PDF (for testing the AI matching)
+   ====================================================================== */
+async function makeSample() {
+  try {
+    const { PDFDocument, StandardFonts, rgb } = PDFLib;
+    const doc = await PDFDocument.create();
+    const font = await doc.embedFont(StandardFonts.Helvetica);
+    const bold = await doc.embedFont(StandardFonts.HelveticaBold);
+    const dark = rgb(0.1, 0.1, 0.1);
+    const lines = (page, arr, x, y) => arr.forEach((t, i) =>
+      page.drawText(t, { x, y: y - i * 16, size: 11, font, color: dark }));
+
+    const p1 = doc.addPage([595, 842]);
+    p1.drawText("Sample notes: kidney and heart", { x: 50, y: 790, size: 20, font: bold, color: dark });
+    lines(p1, [
+      "Glomerulus histology",
+      "Under the microscope the glomerulus appears as a tuft of capillaries",
+      "surrounded by Bowman's capsule."
+    ], 50, 755);
+    p1.drawRectangle({ x: 50, y: 540, width: 240, height: 160, color: rgb(0, 1, 0) });
+    lines(p1, [
+      "Figure 1. Normal glomerulus (H&E stain).",
+      "",
+      "ECG in atrial fibrillation",
+      "The rhythm is irregularly irregular with no distinct P waves."
+    ], 50, 520);
+    p1.drawRectangle({ x: 50, y: 300, width: 300, height: 150, color: rgb(0, 0.69, 0.31) });
+    lines(p1, ["Figure 2. ECG tracing."], 50, 280);
+
+    const p2 = doc.addPage([595, 842]);
+    p2.drawText("Chest imaging", { x: 50, y: 790, size: 20, font: bold, color: dark });
+    lines(p2, [
+      "Lobar pneumonia shows consolidation with air bronchograms on chest X-ray."
+    ], 50, 755);
+    p2.drawRectangle({ x: 50, y: 560, width: 220, height: 160, color: rgb(0.57, 0.82, 0.31) });
+    lines(p2, ["Figure 3. Chest X-ray in pneumonia."], 50, 540);
+
+    const bytes = await doc.save();
+    downloadBlob(new Blob([bytes], { type: "application/pdf" }), "sample-green-placeholders.pdf");
+    toast("Sample downloaded (3 placeholders: glomerulus, ECG, chest X-ray). Open it here to test.", "success");
+  } catch (err) {
+    toast("Could not create the sample: " + err.message, "error");
+  }
+}
+</script>
+</body>
+</html>
