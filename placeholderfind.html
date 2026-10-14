@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PDF Placeholder Filler</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: #f6f7f9; --card: #ffffff; --text: #1c2430; --muted: #6b7684;
+    --accent: #2563eb; --border: #dfe3e8; --danger: #dc2626; --success: #16a34a; --amber: #f5b400;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #111418; --card: #1b2027; --text: #e8ecf1; --muted: #93a0ae;
+      --accent: #5b8cff; --border: #2c343f; --danger: #f06a6a; --success: #4cc27a; --amber: #f5c542;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 20px; background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  }
+  main { max-width: 900px; margin: 0 auto; }
+  h1 { margin: 0 0 4px; font-size: 24px; }
+  h2 { margin: 26px 0 10px; font-size: 18px; }
+  .sub { margin: 0 0 20px; color: var(--muted); font-size: 14px; line-height: 1.5; }
+  .drop {
+    display: block; padding: 28px 16px; text-align: center; cursor: pointer;
+    background: var(--card); border: 2px dashed var(--border); border-radius: 14px;
+    transition: border-color .15s;
+  }
+  .drop.over { border-color: var(--accent); }
+  .drop input { display: none; }
+  .drop strong { display: block; font-size: 16px; margin-bottom: 4px; }
+  .drop span { color: var(--muted); font-size: 13px; word-break: break-all; }
+  .options {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    gap: 12px; margin: 16px 0;
+  }
+  label.opt { font-size: 13px; color: var(--muted); display: flex; flex-direction: column; gap: 6px; }
+  select {
+    padding: 10px; border-radius: 10px; border: 1px solid var(--border);
+    background: var(--card); color: var(--text); font-size: 15px; width: 100%;
+  }
+  .check { display: flex; gap: 8px; align-items: center; font-size: 14px; cursor: pointer; }
+  .actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  button {
+    padding: 12px 18px; border: 0; border-radius: 10px; font-size: 15px; font-weight: 600;
+    background: var(--accent); color: #fff; cursor: pointer;
+  }
+  button.secondary { background: var(--card); color: var(--text); border: 1px solid var(--border); }
+  button.danger { background: var(--card); color: var(--danger); border: 1px solid var(--border); }
+  button.sm { padding: 7px 11px; font-size: 13px; border-radius: 8px; }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  progress { width: 100%; height: 8px; margin-top: 16px; display: none; }
+  #status { margin-top: 10px; font-size: 14px; color: var(--muted); min-height: 20px; line-height: 1.5; }
+  #status.error { color: var(--danger); }
+  .hidden { display: none !important; }
+
+  #summary { font-size: 20px; margin: 0 0 4px; }
+  .pages-line { color: var(--muted); font-size: 14px; margin-bottom: 14px; }
+
+  .slot {
+    display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
+    background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+    padding: 10px 12px; margin-bottom: 10px;
+  }
+  .slot.has { border-color: var(--success); }
+  .thumb {
+    width: 76px; height: 76px; border-radius: 8px; flex-shrink: 0; overflow: hidden;
+    display: flex; align-items: center; justify-content: center;
+    background: repeating-conic-gradient(#8883 0% 25%, transparent 0% 50%) 50% / 14px 14px;
+  }
+  .thumb img { width: 100%; height: 100%; object-fit: contain; }
+  .thumb .sq { width: 46px; height: 46px; background: #00c853; border-radius: 4px; }
+  .slot-info { flex: 1; min-width: 160px; }
+  .slot-title { font-weight: 700; font-size: 16px; }
+  .slot-meta { font-size: 12px; color: var(--muted); margin-top: 3px; word-break: break-all; line-height: 1.5; }
+  .slot-btns { display: flex; gap: 6px; flex-wrap: wrap; }
+
+  .pagebox {
+    background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+    padding: 10px; margin-bottom: 14px;
+  }
+  .pagehead { font-size: 14px; font-weight: 700; margin-bottom: 8px; }
+  .pagehead span { color: var(--muted); font-weight: 400; }
+  .pagewrap { position: relative; line-height: 0; }
+  .pagewrap img { width: 100%; height: auto; display: block; border-radius: 4px; }
+  .pagewrap canvas {
+    position: absolute; left: 0; top: 0; width: 100%; height: 100%; cursor: pointer;
+  }
+
+  #toast {
+    position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%);
+    background: var(--card); color: var(--text); border: 1px solid var(--border);
+    padding: 11px 16px; border-radius: 10px; font-size: 14px; max-width: 90vw;
+    box-shadow: 0 8px 28px rgba(0,0,0,.3); display: none; z-index: 50;
+  }
+  #toast.show { display: block; }
+  #toast.error { border-left: 4px solid var(--danger); }
+  #toast.success { border-left: 4px solid var(--success); }
+</style>
+</head>
+<body>
+<main>
+  <h1>PDF Placeholder Filler</h1>
+  <p class="sub">Finds green squares/rectangles in a PDF, numbers them, and lets you put an image into each one, then exports a new PDF. Everything runs in your browser. Nothing is uploaded.</p>
+
+  <label class="drop" id="drop">
+    <input type="file" id="file" accept="application/pdf,.pdf">
+    <strong>Tap to choose a PDF</strong>
+    <span id="fileName">or drag and drop it here</span>
+  </label>
+
+  <div class="actions" style="margin-top:12px">
+    <button id="sampleBtn" class="secondary sm">Download a sample test PDF</button>
+  </div>
+
+  <div class="options">
+    <label class="opt">Green strength
+      <select id="strength">
+        <option value="strong">Strong greens only (e.g. #00FF00)</option>
+        <option value="normal" selected>Normal</option>
+        <option value="pale">Include pale greens</option>
+      </select>
+    </label>
+    <label class="opt">Ignore shapes smaller than
+      <select id="minSize">
+        <option value="8">Very small (8 pt)</option>
+        <option value="15" selected>Normal (15 pt)</option>
+        <option value="30">Large only (30 pt)</option>
+      </select>
+    </label>
+  </div>
+  <div class="actions">
+    <button id="scanBtn" disabled>Scan for green placeholders</button>
+  </div>
+
+  <progress id="bar" value="0" max="1"></progress>
+  <div id="status"></div>
+
+  <section id="results" class="hidden">
+    <h2 id="summary"></h2>
+    <div class="pages-line" id="pagesLine"></div>
+
+    <div class="options">
+      <label class="opt">How images fit inside a square
+        <select id="fitMode">
+          <option value="contain" selected>Fit inside (keep whole image)</option>
+          <option value="cover">Fill the square (crop edges)</option>
+          <option value="stretch">Stretch to the square</option>
+        </select>
+      </label>
+      <label class="check" style="align-self:end">
+        <input type="checkbox" id="hideEmpty"> Hide green squares that have no image
+      </label>
+    </div>
+
+    <div class="actions" style="margin-bottom:14px">
+      <button id="bulkBtn" class="secondary">Add several images in order</button>
+      <button id="exportBtn" disabled>Export PDF</button>
+    </div>
+    <div class="sub" style="margin:-4px 0 14px">“Add several images” puts the files you pick into the empty squares in filename order.</div>
+
+    <div id="slotList"></div>
+
+    <h2>Page previews</h2>
+    <div class="sub" style="margin-top:-4px">Red dashed boxes are empty placeholders. Tap one to add an image to it.</div>
+    <div id="pageList"></div>
+  </section>
+</main>
+
+<input type="file" id="picker" accept="image/*" class="hidden">
+<input type="file" id="bulkPicker" accept="image/*" multiple class="hidden">
+<div id="toast"></div>
+
+<script>
+const PDFJS_BASE = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/";
+const SCAN_SCALE = 1.5;
+const MAX_IMG_DIM = 3000;
+const PAD_PT = 1.5;
+const $ = id => document.getElementById(id);
+
+let pdfFile = null, pdfBytes = null, workerPromise = null, scanning = false;
+let slots = [];        // detected placeholders
+let pageInfo = {};     // pageNum -> { url, w, h, overlay }
+let pickTarget = null, selectedId = null, selTimer = null, toastTimer = null, nextId = 1;
+
+/* ---------- Helpers ---------- */
+function setStatus(msg, isError) {
+  const s = $("status");
+  s.textContent = msg;
+  s.className = isError ? "error" : "";
+}
+function setProgress(v) {
+  const b = $("bar");
+  b.style.display = v == null ? "none" : "block";
+  if (v != null) b.value = v;
+}
+function toast(msg, type) {
+  const el = $("toast");
+  el.textContent = msg;
+  el.className = "show " + (type || "");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { el.className = ""; }, 3500);
+}
+function el(tag, cls, text) {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text != null) e.textContent = text;
+  return e;
+}
+function triggerDownload(blob, name) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
+}
+const ptToCm = pt => (pt / 72 * 2.54).toFixed(1);
+const baseName = () => pdfFile ? pdfFile.name.replace(/\.pdf$/i, "") : "document";
+
+/* ---------- Wiring ---------- */
+$("file").addEventListener("change", e => setFile(e.target.files[0]));
+const drop = $("drop");
+["dragenter", "dragover"].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add("over"); }));
+["dragleave", "drop"].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove("over"); }));
+drop.addEventListener("drop", e => setFile(e.dataTransfer.files[0]));
+
+$("scanBtn").addEventListener("click", scan);
+$("sampleBtn").addEventListener("click", makeSample);
+$("exportBtn").addEventListener("click", exportPdf);
+$("bulkBtn").addEventListener("click", () => { $("bulkPicker").value = ""; $("bulkPicker").click(); });
+$("fitMode").addEventListener("change", () => Object.keys(pageInfo).forEach(p => drawOverlay(+p)));
+
+$("picker").addEventListener("change", async e => {
+  const f = e.target.files[0];
+  if (f && pickTarget) {
+    const ok = await assignFile(pickTarget, f);
+    if (ok) refreshAfterAssign(pickTarget);
+  }
+});
+$("bulkPicker").addEventListener("change", async e => {
+  const files = [...e.target.files].sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+  if (!files.length) return;
+  const empty = slots.filter(s => !s.assigned);
+  if (!empty.length) { toast("All placeholders already have images.", "error"); return; }
+  let used = 0;
+  for (let i = 0; i < files.length && i < empty.length; i++) {
+    if (await assignFile(empty[i], files[i])) used++;
+  }
+  renderSlots();
+  Object.keys(pageInfo).forEach(p => drawOverlay(+p));
+  const extra = files.length - empty.length;
+  toast("Added " + used + " image" + (used === 1 ? "" : "s") + (extra > 0 ? ". " + extra + " extra file(s) had no empty square." : "."), "success");
+});
+
+async function setFile(f) {
+  if (!f) return;
+  if (f.type !== "application/pdf" && !f.name.toLowerCase().endsWith(".pdf")) {
+    return setStatus("Please choose a PDF file.", true);
+  }
+  if (slots.some(s => s.assigned) && !confirm("Opening a new PDF will clear the images you added. Continue?")) return;
+  pdfFile = f;
+  $("fileName").textContent = f.name;
+  pdfBytes = new Uint8Array(await f.arrayBuffer());
+  $("scanBtn").disabled = false;
+  setStatus("");
+  await scan(true);
+}
+
+function initWorker() {
+  if (!workerPromise) {
+    workerPromise = (async () => {
+      const r = await fetch(PDFJS_BASE + "pdf.worker.min.js");
+      if (!r.ok) throw new Error("Could not load the PDF engine. Check your internet connection.");
+      const blob = new Blob([await r.text()], { type: "text/javascript" });
+      pdfjsLib.GlobalWorkerOptions.workerSrc = URL.createObjectURL(blob);
+    })().catch(err => { workerPromise = null; throw err; });
+  }
+  return workerPromise;
+}
+
+/* ======================================================================
+   DETECTING GREEN RECTANGLES
+   Works on how the page LOOKS, so it finds any filled green rectangle
+   (vector shape, picture, anything).
+   ====================================================================== */
+function dilate(src, w, h, r) {
+  const tmp = new Uint8Array(w * h), out = new Uint8Array(w * h);
+  for (let y = 0; y < h; y++) {
+    const row = y * w;
+    for (let x = 0; x < w; x++) {
+      if (src[row + x]) {
+        const a = Math.max(0, x - r), b = Math.min(w - 1, x + r);
+        for (let k = a; k <= b; k++) tmp[row + k] = 1;
+      }
+    }
+  }
+  for (let x = 0; x < w; x++) {
+    for (let y = 0; y < h; y++) {
+      if (tmp[y * w + x]) {
+        const a = Math.max(0, y - r), b = Math.min(h - 1, y + r);
+        for (let k = a; k <= b; k++) out[k * w + x] = 1;
+      }
+    }
+  }
+  return out;
+}
+
+function findGreenBoxes(img, w, h, sMin, minPx) {
+  const d = img.data, n = w * h, mask = new Uint8Array(n);
+  let any = false;
+  for (let i = 0, p = 0; i < n; i++, p += 4) {
+    const r = d[p], g = d[p + 1], b = d[p + 2];
+    if (g < r || g < b || g < 70) continue;
+    const delta = g - Math.min(r, b);
+    if (delta < 25) continue;
+    if (delta / g < sMin) continue;
+    const hue = 60 * (2 + (b - r) / delta);
+    if (hue < 70 || hue > 170) continue;
+    mask[i] = 1; any = true;
+  }
+  if (!any) return [];
+
+  // Small dilation so thin lines/text crossing a square don't split it apart
+  const dil = dilate(mask, w, h, 2);
+  const visited = new Uint8Array(n), stack = new Int32Array(n), boxes = [];
+
+  for (let i = 0; i < n; i++) {
+    if (!dil[i] || visited[i]) continue;
+    let sp = 0;
+    stack[sp++] = i; visited[i] = 1;
+    let minx = w, maxx = -1, miny = h, maxy = -1, cnt = 0;
+    while (sp) {
+      const p = stack[--sp];
+      const x = p % w, y = (p - x) / w;
+      if (mask[p]) {
+        cnt++;
+        if (x < minx) minx = x; if (x > maxx) maxx = x;
+        if (y < miny) miny = y; if (y > maxy) maxy = y;
+      }
+      if (x > 0     && dil[p - 1] && !visited[p - 1]) { visited[p - 1] = 1; stack[sp++] = p - 1; }
+      if (x < w - 1 && dil[p + 1] && !visited[p + 1]) { visited[p + 1] = 1; stack[sp++] = p + 1; }
+      if (y > 0     && dil[p - w] && !visited[p - w]) { visited[p - w] = 1; stack[sp++] = p - w; }
+      if (y < h - 1 && dil[p + w] && !visited[p + w]) { visited[p + w] = 1; stack[sp++] = p + w; }
+    }
+    if (maxx < 0) continue;
+    const bw = maxx - minx + 1, bh = maxy - miny + 1;
+    if (bw < minPx || bh < minPx) continue;        // too small
+    if (cnt / (bw * bh) < 0.5) continue;           // not a filled rectangle (text, outline...)
+    if (bw * bh > 0.85 * n) continue;              // whole page is green
+    boxes.push({ x: minx, y: miny, w: bw, h: bh });
+  }
+  return boxes;
+}
+
+function readingOrder(boxes) {
+  boxes.sort((a, b) => a.y - b.y);
+  const out = []; let row = [];
+  const flush = () => { row.sort((p, q) => p.x - q.x); out.push(...row); row = []; };
+  boxes.forEach(b => {
+    if (row.length && b.y - row[0].y > Math.min(row[0].h, b.h) / 2) flush();
+    row.push(b);
+  });
+  flush();
+  return out;
+}
+
+function clearAll() {
+  slots.forEach(s => { if (s.assigned) URL.revokeObjectURL(s.assigned.url); });
+  Object.values(pageInfo).forEach(p => URL.revokeObjectURL(p.url));
+  slots = []; pageInfo = [];
+  pageInfo = {};
+  $("slotList").innerHTML = "";
+  $("pageList").innerHTML = "";
+  $("results").classList.add("hidden");
+  $("exportBtn").disabled = true;
+}
+
+async function scan(auto) {
+  if (!pdfBytes || scanning) return;
+  if (auto !== true && slots.some(s => s.assigned) &&
+      !confirm("Rescanning will clear the images you added. Continue?")) return;
+
+  scanning = true;
+  $("scanBtn").disabled = true;
+  $("exportBtn").disabled = true;
+  clearAll();
+  setProgress(0);
+  setStatus("Loading PDF…");
+
+  try {
+    await initWorker();
+    const pdf = await pdfjsLib.getDocument({ data: pdfBytes.slice(0) }).promise;
+    const sMin = { strong: 0.6, normal: 0.35, pale: 0.15 }[$("strength").value];
+    const minPt = parseFloat($("minSize").value);
+    const rotated = [];
+
+    for (let i = 1; i <= pdf.numPages; i++) {
+      setStatus("Scanning page " + i + " of " + pdf.numPages + "…");
+      setProgress((i - 1) / pdf.numPages);
+
+      const page = await pdf.getPage(i);
+      let scale = SCAN_SCALE;
+      const v1 = page.getViewport({ scale: 1 });
+      if (v1.width * v1.height * scale * scale > 5e6) scale = Math.sqrt(5e6 / (v1.width * v1.height));
+      const vp = page.getViewport({ scale });
+
+      const c = document.createElement("canvas");
+      c.width = Math.floor(vp.width); c.height = Math.floor(vp.height);
+      const ctx = c.getContext("2d", { willReadFrequently: true });
+      ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, c.width, c.height);
+      await page.render({ canvasContext: ctx, viewport: vp }).promise;
+
+      const data = ctx.getImageData(0, 0, c.width, c.height);
+      const boxes = readingOrder(findGreenBoxes(data, c.width, c.height, sMin, Math.round(minPt * scale)));
+      if (page.rotate) rotated.push(i);
+
+      if (boxes.length) {
+        const url = await new Promise(res => c.toBlob(b => res(URL.createObjectURL(b)), "image/jpeg", 0.85));
+        pageInfo[i] = { url, w: c.width, h: c.height, overlay: null };
+        boxes.forEach(b => {
+          const [x1, y1] = vp.convertToPdfPoint(b.x, b.y + b.h);
+          const [x2, y2] = vp.convertToPdfPoint(b.x + b.w, b.y);
+          slots.push({
+            id: nextId++, num: 0, page: i, px: b,
+            pdf: { x: Math.min(x1, x2), y: Math.min(y1, y2), w: Math.abs(x2 - x1), h: Math.abs(y2 - y1) },
+            assigned: null
+          });
+        });
+      }
+      page.cleanup();
+    }
+
+    setProgress(null);
+    if (!slots.length) {
+      setStatus("No green placeholders found. Try “Include pale greens” or a smaller minimum size, then scan again.", true);
+    } else {
+      setStatus(rotated.length
+        ? "Done. Note: page(s) " + rotated.join(", ") + " are rotated, so images there may come out rotated."
+        : "Done.");
+      showResults();
+    }
+  } catch (err) {
+    console.error(err);
+    setProgress(null);
+    setStatus("Error: " + (err.message || err), true);
+  } finally {
+    scanning = false;
+    $("scanBtn").disabled = false;
+  }
+}
+
+/* ======================================================================
+   RESULTS UI
+   ====================================================================== */
+function showResults() {
+  $("results").classList.remove("hidden");
+  renderSlots();
+  renderPages();
+}
+
+function renumber() { slots.forEach((s, i) => { s.num = i + 1; }); }
+
+function updateSummary() {
+  const pages = [...new Set(slots.map(s => s.page))];
+  const filled = slots.filter(s => s.assigned).length;
+  $("summary").textContent = slots.length + " green placeholder" + (slots.length === 1 ? "" : "s") +
+    " on " + pages.length + " page" + (pages.length === 1 ? "" : "s");
+  $("pagesLine").textContent = "Pages: " + pages.join(", ") + "  ·  " + filled + " of " + slots.length + " filled";
+  $("exportBtn").disabled = filled === 0;
+  $("exportBtn").textContent = filled ? "Export PDF (" + filled + " image" + (filled === 1 ? "" : "s") + ")" : "Export PDF";
+}
+
+function renderSlots() {
+  renumber();
+  updateSummary();
+  const list = $("slotList");
+  list.innerHTML = "";
+
+  slots.forEach(s => {
+    const card = el("div", "slot" + (s.assigned ? " has" : ""));
+
+    const thumb = el("div", "thumb");
+    if (s.assigned) { const im = new Image(); im.src = s.assigned.url; thumb.appendChild(im); }
+    else thumb.appendChild(el("div", "sq"));
+
+    const info = el("div", "slot-info");
+    info.appendChild(el("div", "slot-title", "#" + s.num + "  ·  Page " + s.page));
+    info.appendChild(el("div", "slot-meta",
+      ptToCm(s.pdf.w) + " × " + ptToCm(s.pdf.h) + " cm  ·  " +
+      (s.assigned ? s.assigned.name : "No image yet")));
+
+    const btns = el("div", "slot-btns");
+    const bAdd = el("button", "sm", s.assigned ? "Replace" : "Add image");
+    bAdd.addEventListener("click", () => pick(s));
+    btns.appendChild(bAdd);
+
+    if (s.assigned) {
+      const bClr = el("button", "secondary sm", "Clear");
+      bClr.addEventListener("click", () => {
+        URL.revokeObjectURL(s.assigned.url); s.assigned = null;
+        refreshAfterAssign(s);
+      });
+      btns.appendChild(bClr);
+    }
+    const bLoc = el("button", "secondary sm", "Locate");
+    bLoc.addEventListener("click", () => locate(s));
+    btns.appendChild(bLoc);
+
+    const bIgn = el("button", "danger sm", "Ignore");
+    bIgn.title = "This is not a real placeholder. Remove it from the list.";
+    bIgn.addEventListener("click", () => ignoreSlot(s));
+    btns.appendChild(bIgn);
+
+    card.append(thumb, info, btns);
+    list.appendChild(card);
+  });
+}
+
+function renderPages() {
+  const list = $("pageList");
+  list.innerHTML = "";
+  const pageNums = [...new Set(slots.map(s => s.page))].sort((a, b) => a - b);
+
+  pageNums.forEach(pn => {
+    const info = pageInfo[pn];
+    const box = el("div", "pagebox");
+    box.id = "page-" + pn;
+
+    const head = el("div", "pagehead", "Page " + pn + "  ");
+    const nums = slots.filter(s => s.page === pn).map(s => "#" + s.num).join(", ");
+    head.appendChild(el("span", null, "placeholders " + nums));
+
+    const wrap = el("div", "pagewrap");
+    const im = new Image(); im.src = info.url; im.alt = "Page " + pn;
+    const cv = document.createElement("canvas");
+    cv.width = info.w; cv.height = info.h;
+    info.overlay = cv;
+
+    cv.addEventListener("click", e => {
+      const r = cv.getBoundingClientRect();
+      const x = (e.clientX - r.left) * cv.width / r.width;
+      const y = (e.clientY - r.top) * cv.height / r.height;
+      const hit = slots.find(s => s.page === pn &&
+        x >= s.px.x && x <= s.px.x + s.px.w && y >= s.px.y && y <= s.px.y + s.px.h);
+      if (hit) pick(hit);
+    });
+
+    wrap.append(im, cv);
+    box.append(head, wrap);
+    list.appendChild(box);
+    drawOverlay(pn);
+  });
+}
+
+function drawFit(ctx, img, x, y, w, h, fit) {
+  const nw = img.naturalWidth, nh = img.naturalHeight;
+  if (fit === "stretch") { ctx.drawImage(img, x, y, w, h); return; }
+  if (fit === "cover") {
+    const ia = nw / nh, ta = w / h;
+    let sx = 0, sy = 0, sw = nw, sh = nh;
+    if (ia > ta) { sw = nh * ta; sx = (nw - sw) / 2; } else { sh = nw / ta; sy = (nh - sh) / 2; }
+    ctx.drawImage(img, sx, sy, sw, sh, x, y, w, h);
+    return;
+  }
+  const sc = Math.min(w / nw, h / nh), dw = nw * sc, dh = nh * sc;
+  ctx.drawImage(img, x + (w - dw) / 2, y + (h - dh) / 2, dw, dh);
+}
+
+function drawOverlay(pn) {
+  const info = pageInfo[pn];
+  if (!info || !info.overlay) return;
+  const cv = info.overlay, ctx = cv.getContext("2d");
+  ctx.clearRect(0, 0, cv.width, cv.height);
+  const fit = $("fitMode").value;
+  const lw = Math.max(2, cv.width / 260);
+
+  slots.filter(s => s.page === pn).forEach(s => {
+    const { x, y, w, h } = s.px;
+    if (s.assigned) {
+      ctx.fillStyle = "#fff";
+      ctx.fillRect(x - 1, y - 1, w + 2, h + 2);
+      drawFit(ctx, s.assigned.img, x, y, w, h, fit);
+    }
+    const color = s.id === selectedId ? "#f5b400" : (s.assigned ? "#16a34a" : "#e11d48");
+    ctx.lineWidth = s.id === selectedId ? lw * 2 : lw;
+    ctx.setLineDash(s.assigned ? [] : [lw * 3, lw * 2]);
+    ctx.strokeStyle = color;
+    ctx.strokeRect(x, y, w, h);
+    ctx.setLineDash([]);
+
+    // number badge (preview only, never exported)
+    const r = Math.min(Math.max(Math.min(w, h) * 0.2, cv.width / 70), cv.width / 28);
+    ctx.fillStyle = color;
+    ctx.beginPath(); ctx.arc(x + r * 1.1, y + r * 1.1, r, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = "#fff";
+    ctx.font = "bold " + Math.round(r * 1.15) + "px sans-serif";
+    ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.fillText(String(s.num), x + r * 1.1, y + r * 1.1 + r * 0.05);
+  });
+}
+
+function locate(s) {
+  selectedId = s.id;
+  drawOverlay(s.page);
+  const box = $("page-" + s.page);
+  if (box) box.scrollIntoView({ behavior: "smooth", block: "center" });
+  clearTimeout(selTimer);
+  selTimer = setTimeout(() => { selectedId = null; drawOverlay(s.page); }, 2000);
+}
+
+function ignoreSlot(s) {
+  if (s.assigned) URL.revokeObjectURL(s.assigned.url);
+  slots = slots.filter(x => x.id !== s.id);
+  if (!slots.length) { clearAll(); setStatus("All detections were ignored. Scan again if needed.", true); return; }
+  renumber();
+  renderSlots();
+  renderPages();
+}
+
+function pick(s) {
+  pickTarget = s;
+  $("picker").value = "";
+  $("picker").click();
+}
+
+function refreshAfterAssign(s) {
+  renderSlots();
+  const nums = slots.filter(x => x.page === s.page).map(x => "#" + x.num).join(", ");
+  const head = document.querySelector("#page-" + s.page + " .pagehead span");
+  if (head) head.textContent = "placeholders " + nums;
+  drawOverlay(s.page);
+}
+
+function loadImg(url) {
+  return new Promise((res, rej) => {
+    const im = new Image();
+    im.onload = () => res(im);
+    im.onerror = () => rej(new Error("Could not read this image. Use a JPG or PNG (HEIC is not supported)."));
+    im.src = url;
+  });
+}
+
+async function assignFile(slot, file) {
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await loadImg(url);
+    if (slot.assigned) URL.revokeObjectURL(slot.assigned.url);
+    slot.assigned = { file, name: file.name, url, img };
+    return true;
+  } catch (e) {
+    URL.revokeObjectURL(url);
+    toast(file.name + ": " + e.message, "error");
+    return false;
+  }
+}
+
+/* ======================================================================
+   EXPORT
+   ====================================================================== */
+function canvasToBytes(canvas, type) {
+  return new Promise(res => {
+    canvas.toBlob(async b => res(new Uint8Array(await b.arrayBuffer())),
+      type === "jpg" ? "image/jpeg" : "image/png", 0.92);
+  });
+}
+
+async function prepareImage(a, aspect, fit) {
+  const img = a.img, nw = img.naturalWidth, nh = img.naturalHeight;
+  const isPng = a.file.type === "image/png";
+  const isJpg = a.file.type === "image/jpeg";
+
+  // PNGs that need no cropping or shrinking go in untouched
+  if (isPng && fit !== "cover" && Math.max(nw, nh) <= MAX_IMG_DIM) {
+    return { bytes: new Uint8Array(await a.file.arrayBuffer()), type: "png" };
+  }
+
+  let sx = 0, sy = 0, sw = nw, sh = nh;
+  if (fit === "cover") {
+    const ia = nw / nh;
+    if (ia > aspect) { sw = nh * aspect; sx = (nw - sw) / 2; }
+    else { sh = nw / aspect; sy = (nh - sh) / 2; }
+  }
+  const scale = Math.min(1, MAX_IMG_DIM / Math.max(sw, sh));
+  const cw = Math.max(1, Math.round(sw * scale)), ch = Math.max(1, Math.round(sh * scale));
+  const c = document.createElement("canvas");
+  c.width = cw; c.height = ch;
+  const ctx = c.getContext("2d");
+  if (isJpg) { ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, cw, ch); }
+  ctx.drawImage(img, sx, sy, sw, sh, 0, 0, cw, ch);
+  const type = isJpg ? "jpg" : "png";
+  return { bytes: await canvasToBytes(c, type), type };
+}
+
+async function exportPdf() {
+  const filled = slots.filter(s => s.assigned);
+  if (!filled.length) return;
+  $("exportBtn").disabled = true;
+  setProgress(0);
+
+  try {
+    setStatus("Building PDF…");
+    const doc = await PDFLib.PDFDocument.load(pdfBytes.slice(0), { ignoreEncryption: true });
+    const pgs = doc.getPages();
+    const fit = $("fitMode").value;
+    const hideEmpty = $("hideEmpty").checked;
+    const white = PDFLib.rgb(1, 1, 1);
+
+    for (let i = 0; i < slots.length; i++) {
+      const s = slots[i];
+      setStatus("Placing image " + (i + 1) + " of " + slots.length + "…");
+      setProgress(i / slots.length);
+
+      const page = pgs[s.page - 1];
+      const { x, y, w, h } = s.pdf;
+
+      if (s.assigned || hideEmpty) {
+        page.drawRectangle({ x: x - PAD_PT, y: y - PAD_PT, width: w + PAD_PT * 2, height: h + PAD_PT * 2, color: white });
+      }
+      if (!s.assigned) continue;
+
+      const prep = await prepareImage(s.assigned, w / h, fit);
+      const emb = prep.type === "png" ? await doc.embedPng(prep.bytes) : await doc.embedJpg(prep.bytes);
+
+      let dw = w, dh = h, dx = x, dy = y;
+      if (fit === "contain") {
+        const sc = Math.min(w / emb.width, h / emb.height);
+        dw = emb.width * sc; dh = emb.height * sc;
+        dx = x + (w - dw) / 2; dy = y + (h - dh) / 2;
+      }
+      page.drawImage(emb, { x: dx, y: dy, width: dw, height: dh });
+    }
+
+    setStatus("Saving…");
+    const out = await doc.save();
+    triggerDownload(new Blob([out], { type: "application/pdf" }), baseName() + "-with-images.pdf");
+    setStatus("Exported " + filled.length + " image" + (filled.length === 1 ? "" : "s") + " into " + baseName() + "-with-images.pdf");
+    toast("PDF exported", "success");
+  } catch (err) {
+    console.error(err);
+    setStatus("Export failed: " + (err.message || err), true);
+  } finally {
+    setProgress(null);
+    updateSummary();
+  }
+}
+
+/* ======================================================================
+   SAMPLE PDF (for testing)
+   ====================================================================== */
+async function makeSample() {
+  try {
+    const { PDFDocument, StandardFonts, rgb } = PDFLib;
+    const doc = await PDFDocument.create();
+    const font = await doc.embedFont(StandardFonts.Helvetica);
+    const bold = await doc.embedFont(StandardFonts.HelveticaBold);
+    const dark = rgb(0.1, 0.1, 0.1);
+
+    const lines = (page, arr, x, y) => arr.forEach((t, i) =>
+      page.drawText(t, { x, y: y - i * 18, size: 12, font, color: dark }));
+
+    const p1 = doc.addPage([595, 842]);
+    p1.drawText("Sample lecture notes", { x: 50, y: 780, size: 22, font: bold, color: dark });
+    lines(p1, [
+      "The glomerulus filters blood plasma. The image below shows its structure.",
+      "Place a histology picture in the green square."
+    ], 50, 745);
+    p1.drawRectangle({ x: 50, y: 520, width: 240, height: 180, color: rgb(0, 1, 0) });
+    p1.drawText("IMAGE 1", { x: 130, y: 605, size: 18, font: bold, color: rgb(1, 1, 1) });
+    lines(p1, ["Next, the second figure shows the nephron in a darker green:"], 50, 490);
+    p1.drawRectangle({ x: 50, y: 270, width: 300, height: 190, color: rgb(0, 0.69, 0.31) });
+    lines(p1, ["Text continues after the figure..."], 50, 240);
+
+    const p2 = doc.addPage([595, 842]);
+    p2.drawText("Page two", { x: 50, y: 780, size: 22, font: bold, color: dark });
+    lines(p2, ["Two pale-green squares side by side:"], 50, 745);
+    p2.drawRectangle({ x: 50, y: 560, width: 220, height: 160, color: rgb(0.57, 0.82, 0.31) });
+    p2.drawRectangle({ x: 310, y: 560, width: 220, height: 160, color: rgb(0.57, 0.82, 0.31) });
+    lines(p2, ["End of sample."], 50, 520);
+
+    const bytes = await doc.save();
+    triggerDownload(new Blob([bytes], { type: "application/pdf" }), "sample-green-placeholders.pdf");
+    toast("Sample PDF downloaded. Open it here to test (4 placeholders on 2 pages).", "success");
+  } catch (err) {
+    toast("Could not create the sample: " + err.message, "error");
+  }
+}
+</script>
+</body>
+</html>
