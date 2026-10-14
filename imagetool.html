@@ -137,9 +137,9 @@
   .slot-title { font-weight: 700; font-size: 16px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
   .slot-meta { font-size: 12px; color: var(--muted); margin-top: 3px; word-break: break-all; line-height: 1.5; }
   .slot-note { font-size: 12px; color: var(--muted); margin-top: 4px; line-height: 1.45; font-style: italic; }
-  .slot details { margin-top: 6px; font-size: 12px; color: var(--muted); }
-  .slot details summary { cursor: pointer; }
-  .slot details div { margin-top: 4px; line-height: 1.5; white-space: pre-wrap; }
+  .slot details, .ctx { margin-top: 6px; font-size: 12px; color: var(--muted); }
+  .slot details summary, .ctx summary { cursor: pointer; }
+  .slot details div, .ctx div { margin-top: 4px; line-height: 1.5; white-space: pre-wrap; }
   .slot-btns { display: flex; gap: 6px; flex-wrap: wrap; }
 
   .pagebox { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 10px; margin-bottom: 14px; }
@@ -155,13 +155,14 @@
   }
   .modal {
     background: var(--bg); border: 1px solid var(--border); border-radius: 14px;
-    width: 100%; max-width: 760px; max-height: 88vh; display: flex; flex-direction: column; padding: 14px; gap: 10px;
+    width: 100%; max-width: 760px; max-height: 90vh; display: flex; flex-direction: column; padding: 14px; gap: 10px;
   }
+  .modal .status { margin-top: 0; min-height: 0; }
   .modal-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
-  .mgrid { overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; }
+  .mgrid { overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; min-height: 120px; }
   .mcard {
     background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 8px;
-    cursor: pointer; display: flex; flex-direction: column; gap: 5px;
+    cursor: pointer; display: flex; flex-direction: column; gap: 4px;
   }
   .mcard:hover { border-color: var(--accent); }
   .mcard img {
@@ -169,6 +170,8 @@
     background: repeating-conic-gradient(#8883 0% 25%, transparent 0% 50%) 50% / 12px 12px;
   }
   .mlabel { font-size: 12px; line-height: 1.35; word-break: break-word; }
+  .mlabel.none { color: var(--muted); font-style: italic; }
+  .msrc { font-size: 11px; color: var(--muted); }
   .mused { font-size: 11px; color: var(--amber); }
 
   #toast {
@@ -222,7 +225,7 @@
         <input id="orKey" type="password" placeholder="sk-or-v1-..." autocomplete="off">
       </label>
     </div>
-    <p class="hint">Labeling images needs a model that can read images (Claude, GPT, Gemini). DeepSeek and small Llama models may fail on images. Matching images to placeholders only uses text, so any model works for that. Puter may ask you to sign in the first time. OpenRouter key: <a href="https://openrouter.ai/keys" target="_blank" rel="noopener">openrouter.ai/keys</a> (saved only in this browser).</p>
+    <p class="hint">Labeling images in Step 1 needs a model that can read images (Claude, GPT, Gemini). DeepSeek and small Llama models may fail on images. Matching images to placeholders in Step 2 only uses text, so any model works for that. Puter may ask you to sign in the first time. OpenRouter key: <a href="https://openrouter.ai/keys" target="_blank" rel="noopener">openrouter.ai/keys</a> (saved only in this browser).</p>
   </details>
 
   <div class="tabs">
@@ -276,7 +279,7 @@
         <button id="analyzeBtn" disabled>Analyze all with AI</button>
         <button id="stopBtn" class="secondary hidden">Stop</button>
       </div>
-      <p class="hint">The AI only <strong>suggests</strong>. Flagged images get a red border, and nothing is removed until you tap Remove (or "Remove all flagged"). Removed images can be restored from the filter menu. Images that are removed or flagged are not used in Step 2.</p>
+      <p class="hint">The AI only <strong>suggests</strong>. Flagged images get a red border, and nothing is removed until you tap Remove (or "Remove all flagged"). Removed images can be restored from the filter menu. Images that are removed or flagged are not used in Step 2. This is the only place where the AI looks at the pictures themselves, so label them here once.</p>
     </details>
 
     <div class="toolbar" id="imgToolbar">
@@ -335,14 +338,15 @@
 
       <details class="panel" open>
         <summary>✨ AI auto-fill</summary>
-        <p class="hint" style="margin-top:8px">The AI reads the text inside and around each green square, then picks the best image from the ones you extracted in Step 1 (using their labels). Images without a label are labeled first.</p>
+        <p class="hint" style="margin-top:8px">The AI reads only <strong>text</strong>: the words inside, before and after each green square, and each extracted image's saved label and source-page text. It never looks at the pictures again, so it is fast and uses very few credits. To fill just one placeholder, use <strong>✨ AI pick</strong> on its card (or inside the picker that opens when you tap it in the page preview).</p>
         <div class="checks">
-          <label><input type="checkbox" id="onlyEmpty" checked><span>Only fill empty placeholders (keep my manual choices)</span></label>
+          <label><input type="checkbox" id="onlyEmpty" checked><span>“Fill all” only fills empty placeholders (keep my manual choices)</span></label>
           <label><input type="checkbox" id="allowReuse"><span>Allow the same image in more than one place</span></label>
-          <label><input type="checkbox" id="matchSrcText" checked><span>Also send the text from each image's source page to help matching</span></label>
+          <label><input type="checkbox" id="matchSrcText" checked><span>Send each image's source-page text along with its label (images with no label always get it)</span></label>
+          <label><input type="checkbox" id="labelFirst"><span>“Fill all”: label unlabeled images first (this reads each image, so it is slower and uses more credits)</span></label>
         </div>
         <div class="options" style="margin:0 0 12px">
-          <label class="opt">Only place matches with at least this confidence
+          <label class="opt">“Fill all”: only place matches with at least this confidence
             <select id="minConf">
               <option value="low">Low (place everything the AI suggests)</option>
               <option value="medium" selected>Medium</option>
@@ -351,7 +355,7 @@
           </label>
         </div>
         <div class="actions">
-          <button id="aiFillBtn">✨ Auto-fill with AI</button>
+          <button id="aiFillBtn">✨ Fill all with AI</button>
           <button id="stopFillBtn" class="secondary hidden">Stop</button>
         </div>
       </details>
@@ -377,20 +381,30 @@
       <div id="slotList"></div>
 
       <h2>Page previews</h2>
-      <div class="sub" style="margin-top:-4px">Red dashed boxes are empty placeholders. Tap one to upload an image to it.</div>
+      <div class="sub" style="margin-top:-4px">Tap any placeholder box to pick one of your extracted images for it (or let the AI pick).</div>
       <div id="pageList"></div>
     </section>
   </section>
 </main>
 
-<!-- library picker modal -->
+<!-- picker modal: extracted images + AI pick + upload -->
 <div class="modal-backdrop hidden" id="modal">
   <div class="modal">
     <div class="modal-head">
       <strong id="modalTitle">Choose an image</strong>
       <button id="modalClose" class="secondary sm">Close</button>
     </div>
-    <input type="text" id="modalSearch" placeholder="Search labels…">
+    <details class="ctx">
+      <summary>Text around this placeholder</summary>
+      <div id="modalCtxText"></div>
+    </details>
+    <div class="actions">
+      <button id="modalAiBtn" class="sm">✨ Pick with AI</button>
+      <button id="modalUploadBtn" class="secondary sm">Upload from device</button>
+      <button id="modalClearBtn" class="dangerline sm hidden">Remove current image</button>
+    </div>
+    <div class="status" id="modalStatus"></div>
+    <input type="text" id="modalSearch" placeholder="Search by label or source-page text…">
     <div class="mgrid" id="modalGrid"></div>
   </div>
 </div>
@@ -414,7 +428,7 @@ let srcFile = null, images = [], imgSeq = 0, isAnalyzing = false, stopFlag = fal
 // Step 2 state
 let docFile = null, docBytes = null, scanning = false, slots = [], pageInfo = {};
 let nextSlotId = 1, pickTarget = null, selectedId = null, selTimer = null;
-let isFilling = false, stopFill = false;
+let isFilling = false, stopFill = false, aiOneBusy = false;
 
 /* ======================================================================
    SHARED HELPERS
@@ -671,9 +685,29 @@ async function toDataUrl(url, maxDim) {
   });
   $("bulkPicker").addEventListener("change", onBulkPicked);
 
+  // Picker modal
   $("modalClose").addEventListener("click", closeModal);
   $("modal").addEventListener("click", e => { if (e.target.id === "modal") closeModal(); });
   $("modalSearch").addEventListener("input", renderModalGrid);
+  $("modalUploadBtn").addEventListener("click", () => {
+    if (!pickTarget) return;
+    closeModal();
+    $("picker").value = "";
+    $("picker").click();
+  });
+  $("modalClearBtn").addEventListener("click", () => {
+    const t = pickTarget;
+    closeModal();
+    if (t) { clearAssigned(t); refreshAfterAssign(t); }
+  });
+  $("modalAiBtn").addEventListener("click", async () => {
+    const t = pickTarget;
+    if (!t) return;
+    $("modalAiBtn").disabled = true;
+    const ok = await aiAssignOne(t, m => { $("modalStatus").textContent = m; });
+    $("modalAiBtn").disabled = false;
+    if (ok) closeModal();
+  });
 })();
 
 function setupDrop(drop, handler) {
@@ -702,7 +736,6 @@ function clearImages() {
   $("zipBtn").disabled = true;
   $("analyzeBtn").disabled = true;
   $("imgToolbar").style.display = "none";
-  // placeholders that used an extracted image lose it
   let lost = 0;
   slots.forEach(s => { if (s.assigned && !s.assigned.owned) { s.assigned = null; lost++; } });
   if (slots.length) { renderSlots(); redrawAllOverlays(); }
@@ -1004,7 +1037,7 @@ async function downloadZip() {
   }
 }
 
-/* ---------- Step 1 AI: labels + slide detection ---------- */
+/* ---------- Step 1 AI: labels + slide detection (reads the pictures) ---------- */
 function getWants(r) {
   return {
     label: $("optLabel").checked,
@@ -1052,7 +1085,6 @@ function checkAIReady(r) {
   return aiReady();
 }
 
-// forced = {label:true, cat:false} lets AI fill run label-only regardless of the checkboxes
 async function analyzeOne(r, forced) {
   const wants = forced || getWants(r);
   r.state = "analyzing"; r.error = null;
@@ -1296,7 +1328,7 @@ async function setDocFile(f) {
 }
 
 async function scanDoc(auto) {
-  if (!docBytes || scanning || isFilling) return;
+  if (!docBytes || scanning || isFilling || aiOneBusy) return;
   if (!auto && slots.some(s => s.assigned) &&
       !confirm("Rescanning will clear the images placed in the document. Continue?")) return;
 
@@ -1344,7 +1376,7 @@ async function scanDoc(auto) {
           const rect = { x: Math.min(x1, x2), y: Math.min(y1, y2), w: Math.abs(x2 - x1), h: Math.abs(y2 - y1) };
           slots.push({
             id: nextSlotId++, num: 0, page: i, px: b, pdf: rect,
-            context: buildContext(items, rect), assigned: null, aiNote: ""
+            context: buildContext(items, rect), assigned: null, aiNote: "", busy: false
           });
         });
       }
@@ -1402,6 +1434,7 @@ function renderSlots() {
   updateDocSummary();
   const list = $("slotList");
   list.innerHTML = "";
+  const aiBusy = aiOneBusy || isFilling;
 
   slots.forEach(s => {
     const a = s.assigned;
@@ -1431,9 +1464,14 @@ function renderSlots() {
     const btns = el("div", "slot-btns");
     const bLib = el("button", "sm", a ? "Change" : "Pick image");
     bLib.title = "Choose from the images extracted in Step 1";
-    bLib.disabled = !images.length;
     bLib.addEventListener("click", () => openLibrary(s));
     btns.appendChild(bLib);
+
+    const bAi = el("button", "sm", s.busy ? "Thinking…" : "✨ AI pick");
+    bAi.title = "AI reads the text around this placeholder and each image's label, then picks one";
+    bAi.disabled = aiBusy || !images.length;
+    bAi.addEventListener("click", () => aiAssignOne(s));
+    btns.appendChild(bAi);
 
     const bUp = el("button", "secondary sm", "Upload");
     bUp.addEventListener("click", () => { pickTarget = s; $("picker").value = ""; $("picker").click(); });
@@ -1477,13 +1515,14 @@ function renderPages() {
     cv.width = info.w; cv.height = info.h;
     info.overlay = cv;
 
+    // Tapping a placeholder opens the picker with the extracted images
     cv.addEventListener("click", e => {
       const r = cv.getBoundingClientRect();
       const x = (e.clientX - r.left) * cv.width / r.width;
       const y = (e.clientY - r.top) * cv.height / r.height;
       const hit = slots.find(s => s.page === pn &&
         x >= s.px.x && x <= s.px.x + s.px.w && y >= s.px.y && y <= s.px.y + s.px.h);
-      if (hit) { pickTarget = hit; $("picker").value = ""; $("picker").click(); }
+      if (hit) openLibrary(hit);
     });
 
     wrap.append(im, cv);
@@ -1612,11 +1651,17 @@ async function onBulkPicked(e) {
   toast("Added " + used + " image" + (used === 1 ? "" : "s") + (extra > 0 ? ". " + extra + " extra file(s) had no empty square." : "."), "success");
 }
 
-/* ---------- Library picker (images from Step 1) ---------- */
+/* ---------- Picker modal (extracted images, AI pick, upload) ---------- */
 function openLibrary(slot) {
   pickTarget = slot;
-  $("modalTitle").textContent = "Choose an image for #" + slot.num;
+  $("modalTitle").textContent = "#" + slot.num + " · Page " + slot.page + " — choose an image";
+  const c = slot.context || {};
+  $("modalCtxText").textContent =
+    "Inside: " + (c.inside || "(none)") + "\nBefore: " + (c.before || "(none)") + "\nAfter: " + (c.after || "(none)");
   $("modalSearch").value = "";
+  $("modalStatus").textContent = (!slot.assigned && slot.aiNote) ? slot.aiNote : "";
+  $("modalClearBtn").classList.toggle("hidden", !slot.assigned);
+  $("modalAiBtn").disabled = !images.length || aiOneBusy || isFilling;
   renderModalGrid();
   $("modal").classList.remove("hidden");
 }
@@ -1626,13 +1671,19 @@ function renderModalGrid() {
   const q = $("modalSearch").value.trim().toLowerCase();
   const grid = $("modalGrid");
   grid.innerHTML = "";
-  const list = images.filter(r => !r.removed && (!q || (r.label || "").toLowerCase().includes(q)));
+  if (!images.length) {
+    grid.appendChild(el("div", "sub", "No extracted images yet. Extract them in Step 1 first, or use “Upload from device”."));
+    return;
+  }
+  const list = images.filter(r => !r.removed && (!q ||
+    (r.label || "").toLowerCase().includes(q) || (r.pageText || "").toLowerCase().includes(q)));
   if (!list.length) { grid.appendChild(el("div", "sub", "No images match.")); return; }
 
   list.forEach(r => {
     const c = el("div", "mcard");
     const im = new Image(); im.src = r.url;
-    c.append(im, el("div", "mlabel", r.label || ("image " + r.n + " (page " + r.page + ")")));
+    c.append(im, el("div", "mlabel" + (r.label ? "" : " none"), r.label || "(no label)"));
+    c.appendChild(el("div", "msrc", "page " + r.page));
     const used = slots.filter(s => s.assigned && s.assigned.imageId === r.id).map(s => "#" + s.num);
     if (used.length) c.appendChild(el("div", "mused", "Used in " + used.join(", ")));
     if (isFlagged(r)) c.appendChild(el("div", "mused", "AI flagged this"));
@@ -1648,28 +1699,30 @@ function renderModalGrid() {
 }
 
 /* ======================================================================
-   STEP 2 — AI AUTO-FILL
+   STEP 2 — AI MATCHING (text only: never re-reads the pictures)
    ====================================================================== */
 const confRank = c => c === "high" ? 3 : c === "medium" ? 2 : c === "low" ? 1 : 0;
 const clean = s => String(s || "").replace(/"/g, "'").replace(/\s+/g, " ").trim();
+const normConf = m => { const x = String(m.confidence || "").toLowerCase(); return ["high", "medium", "low"].includes(x) ? x : "low"; };
 
 function buildMatchPrompt(chunk, pool, reuse, useSrcText) {
   const p = [];
   p.push("You are matching images to placeholders in a medical document.");
-  p.push("The document has numbered placeholders where an image must be inserted. For each placeholder you get the text found inside it and around it. Below the placeholders is a library of available images, each with an ID and a short label describing what it shows.");
+  p.push("The document has numbered placeholders where an image must be inserted. For each placeholder you get the text found inside it and around it.");
+  p.push("Below is a library of available images. You cannot see the pictures: each one is described only by an ID, a short label (written earlier by someone who looked at the picture) and sometimes the text of the page it came from.");
   p.push("");
   p.push("PLACEHOLDERS:");
   chunk.forEach(s => {
     const c = s.context || {};
-    p.push("[P" + s.num + '] page ' + s.page + '. Text inside the placeholder: "' + (clean(c.inside) || "(none)") +
+    p.push("[P" + s.num + "] page " + s.page + '. Text inside the placeholder: "' + (clean(c.inside) || "(none)") +
       '". Text just before it: "' + (clean(c.before) || "(none)") +
       '". Text just after it: "' + (clean(c.after) || "(none)") + '".');
   });
   p.push("");
   p.push("IMAGES:");
   pool.forEach(r => {
-    let line = "[I" + r.id + '] "' + clean(r.label) + '"';
-    if (useSrcText && r.pageText) line += ' (from a source page with text: "' + clean(r.pageText).slice(0, 160) + '")';
+    let line = "[I" + r.id + "] " + (r.label ? '"' + clean(r.label) + '"' : "(no label)");
+    if ((useSrcText || !r.label) && r.pageText) line += ' (source page text: "' + clean(r.pageText).slice(0, 160) + '")';
     p.push(line);
   });
   p.push("");
@@ -1684,14 +1737,77 @@ function buildMatchPrompt(chunk, pool, reuse, useSrcText) {
   return p.join("\n");
 }
 
+// Fill ONE placeholder. setMsg (optional) receives progress/result text (used by the picker modal).
+async function aiAssignOne(slot, setMsg) {
+  if (aiOneBusy || isFilling || isAnalyzing || scanning) { toast("Wait for the current AI task to finish.", "error"); return false; }
+  if (!images.length) { toast("No extracted images yet. Extract them in Step 1 first.", "error"); return false; }
+  if (!aiReady()) return false;
+
+  const say = m => { if (setMsg) setMsg(m); };
+  const reuse = $("allowReuse").checked, useSrc = $("matchSrcText").checked;
+  const usedElsewhere = new Set(slots
+    .filter(s => s !== slot && s.assigned && s.assigned.imageId != null)
+    .map(s => s.assigned.imageId));
+
+  let pool = candidatePool().filter(r => r.label || r.pageText);
+  if (!reuse) pool = pool.filter(r => !usedElsewhere.has(r.id));
+  if (!pool.length) {
+    const m = "No usable images left. Each needs a label or source-page text, and images already used elsewhere are skipped unless you allow reuse.";
+    slot.aiNote = m; say(m); refreshAfterAssign(slot);
+    toast(m, "error");
+    return false;
+  }
+
+  aiOneBusy = true; slot.busy = true;
+  slot.aiNote = "AI is reading the text…"; say(slot.aiNote);
+  renderSlots();
+
+  let placed = false;
+  try {
+    const raw = await callAI(buildMatchPrompt([slot], pool, reuse, useSrc), null, 1500);
+    const obj = parseJsonObject(raw);
+    const arr = Array.isArray(obj.matches) ? obj.matches : [];
+    const m = arr.find(x => Number(String(x.placeholder).replace(/\D/g, "")) === slot.num) || arr[0];
+    if (!m) throw new Error("AI gave no answer");
+
+    const reason = String(m.reason || "").trim();
+    const conf = normConf(m);
+    const idDigits = m.image == null ? "" : String(m.image).replace(/\D/g, "");
+    const img = idDigits ? pool.find(r => String(r.id) === idDigits) : null;
+
+    if (!img) {
+      slot.aiNote = reason ? "No match: " + reason : "AI found no good match for this placeholder.";
+    } else {
+      await assignLibrary(slot, img, { conf, note: reason });
+      placed = true;
+    }
+  } catch (err) {
+    console.error("Match error:", err);
+    slot.aiNote = "AI error: " + (err.message || err);
+  } finally {
+    aiOneBusy = false; slot.busy = false;
+  }
+
+  refreshAfterAssign(slot);
+  if (placed) {
+    say("Placed: " + slot.assigned.name + " (" + slot.assigned.conf + " confidence)");
+    toast("AI picked “" + slot.assigned.name + "” (" + slot.assigned.conf + " confidence). Check it looks right.", "success");
+  } else {
+    say(slot.aiNote);
+    toast(slot.aiNote, "error");
+  }
+  return placed;
+}
+
+// Fill ALL (or all empty) placeholders in batches
 async function aiFill() {
-  if (isFilling || isAnalyzing || scanning) return;
+  if (isFilling || isAnalyzing || scanning || aiOneBusy) return;
   if (!images.length) { toast("Step 1 first: extract images from a PDF.", "error"); showTab("images"); return; }
   if (!slots.length) { toast("Scan a document with green placeholders first.", "error"); return; }
   if (!aiReady()) return;
 
   const onlyEmpty = $("onlyEmpty").checked, reuse = $("allowReuse").checked;
-  const minConf = $("minConf").value, useSrc = $("matchSrcText").checked;
+  const minConf = $("minConf").value, useSrc = $("matchSrcText").checked, labelFirst = $("labelFirst").checked;
   const targets = slots.filter(s => !onlyEmpty || !s.assigned);
   if (!targets.length) { toast("Every placeholder already has an image.", "success"); return; }
 
@@ -1699,30 +1815,33 @@ async function aiFill() {
   $("aiFillBtn").disabled = true;
   $("scanBtn").disabled = true;
   $("stopFillBtn").classList.remove("hidden");
+  renderSlots();
 
-  let placed = 0, failedChunks = 0, unlabeledLeft = 0;
+  let placed = 0, failedChunks = 0, labelFailed = 0, skippedNoInfo = 0;
   try {
     let pool = candidatePool();
     if (!pool.length) { toast("No usable images: they are all removed or flagged.", "error"); return; }
 
-    // 1) make sure every candidate image has a label
-    const unl = pool.filter(r => !r.label);
-    for (let i = 0; i < unl.length; i++) {
-      if (stopFill) break;
-      setStatus(2, "AI is labeling image " + (i + 1) + " of " + unl.length + " (needed for matching)…");
-      setProgress(2, i / unl.length);
-      await analyzeOne(unl[i], { label: true, cat: false });
-      await sleep(600);
+    // Optional: label unlabeled images first (this one DOES read the pictures)
+    if (labelFirst) {
+      const unl = pool.filter(r => !r.label);
+      for (let i = 0; i < unl.length; i++) {
+        if (stopFill) break;
+        setStatus(2, "AI is labeling image " + (i + 1) + " of " + unl.length + "…");
+        setProgress(2, i / unl.length);
+        await analyzeOne(unl[i], { label: true, cat: false });
+        await sleep(600);
+      }
+      labelFailed = unl.filter(r => !r.label).length;
     }
-    pool = pool.filter(r => r.label);
-    unlabeledLeft = unl.length - unl.filter(r => r.label).length;
-    if (!pool.length) throw new Error("No image could be labeled. Check your AI settings and try again.");
 
-    // 2) clear the targets if the user wants a full redo
+    skippedNoInfo = pool.filter(r => !r.label && !r.pageText).length;
+    pool = pool.filter(r => r.label || r.pageText);
+    if (!pool.length) throw new Error("No usable images: none has a label or source-page text. Label them in Step 1 or tick the “label unlabeled images first” option.");
+
     if (!onlyEmpty) targets.forEach(clearAssigned);
     const used = new Set(slots.filter(s => s.assigned && s.assigned.imageId != null).map(s => s.assigned.imageId));
 
-    // 3) match in chunks
     for (let c = 0; c < targets.length; c += MATCH_CHUNK) {
       if (stopFill) break;
       const chunk = targets.slice(c, c + MATCH_CHUNK);
@@ -1733,11 +1852,9 @@ async function aiFill() {
       if (!avail.length) { chunk.forEach(s => { s.aiNote = "No unused images left."; }); continue; }
 
       try {
-        const prompt = buildMatchPrompt(chunk, avail, reuse, useSrc);
-        const raw = await callAI(prompt, null, 4000);
+        const raw = await callAI(buildMatchPrompt(chunk, avail, reuse, useSrc), null, 4000);
         const obj = parseJsonObject(raw);
         const arr = Array.isArray(obj.matches) ? obj.matches : [];
-        const normConf = m => { const x = String(m.confidence || "").toLowerCase(); return ["high", "medium", "low"].includes(x) ? x : "low"; };
         arr.sort((a, b) => confRank(normConf(b)) - confRank(normConf(a)));
 
         const answered = new Set();
@@ -1774,8 +1891,9 @@ async function aiFill() {
 
     const left = slots.filter(s => !s.assigned).length;
     setStatus(2, (stopFill ? "Stopped. " : "Finished. ") + "Placed " + placed + " image" + (placed === 1 ? "" : "s") + ", " + left + " placeholder" + (left === 1 ? "" : "s") + " still empty." +
-      (failedChunks ? " " + failedChunks + " batch(es) failed. Run auto-fill again to retry." : "") +
-      (unlabeledLeft ? " " + unlabeledLeft + " image(s) could not be labeled and were skipped." : ""),
+      (failedChunks ? " " + failedChunks + " batch(es) failed. Run it again to retry." : "") +
+      (labelFailed ? " " + labelFailed + " image(s) could not be labeled." : "") +
+      (skippedNoInfo ? " " + skippedNoInfo + " image(s) skipped (no label and no source-page text)." : ""),
       failedChunks > 0);
     toast("AI placed " + placed + " image" + (placed === 1 ? "" : "s") + ". Review them, then export.", placed ? "success" : "error");
   } catch (err) {
