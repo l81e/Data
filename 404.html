@@ -21,6 +21,14 @@
       window.location.replace(window.location.origin + '/flashmake.html' + search + hash);
       return;
     }
+    if (path === '/imagetool' || path === '/imagetool/' || path.startsWith('/imagetool?')){
+      window.location.replace(window.location.origin + '/imagetool.html' + search + hash);
+      return;
+    }
+    if (path === '/extractor' || path === '/extractor/' || path === '/placeholderfind' || path === '/placeholderfind/'){
+      window.location.replace(window.location.origin + '/imagetool.html' + search + hash);
+      return;
+    }
 
     // Capture date routes (e.g. /11-9-2026) and bounce to index.html
     var full = path + search + hash;
