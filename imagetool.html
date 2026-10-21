@@ -1232,11 +1232,12 @@
 
   <!-- Shared AI settings -->
   <details class="panel" id="aiPanel">
-    <summary data-en="AI Settings (shared by Step 1 & Step 2 — Google Gemini 3.8 Flash Free Tier Recommended)" data-ar="إعدادات الذكاء الاصطناعي (مشتركة للخطوتين ١ و ٢ — يوصى بـ Google Gemini 3.8 Flash المجاني)">AI Settings (shared by Step 1 &amp; Step 2 — Google Gemini 3.8 Flash Free Tier Recommended)</summary>
+    <summary data-en="AI Settings (shared by Step 1 & Step 2 — Google Gemini 3.8 Flash, Nous Hermes & OpenRouter)" data-ar="إعدادات الذكاء الاصطناعي (مشتركة للخطوتين ١ و ٢ — Google Gemini 3.8 Flash و Nous Hermes)">AI Settings (shared by Step 1 &amp; Step 2 — Google Gemini 3.8 Flash, Nous Hermes &amp; OpenRouter)</summary>
     <div class="options">
       <label class="opt"><span data-en="Provider" data-ar="مزود الذكاء الاصطناعي">Provider</span>
         <select id="aiProvider">
           <option value="gemini" selected>Google Gemini API (Free Tier · Gemini 3.8 Flash Recommended)</option>
+          <option value="nous">Nous Portal / Hermes API (portal.nousresearch.com)</option>
           <option value="puter">Puter.js (Built-in, no key needed)</option>
           <option value="openrouter">OpenRouter (Bring your own key)</option>
         </select>
@@ -1261,7 +1262,32 @@
       <label class="opt" id="keyFieldGemini"><span data-en="Google Gemini API Key" data-ar="مفتاح Google Gemini API">Google Gemini API Key</span>
         <div class="key-row">
           <input id="geminiKey" type="password" placeholder="AIzaSy... (free at aistudio.google.com)" autocomplete="off">
-          <button type="button" class="sm secondary" id="testGeminiKeyBtn" title="Verify your Gemini API key" data-en="Test" data-ar="اختبار">Test</button>
+          <button type="button" class="sm secondary" id="testGeminiKeyBtn" title="Verify key &amp; auto-sync available Gemini models on your account" data-en="Test &amp; Sync" data-ar="اختبار ومزامنة">Test &amp; Sync</button>
+        </div>
+      </label>
+
+      <label class="opt" id="modelFieldNous" style="display:none"><span data-en="Model via Nous Portal (Hermes)" data-ar="نموذج Nous Portal (Hermes)">Model via Nous Portal (Hermes)</span>
+        <select id="aiModelNous">
+          <optgroup label="Nous Flagship Hermes Series (Step 2 Global Reasoning &amp; Context)">
+            <option value="Hermes-4-405B" selected>Hermes 4 405B (Flagship Frontier Reasoning)</option>
+            <option value="Hermes-4-70B">Hermes 4 70B (Fast &amp; High-Accuracy)</option>
+            <option value="DeepHermes-3-Llama-3-70B-Preview">DeepHermes 3 70B (Deep Chain-of-Thought)</option>
+            <option value="Hermes-3-Llama-3.1-405B">Hermes 3 Llama 3.1 405B</option>
+            <option value="Hermes-3-Llama-3.1-70B">Hermes 3 Llama 3.1 70B</option>
+          </optgroup>
+          <optgroup label="Nous Portal Multimodal / Vision Models">
+            <option value="google/gemini-3.8-flash">Gemini 3.8 Flash (via Nous Portal)</option>
+            <option value="anthropic/claude-sonnet-4-6">Claude Sonnet 4.6 (via Nous Portal)</option>
+            <option value="openai/gpt-4o">GPT-4o Vision (via Nous Portal)</option>
+            <option value="qwen/qwen2.5-vl-72b-instruct">Qwen 2.5 VL 72B Vision</option>
+          </optgroup>
+        </select>
+      </label>
+
+      <label class="opt" id="keyFieldNous" style="display:none"><span data-en="Nous Portal API Key" data-ar="مفتاح Nous Portal API">Nous Portal API Key</span>
+        <div class="key-row">
+          <input id="nousKey" type="password" placeholder="sk-... (from portal.nousresearch.com)" autocomplete="off">
+          <button type="button" class="sm secondary" id="testNousKeyBtn" title="Verify Nous API key &amp; sync live portal models" data-en="Test &amp; Sync" data-ar="اختبار ومزامنة">Test &amp; Sync</button>
         </div>
       </label>
 
@@ -1273,6 +1299,8 @@
             <option value="openai/gpt-5.5">GPT-5.5</option>
             <option value="google/gemini-3.8-flash">Gemini 3.8 Flash</option>
             <option value="google/gemini-4-argon">Gemini 4 Argon</option>
+            <option value="nousresearch/hermes-4-405b">Nous: Hermes 4 405B</option>
+            <option value="nousresearch/hermes-3-llama-3.1-405b">Nous: Hermes 3 405B</option>
             <option value="google/gemini-3.5-flash">Gemini 3.5 Flash</option>
             <option value="deepseek/deepseek-v4-pro">DeepSeek V4 Pro</option>
             <option value="anthropic/claude-sonnet-4">Claude Sonnet 4</option>
@@ -1281,6 +1309,7 @@
           <optgroup label="Fast &amp; Low Credit Cost">
             <option value="google/gemini-3.5-flash-lite">Gemini 3.5 Flash-Lite</option>
             <option value="google/gemini-3.1-flash-lite">Gemini 3.1 Flash-Lite</option>
+            <option value="nousresearch/hermes-4-70b">Nous: Hermes 4 70B</option>
             <option value="openai/gpt-4o-mini">GPT-4o Mini</option>
           </optgroup>
         </select>
@@ -1296,6 +1325,9 @@
             <option value="openai/gpt-5.5">OpenAI: GPT-5.5</option>
             <option value="google/gemini-3.8-flash">Google: Gemini 3.8 Flash</option>
             <option value="google/gemini-4-argon">Google: Gemini 4 Argon</option>
+            <option value="nousresearch/hermes-4-405b">Nous: Hermes 4 405B</option>
+            <option value="nousresearch/hermes-4-70b">Nous: Hermes 4 70B</option>
+            <option value="nousresearch/hermes-3-llama-3.1-405b">Nous: Hermes 3 Llama 3.1 405B</option>
             <option value="google/gemini-3.5-flash">Google: Gemini 3.5 Flash</option>
             <option value="deepseek/deepseek-v4-pro">DeepSeek V4 Pro</option>
             <option value="anthropic/claude-sonnet-4">Anthropic: Claude Sonnet 4</option>
@@ -1304,6 +1336,7 @@
           <optgroup label="Fast, Cheap &amp; Free Tier Models">
             <option value="google/gemini-3.5-flash-lite">Gemini 3.5 Flash-Lite (ultra-fast, low cost)</option>
             <option value="deepseek/deepseek-v4-flash">DeepSeek V4 Flash (cheap, fast)</option>
+            <option value="nousresearch/hermes-3-llama-3.1-405b:free">Nous: Hermes 3 405B (free tier)</option>
             <option value="qwen/qwen2.5-vl-72b-instruct:free">Qwen 2.5 VL 72B (free)</option>
             <option value="meta-llama/llama-3.2-11b-vision-instruct:free">Llama 3.2 11B Vision (free)</option>
             <option value="meta-llama/llama-3.1-8b-instruct:free">Llama 3.1 8B Instruct (free, rate-limited)</option>
@@ -1324,9 +1357,8 @@
       </label>
     </div>
     <p class="hint">
-      <strong>Google Gemini API</strong> gives you 1,500 requests/day 100% free — get a key in 10 seconds at
-      <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a>.
-      With <strong>6-image batching</strong> and <strong>perceptual hash caching</strong>, a 50-slide lecture takes only ~7 requests and re-analyzes in 0ms!
+      <strong>Google Gemini API</strong> (<a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a>) gives free daily requests on <strong>Gemini 3.8 Flash</strong> &amp; <strong>Gemini 3.5 Flash-Lite</strong> — click <strong>Test &amp; Sync</strong> to auto-detect every active model on your key.
+      <strong>Nous Portal / Hermes</strong> (<a href="https://portal.nousresearch.com" target="_blank" rel="noopener">portal.nousresearch.com</a>) connects directly to <code>inference-api.nousresearch.com/v1</code> for Hermes 4 405B/70B &amp; DeepHermes reasoning.
     </p>
   </details>
 
@@ -2322,10 +2354,10 @@ function initPageSlider() {
   $("goStep2Btn").addEventListener("click", () => showTab("doc"));
 
   // AI settings persistence
-  const prov = $("aiProvider"), mGem = $("aiModelGemini"), mPuter = $("aiModelPuter"), mOr = $("aiModelOpenrouter");
-  const kGem = $("geminiKey"), kOr = $("orKey"), bSize = $("aiBatchSize");
+  const prov = $("aiProvider"), mGem = $("aiModelGemini"), mNous = $("aiModelNous"), mPuter = $("aiModelPuter"), mOr = $("aiModelOpenrouter");
+  const kGem = $("geminiKey"), kNous = $("nousKey"), kOr = $("orKey"), bSize = $("aiBatchSize");
 
-  if (lsGet("pdfx_provider") && ["gemini", "puter", "openrouter"].includes(lsGet("pdfx_provider"))) {
+  if (lsGet("pdfx_provider") && ["gemini", "nous", "puter", "openrouter"].includes(lsGet("pdfx_provider"))) {
     prov.value = lsGet("pdfx_provider");
   }
   const savedGemModel = lsGet("pdfx_model_gemini");
@@ -2334,22 +2366,27 @@ function initPageSlider() {
   } else {
     setSelectIfValid(mGem, savedGemModel);
   }
+  setSelectIfValid(mNous, lsGet("pdfx_model_nous"));
   setSelectIfValid(mPuter, lsGet("pdfx_model_puter"));
   setSelectIfValid(mOr, lsGet("pdfx_model_or"));
   setSelectIfValid(bSize, lsGet("pdfx_batch_size"));
   kGem.value = lsGet("pdfx_geminikey") || "";
+  kNous.value = lsGet("pdfx_nouskey") || "";
   kOr.value = lsGet("pdfx_orkey") || "";
 
   updateProviderVisibility();
   prov.addEventListener("change", () => { lsSet("pdfx_provider", prov.value); updateProviderVisibility(); });
   mGem.addEventListener("change", () => lsSet("pdfx_model_gemini", mGem.value));
+  mNous.addEventListener("change", () => lsSet("pdfx_model_nous", mNous.value));
   mPuter.addEventListener("change", () => lsSet("pdfx_model_puter", mPuter.value));
   mOr.addEventListener("change", () => lsSet("pdfx_model_or", mOr.value));
   bSize.addEventListener("change", () => lsSet("pdfx_batch_size", bSize.value));
   kGem.addEventListener("input", () => lsSet("pdfx_geminikey", kGem.value));
+  kNous.addEventListener("input", () => lsSet("pdfx_nouskey", kNous.value));
   kOr.addEventListener("input", () => lsSet("pdfx_orkey", kOr.value));
 
   $("testGeminiKeyBtn").addEventListener("click", testGeminiKey);
+  $("testNousKeyBtn").addEventListener("click", testNousKey);
 
   // Step 1 events
   wireDrop($("srcDrop"), $("srcFile"), f => {
@@ -2484,6 +2521,8 @@ function updateProviderVisibility() {
   const p = $("aiProvider").value;
   $("modelFieldGemini").style.display     = p === "gemini"     ? "flex" : "none";
   $("keyFieldGemini").style.display       = p === "gemini"     ? "flex" : "none";
+  $("modelFieldNous").style.display       = p === "nous"       ? "flex" : "none";
+  $("keyFieldNous").style.display         = p === "nous"       ? "flex" : "none";
   $("modelFieldPuter").style.display      = p === "puter"      ? "flex" : "none";
   $("modelFieldOpenrouter").style.display = p === "openrouter" ? "flex" : "none";
   $("keyFieldOpenrouter").style.display   = p === "openrouter" ? "flex" : "none";
@@ -2491,6 +2530,7 @@ function updateProviderVisibility() {
 function getActiveModel() {
   const p = $("aiProvider").value;
   if (p === "gemini") return $("aiModelGemini").value;
+  if (p === "nous") return $("aiModelNous").value;
   if (p === "openrouter") return $("aiModelOpenrouter").value;
   return $("aiModelPuter").value;
 }
@@ -2502,6 +2542,12 @@ function aiReady() {
     $("geminiKey").focus();
     return false;
   }
+  if (p === "nous" && !$("nousKey").value.trim()) {
+    toast("Enter your Nous Portal API key in AI Settings first.", "error");
+    $("aiPanel").open = true;
+    $("nousKey").focus();
+    return false;
+  }
   if (p === "openrouter" && !$("orKey").value.trim()) {
     toast("Enter your OpenRouter API key in AI Settings first.", "error");
     $("aiPanel").open = true;
@@ -2509,6 +2555,63 @@ function aiReady() {
     return false;
   }
   return true;
+}
+
+async function discoverGeminiModels(apiKey) {
+  try {
+    const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(apiKey)}`);
+    if (!resp.ok) return null;
+    const data = await resp.json();
+    const list = (data.models || [])
+      .filter(m => Array.isArray(m.supportedGenerationMethods) && m.supportedGenerationMethods.includes("generateContent"))
+      .map(m => ({
+        id: String(m.name || "").replace(/^models\//, ""),
+        displayName: m.displayName || m.name
+      }))
+      .filter(m => m.id && /^(gemini|gemma)/i.test(m.id) && !/tts|embedding|imagen|veo|aqa|robotics|computer-use|audio/i.test(m.id));
+
+    if (!list.length) return null;
+
+    const sel = $("aiModelGemini");
+    const existing = new Set([...sel.options].map(o => o.value));
+    let syncGroup = sel.querySelector('optgroup[data-synced="1"]');
+    list.forEach(m => {
+      if (!existing.has(m.id)) {
+        if (!syncGroup) {
+          syncGroup = document.createElement("optgroup");
+          syncGroup.label = "Live Models Discovered on Your Key";
+          syncGroup.setAttribute("data-synced", "1");
+          sel.prepend(syncGroup);
+        }
+        const opt = document.createElement("option");
+        opt.value = m.id;
+        opt.textContent = `${m.displayName} (${m.id})`;
+        syncGroup.appendChild(opt);
+      }
+    });
+
+    // Rank best free Flash models available on this specific key
+    const preferredOrder = [
+      "gemini-3.8-flash",
+      "gemini-3.6-flash",
+      "gemini-3.5-flash",
+      "gemini-3.5-flash-lite",
+      "gemini-3-flash-preview",
+      "gemini-3.1-flash-lite",
+      "gemini-2.5-flash",
+      "gemini-2.5-flash-lite",
+      "gemini-2.0-flash",
+      "gemma-4-31b-it"
+    ];
+    const availableIds = new Set(list.map(x => x.id));
+    for (const pref of preferredOrder) {
+      if (availableIds.has(pref)) return pref;
+    }
+    const anyFlash = list.find(x => /flash/i.test(x.id));
+    return anyFlash ? anyFlash.id : list[0].id;
+  } catch {
+    return null;
+  }
 }
 
 async function testGeminiKey() {
@@ -2519,15 +2622,72 @@ async function testGeminiKey() {
     return;
   }
   const btn = $("testGeminiKeyBtn");
-  btn.disabled = true; btn.textContent = "Testing…";
+  btn.disabled = true; btn.textContent = "Syncing…";
   try {
-    const activeModel = $("aiModelGemini").value || "gemini-3.8-flash";
+    const bestDiscovered = await discoverGeminiModels(key);
+    if (bestDiscovered && (!$("aiModelGemini").value || /^gemini-(1\.|2\.)/.test($("aiModelGemini").value))) {
+      $("aiModelGemini").value = bestDiscovered;
+      lsSet("pdfx_model_gemini", bestDiscovered);
+    }
+    const activeModel = $("aiModelGemini").value || bestDiscovered || "gemini-3.8-flash";
     const out = await callGemini('Return {"status":"ok"}', activeModel, null, 1024);
-    if (out) toast(`Gemini API key verified on ${activeModel}! Ready for free requests.`, "success");
+    const finalModel = $("aiModelGemini").value;
+    if (out) toast(`Gemini API key verified & synced! Active model: ${finalModel}`, "success");
   } catch (err) {
     toast("Key test failed: " + err.message, "error");
   } finally {
-    btn.disabled = false; btn.textContent = "Test";
+    btn.disabled = false; btn.textContent = currentLang === "ar" ? "اختبار ومزامنة" : "Test & Sync";
+  }
+}
+
+async function testNousKey() {
+  const key = $("nousKey").value.trim();
+  if (!key) {
+    toast("Paste your Nous Portal API key first (from portal.nousresearch.com)", "error");
+    $("nousKey").focus();
+    return;
+  }
+  const btn = $("testNousKeyBtn");
+  btn.disabled = true; btn.textContent = "Syncing…";
+  try {
+    // 1. Try syncing live models from Nous Portal /v1/models
+    try {
+      const mResp = await fetch("https://inference-api.nousresearch.com/v1/models", {
+        headers: { "Authorization": "Bearer " + key }
+      });
+      if (mResp.ok) {
+        const mData = await mResp.json();
+        const models = Array.isArray(mData.data) ? mData.data : [];
+        if (models.length) {
+          const sel = $("aiModelNous");
+          const existing = new Set([...sel.options].map(o => o.value));
+          let syncGroup = sel.querySelector('optgroup[data-synced="1"]');
+          models.forEach(m => {
+            const id = m.id || m.name;
+            if (id && !existing.has(id)) {
+              if (!syncGroup) {
+                syncGroup = document.createElement("optgroup");
+                syncGroup.label = "Live Models Synced from Nous Portal";
+                syncGroup.setAttribute("data-synced", "1");
+                sel.prepend(syncGroup);
+              }
+              const opt = document.createElement("option");
+              opt.value = id;
+              opt.textContent = id;
+              syncGroup.appendChild(opt);
+            }
+          });
+        }
+      }
+    } catch {}
+
+    const activeModel = $("aiModelNous").value || "Hermes-4-70B";
+    const out = await callNous('Return ONLY JSON: {"status":"ok"}', activeModel, [], 200);
+    if (out) toast(`Nous Portal API verified on ${activeModel}!`, "success");
+  } catch (err) {
+    toast("Nous key test failed: " + err.message, "error");
+  } finally {
+    btn.disabled = false; btn.textContent = currentLang === "ar" ? "اختبار ومزامنة" : "Test & Sync";
   }
 }
 
@@ -3208,6 +3368,7 @@ function callAI(prompt, imageUrlOrArray, maxTokens) {
 
   return withRetry(() => {
     if (prov === "gemini") return callGemini(prompt, model, imagesArr, maxTokens || 600);
+    if (prov === "nous") return callNous(prompt, model, imagesArr, maxTokens || 600);
     if (prov === "openrouter") return callOpenRouter(prompt, model, imagesArr, maxTokens || 600);
     return callPuter(prompt, model, imagesArr[0] || null);
   }, {
@@ -3259,11 +3420,15 @@ async function callGemini(prompt, model, imagesArr, maxTokens, _isFallback = fal
       const errObj = JSON.parse(errText);
       if (errObj.error?.message) msg += ": " + errObj.error.message;
     } catch {}
-    if (!_isFallback && targetModel !== "gemini-3.8-flash" && /not found|no longer available|not supported|404/i.test(msg)) {
-      console.warn(`Model ${targetModel} unavailable, auto-falling back to gemini-3.8-flash`);
-      $("aiModelGemini").value = "gemini-3.8-flash";
-      lsSet("pdfx_model_gemini", "gemini-3.8-flash");
-      return callGemini(prompt, "gemini-3.8-flash", imagesArr, maxTokens, true);
+    if (!_isFallback && /not found|no longer available|not supported|404/i.test(msg)) {
+      const discovered = await discoverGeminiModels(apiKey);
+      const nextModel = (discovered && discovered !== targetModel)
+        ? discovered
+        : (targetModel !== "gemini-3.8-flash" ? "gemini-3.8-flash" : "gemini-3.5-flash-lite");
+      console.warn(`Model ${targetModel} unavailable, auto-switching to ${nextModel}`);
+      setSelectIfValid($("aiModelGemini"), nextModel);
+      lsSet("pdfx_model_gemini", nextModel);
+      return callGemini(prompt, nextModel, imagesArr, maxTokens, true);
     }
     throw new Error(msg);
   }
@@ -3274,6 +3439,51 @@ async function callGemini(prompt, model, imagesArr, maxTokens, _isFallback = fal
     || "";
   if (!text) throw new Error("Gemini returned an empty response");
   return text;
+}
+
+async function callNous(prompt, model, imagesArr, maxTokens, _textOnlyFallback = false) {
+  const key = $("nousKey").value.trim();
+  if (!key) {
+    throw new Error("Please enter your Nous Portal API key (from portal.nousresearch.com)");
+  }
+  const targetModel = model || "Hermes-4-405B";
+  const isTextOnlyHermes = _textOnlyFallback || /^(Hermes-|DeepHermes)/i.test(targetModel);
+  let messages;
+  if (!isTextOnlyHermes && Array.isArray(imagesArr) && imagesArr.length > 0) {
+    const content = [{ type: "text", text: prompt }];
+    imagesArr.forEach((imgUrl, idx) => {
+      if (!imgUrl) return;
+      if (imagesArr.length > 1) content.push({ type: "text", text: `IMAGE_${idx + 1}:` });
+      content.push({ type: "image_url", image_url: { url: imgUrl } });
+    });
+    messages = [{ role: "user", content }];
+  } else {
+    messages = [{ role: "user", content: prompt }];
+  }
+
+  const r = await fetch("https://inference-api.nousresearch.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Authorization": "Bearer " + key,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      model: targetModel,
+      messages,
+      max_tokens: maxTokens || 1024
+    })
+  });
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok || data.error) {
+    const errMsg = data?.error?.message || data?.detail || ("HTTP " + r.status);
+    if (!_textOnlyFallback && Array.isArray(imagesArr) && imagesArr.length > 0 && /image|vision|multimodal|content|array/i.test(String(errMsg))) {
+      return callNous(prompt, targetModel, [], maxTokens, true);
+    }
+    throw new Error("Nous Portal error: " + errMsg);
+  }
+  const msg = data?.choices?.[0]?.message?.content;
+  if (Array.isArray(msg)) return msg.map(c => c.text || "").join("");
+  return msg || "";
 }
 
 async function callPuter(prompt, model, imageUrl) {
