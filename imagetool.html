@@ -1481,6 +1481,8 @@
 
     <div class="actions">
       <button id="scanBtn" disabled data-en="Scan PDF for Green Placeholders" data-ar="فحص الملف بحثاً عن المربعات الخضراء">Scan PDF for Green Placeholders</button>
+      <button id="aiFillTopBtn" type="button" disabled data-en="⚡ AI Auto-Fill Entire File" data-ar="⚡ ملء الملف بالكامل بالذكاء الاصطناعي">⚡ AI Auto-Fill Entire File</button>
+      <button id="stopFillTopBtn" class="danger hidden" type="button" data-en="Stop AI Fill" data-ar="إيقاف الملء">Stop AI Fill</button>
       <button id="exportBtn" class="success" disabled data-en="Export Filled PDF" data-ar="تصدير ملف PDF المكتمل">Export Filled PDF</button>
       <button id="editBoxesBtn" class="secondary hidden" type="button" title="Draw new placeholder boxes, resize corners, or delete boxes directly on the page preview">✥ Draw / Edit Boxes: Off</button>
       <button id="eyedropperBtn" class="secondary hidden" type="button" title="Click any colored box on a page to also detect that color as a placeholder">💧 Pick Custom Color</button>
@@ -1489,8 +1491,15 @@
 
     <!-- AI auto-fill panel -->
     <details class="panel" style="margin-top:16px" open>
-      <summary data-en="AI Auto-Fill (Global Chapter Matching + Top-3 Candidate Alternatives)" data-ar="الملء التلقائي بالذكاء الاصطناعي (مطابقة شاملة للفصل + أفضل ٣ بدائل)">AI Auto-Fill (Global Chapter Matching + Top-3 Candidate Alternatives)</summary>
+      <summary data-en="AI Auto-Fill Entire File (Global Chapter Matching + Deep Visual Verification)" data-ar="الملء التلقائي للملف بالكامل بالذكاء الاصطناعي (مطابقة شاملة + تحقق بصري)">AI Auto-Fill Entire File (Global Chapter Matching + Deep Visual Verification)</summary>
       <div class="options" style="margin-top:10px">
+        <label class="opt"><span data-en="Full-File Automation Mode" data-ar="وضع الأتمتة الشاملة للملف">Full-File Automation Mode</span>
+          <select id="aiFillStrategy">
+            <option value="smart_hybrid" selected>Smart Hybrid (Global Chapter Match + Auto Visual Verification · Best)</option>
+            <option value="sequential_deep">Deep Sequential AI-Pick (Run Visual AI-Pick on Every Slot One-by-One)</option>
+            <option value="fast_batch">Fast Global Batch Only (1 Request per 18 Placeholders · Fastest)</option>
+          </select>
+        </label>
         <label class="opt"><span data-en="Minimum AI confidence to place" data-ar="الحد الأدنى لثقة الذكاء الاصطناعي">Minimum AI confidence to place</span>
           <select id="minConf">
             <option value="low">Low (place best guess even if unsure)</option>
@@ -1514,11 +1523,11 @@
         </label>
       </div>
       <div class="actions">
-        <button id="aiFillBtn" type="button" disabled data-en="✨ AI Auto-Fill All Placeholders" data-ar="✨ ملء جميع المربعات تلقائياً بالذكاء الاصطناعي">✨ AI Auto-Fill All Placeholders</button>
-        <button id="stopFillBtn" class="danger hidden" type="button" data-en="Stop" data-ar="إيقاف">Stop</button>
+        <button id="aiFillBtn" type="button" disabled data-en="⚡ AI Auto-Fill Entire File" data-ar="⚡ ملء الملف بالكامل تلقائياً بالذكاء الاصطناعي">⚡ AI Auto-Fill Entire File</button>
+        <button id="stopFillBtn" class="danger hidden" type="button" data-en="Stop AI Fill" data-ar="إيقاف الملء">Stop AI Fill</button>
       </div>
       <p class="hint">
-        Global Chapter Matching evaluates all placeholders together so early slots never steal a figure meant for a later section, and provides 1-click runner-up alternatives on every slot.
+        <strong>1-Click Full-File Automation:</strong> Evaluates all placeholders across the entire PDF automatically (no need to click “AI Pick” on each placeholder individually), verifies ambiguous figures visually, and provides 1-click runner-up alternatives on every slot.
       </p>
     </details>
 
@@ -1532,6 +1541,8 @@
           <div id="pagesLine" class="pages-line"></div>
         </div>
         <div class="actions">
+          <button id="aiFillResultsBtn" class="sm" type="button" disabled data-en="⚡ AI Auto-Fill All Placeholders" data-ar="⚡ ملء جميع المربعات بالذكاء الاصطناعي">⚡ AI Auto-Fill All Placeholders</button>
+          <button id="stopFillResultsBtn" class="danger sm hidden" type="button" data-en="Stop AI Fill" data-ar="إيقاف">Stop AI Fill</button>
           <input type="file" id="bulkFiles" accept="image/*" multiple class="hidden">
           <button id="bulkBtn" class="secondary sm" type="button" data-en="Upload multiple from device…" data-ar="رفع عدة صور من الجهاز…">Upload multiple from device…</button>
           <button id="clearAllBtn" class="danger-outline sm" type="button" data-en="Clear all placed images" data-ar="مسح جميع الصور الموضوعة">Clear all placed images</button>
@@ -2072,13 +2083,36 @@ function showTab(which) {
   $("paneImages").classList.toggle("hidden", !isImg);
   $("paneDoc").classList.toggle("hidden", isImg);
 }
+function syncAiFillButtons(runningLabel = null) {
+  const kept = images.filter(r => !r.removed).length;
+  const emptyCount = slots.filter(s => !s.assigned).length;
+  const canFill = (kept > 0 || !!srcFile) && (slots.length > 0 || !!docBytes) && !isFilling && !scanning && !isAnalyzing;
+  const fillBtns = [$("aiFillBtn"), $("aiFillTopBtn"), $("aiFillResultsBtn")].filter(Boolean);
+  const stopBtns = [$("stopFillBtn"), $("stopFillTopBtn"), $("stopFillResultsBtn")].filter(Boolean);
+
+  fillBtns.forEach(btn => {
+    btn.disabled = !canFill;
+    if (runningLabel) {
+      btn.textContent = runningLabel;
+    } else if (currentLang === "ar") {
+      btn.textContent = slots.length > 0
+        ? `⚡ ملء الملف بالكامل (${emptyCount > 0 ? emptyCount : slots.length} مربع)`
+        : (btn.getAttribute("data-ar") || "⚡ ملء الملف بالكامل بالذكاء الاصطناعي");
+    } else {
+      btn.textContent = slots.length > 0
+        ? `⚡ AI Auto-Fill Entire File (${emptyCount > 0 ? emptyCount + " Empty" : "All " + slots.length})`
+        : (btn.getAttribute("data-en") || "⚡ AI Auto-Fill Entire File");
+    }
+  });
+  stopBtns.forEach(btn => btn.classList.toggle("hidden", !isFilling));
+}
+
 function updateTabCounts() {
   const kept = images.filter(r => !r.removed).length;
   $("tabCountImages").textContent = kept + " kept";
   const filled = slots.filter(s => s.assigned).length;
   $("tabCountDoc").textContent = filled + " / " + slots.length + " filled";
-  const canFill = kept > 0 && slots.length > 0 && !isFilling && !scanning;
-  $("aiFillBtn").disabled = !canFill;
+  syncAiFillButtons(isFilling ? "⏳ Auto-Filling File…" : null);
 }
 
 /* ---------- MedicineBank 7-Theme Engine, Floating Scrubber & Bilingual Support ---------- */
@@ -2322,6 +2356,7 @@ function initPageSlider() {
     srcFile = f;
     $("srcFileLabel").textContent = `${f.name} (${(f.size / 1048576).toFixed(2)} MB)`;
     $("extractBtn").disabled = false;
+    updateTabCounts();
   });
   $("extractBtn").addEventListener("click", extractAll);
   $("aiAnalyzeBtn").addEventListener("click", () => analyzeAll(false));
@@ -2352,8 +2387,16 @@ function initPageSlider() {
   $("sampleBtn").addEventListener("click", makeSample);
   $("fitMode").addEventListener("change", redrawAllOverlays);
   $("pureWhiteMask").addEventListener("change", redrawAllOverlays);
-  $("aiFillBtn").addEventListener("click", aiFill);
-  $("stopFillBtn").addEventListener("click", () => { stopFill = true; });
+  [$("aiFillBtn"), $("aiFillTopBtn"), $("aiFillResultsBtn")].filter(Boolean).forEach(btn => {
+    btn.addEventListener("click", aiFill);
+  });
+  [$("stopFillBtn"), $("stopFillTopBtn"), $("stopFillResultsBtn")].filter(Boolean).forEach(btn => {
+    btn.addEventListener("click", () => { stopFill = true; });
+  });
+  if ($("aiFillStrategy")) {
+    setSelectIfValid($("aiFillStrategy"), lsGet("pdfx_fill_strategy"));
+    $("aiFillStrategy").addEventListener("change", e => lsSet("pdfx_fill_strategy", e.target.value));
+  }
 
   $("editBoxesBtn").addEventListener("click", () => {
     boxEditMode = !boxEditMode;
@@ -4403,27 +4446,9 @@ function buildMatchPrompt(chunk, pool, reuse, useSrcText) {
   return p.join("\n");
 }
 
-async function aiAssignOne(slot, setMsg) {
-  if (aiOneBusy || isFilling || isAnalyzing || scanning) { toast("Wait for the current AI task to finish.", "error"); return false; }
-  if (!images.length) { toast("No extracted images yet. Extract them in Step 1 first.", "error"); return false; }
-  if (!aiReady()) return false;
-
+async function aiAssignOneCore(slot, pool, reuse, useSrc, minConf = "low", setMsg = null) {
   const say = m => { if (setMsg) setMsg(m); };
-  const reuse = $("allowReuse").checked, useSrc = $("matchSrcText").checked;
-  const usedElsewhere = new Set(slots
-    .filter(s => s !== slot && s.assigned && s.assigned.imageId != null)
-    .map(s => s.assigned.imageId));
-
-  let pool = candidatePool().filter(r => r.label || r.pageText);
-  if (!reuse) pool = pool.filter(r => !usedElsewhere.has(r.id));
-  if (!pool.length) {
-    const m = "No usable images left. Each needs a label or source-page text, and images already used elsewhere are skipped unless you allow reuse.";
-    slot.aiNote = m; say(m); refreshAfterAssign(slot);
-    toast(m, "error");
-    return false;
-  }
-
-  aiOneBusy = true; slot.busy = true;
+  slot.busy = true;
   slot.aiNote = "AI is matching context…"; say(slot.aiNote);
   renderSlots();
 
@@ -4483,8 +4508,9 @@ async function aiAssignOne(slot, setMsg) {
 
     if (!img) {
       slot.aiNote = finalReason ? "No match: " + finalReason : "AI found no good match for this placeholder.";
+    } else if (confRank(conf) < confRank(minConf)) {
+      slot.aiNote = `Skipped (${conf} confidence): ${finalReason}`;
     } else {
-      pushUndoSnapshot(`AI pick for slot #${slot.num}`);
       await assignLibrary(slot, img, { conf, note: finalReason });
       placed = true;
     }
@@ -4492,10 +4518,37 @@ async function aiAssignOne(slot, setMsg) {
     console.error("Match error:", err);
     slot.aiNote = "AI error: " + (err.message || err);
   } finally {
-    aiOneBusy = false; slot.busy = false;
+    slot.busy = false;
+  }
+  refreshAfterAssign(slot);
+  return placed;
+}
+
+async function aiAssignOne(slot, setMsg) {
+  if (aiOneBusy || isFilling || isAnalyzing || scanning) { toast("Wait for the current AI task to finish.", "error"); return false; }
+  if (!images.length) { toast("No extracted images yet. Extract them in Step 1 first.", "error"); return false; }
+  if (!aiReady()) return false;
+
+  const say = m => { if (setMsg) setMsg(m); };
+  const reuse = $("allowReuse").checked, useSrc = $("matchSrcText").checked;
+  const usedElsewhere = new Set(slots
+    .filter(s => s !== slot && s.assigned && s.assigned.imageId != null)
+    .map(s => s.assigned.imageId));
+
+  let pool = candidatePool().filter(r => r.label || r.pageText);
+  if (!reuse) pool = pool.filter(r => !usedElsewhere.has(r.id));
+  if (!pool.length) {
+    const m = "No usable images left. Each needs a label or source-page text, and images already used elsewhere are skipped unless you allow reuse.";
+    slot.aiNote = m; say(m); refreshAfterAssign(slot);
+    toast(m, "error");
+    return false;
   }
 
-  refreshAfterAssign(slot);
+  aiOneBusy = true;
+  pushUndoSnapshot(`AI pick for slot #${slot.num}`);
+  const placed = await aiAssignOneCore(slot, pool, reuse, useSrc, "low", setMsg);
+  aiOneBusy = false;
+
   if (placed) {
     say(`Placed: ${slot.assigned.name} (${slot.assigned.conf} confidence)`);
     toast(`AI picked “${slot.assigned.name}” (${slot.assigned.conf} confidence).`, "success");
@@ -4508,28 +4561,45 @@ async function aiAssignOne(slot, setMsg) {
 
 async function aiFill() {
   if (isFilling || isAnalyzing || scanning || aiOneBusy) return;
-  if (!images.length) { toast("Step 1 first: extract images from a PDF.", "error"); showTab("images"); return; }
-  if (!slots.length) { toast("Scan a document with green placeholders first.", "error"); return; }
   if (!aiReady()) return;
+
+  // Auto-extract Step 1 if user uploaded source PDF but didn't click Extract yet
+  if (!images.length && srcFile) {
+    toast("Extracting figures from Step 1 source PDF first…", "info");
+    await extractAll();
+  }
+  if (!images.length) { toast("Step 1 first: drop a source lecture PDF and extract images.", "error"); showTab("images"); return; }
+
+  // Auto-scan Step 2 if user uploaded textbook PDF but didn't scan yet
+  if (!slots.length && docBytes) {
+    await scanPdf();
+  }
+  if (!slots.length) { toast("Scan a textbook PDF with green placeholders first.", "error"); return; }
 
   const onlyEmpty = $("onlyEmpty").checked, reuse = $("allowReuse").checked;
   const minConf = $("minConf").value, useSrc = $("matchSrcText").checked, labelFirst = $("labelFirst").checked;
-  const targets = slots.filter(s => !onlyEmpty || !s.assigned);
-  if (!targets.length) { toast("Every placeholder already has an image.", "success"); return; }
+  const strategy = $("aiFillStrategy") ? $("aiFillStrategy").value : "smart_hybrid";
+  let targets = slots.filter(s => !onlyEmpty || !s.assigned);
+  if (!targets.length) {
+    if (confirm("Every placeholder already has an image. Re-run AI Auto-Fill across the entire file from scratch?")) {
+      targets = [...slots];
+    } else {
+      return;
+    }
+  }
 
-  pushUndoSnapshot("AI Auto-Fill Placeholders");
+  pushUndoSnapshot("AI Auto-Fill Entire File");
   isFilling = true; stopFill = false;
-  $("aiFillBtn").disabled = true;
   $("scanBtn").disabled = true;
-  $("stopFillBtn").classList.remove("hidden");
+  syncAiFillButtons(`⏳ Preparing (${targets.length} slots)…`);
   renderSlots();
 
-  let placed = 0, failedChunks = 0, labelFailed = 0, skippedNoInfo = 0;
+  let placed = 0, failedChunks = 0, labelFailed = 0, visualVerified = 0;
   try {
     let pool = candidatePool();
     if (!pool.length) { toast("No usable images: they are all removed or flagged.", "error"); return; }
 
-    // Batch-label any unlabeled images first
+    // 1. Batch-label any unlabeled images first
     if (labelFirst) {
       const unl = pool.filter(r => !r.label);
       if (unl.length) {
@@ -4538,87 +4608,161 @@ async function aiFill() {
         for (let i = 0; i < unl.length; i += bSize) {
           if (stopFill) break;
           const chunk = unl.slice(i, i + bSize);
-          setStatus(2, `AI batch-labeling unlabeled figures ${i + 1}–${Math.min(unl.length, i + chunk.length)} of ${unl.length}…`);
-          setProgress(2, i / unl.length);
+          const msg = `AI batch-labeling unlabeled figures ${i + 1}–${Math.min(unl.length, i + chunk.length)} of ${unl.length}…`;
+          setStatus(2, msg);
+          syncAiFillButtons(`⏳ Labeling (${i + 1}/${unl.length})…`);
+          setProgress(2, (i / unl.length) * 0.3);
           await analyzeBatch(chunk, { label: true, cat: false, force: false });
-          if (i + bSize < unl.length) await sleep(800);
+          if (i + bSize < unl.length) await sleep(600);
         }
         labelFailed = unl.filter(r => !r.label).length;
       }
     }
 
-    skippedNoInfo = pool.filter(r => !r.label && !r.pageText).length;
     pool = pool.filter(r => r.label || r.pageText);
     if (!pool.length) throw new Error("No usable images: none has a label or source-page text.");
 
-    if (!onlyEmpty) targets.forEach(clearAssigned);
+    if (targets.length === slots.length || !onlyEmpty) targets.forEach(clearAssigned);
     const used = new Set(slots.filter(s => s.assigned && s.assigned.imageId != null).map(s => s.assigned.imageId));
 
-    for (let c = 0; c < targets.length; c += MATCH_CHUNK) {
-      if (stopFill) break;
-      const chunk = targets.slice(c, c + MATCH_CHUNK);
-      const avail = reuse ? pool : pool.filter(r => !used.has(r.id));
-      setStatus(2, `AI globally matching placeholders ${c + 1}–${c + chunk.length} of ${targets.length}…`);
-      setProgress(2, c / targets.length);
+    if (strategy === "sequential_deep") {
+      // Deep Sequential AI-Pick: runs full individual AI-Pick + visual verification on every target slot
+      for (let i = 0; i < targets.length; i++) {
+        if (stopFill) break;
+        const s = targets[i];
+        const avail = reuse ? pool : pool.filter(r => !used.has(r.id));
+        if (!avail.length) { s.aiNote = "No unused images left."; continue; }
 
-      if (!avail.length) { chunk.forEach(s => { s.aiNote = "No unused images left."; }); continue; }
+        setStatus(2, `⚡ Deep AI-Picking placeholder #${s.num} (${i + 1} of ${targets.length}) across file…`);
+        syncAiFillButtons(`⏳ Auto-Filling (${i + 1} / ${targets.length})…`);
+        setProgress(2, 0.3 + (i / targets.length) * 0.7);
 
-      try {
-        const raw = await callAI(buildMatchPrompt(chunk, avail, reuse, useSrc), null, 4000);
-        const obj = parseJsonObject(raw);
-        const arr = Array.isArray(obj.matches) ? obj.matches : [];
-        arr.sort((a, b) => confRank(normConf(b)) - confRank(normConf(a)));
-
-        const answered = new Set();
-        for (const m of arr) {
-          const num = Number(String(m.placeholder).replace(/\D/g, ""));
-          const s = chunk.find(x => x.num === num);
-          if (!s || answered.has(s.id)) continue;
-          answered.add(s.id);
-
-          const reason = String(m.reason || "").trim();
-          const conf = normConf(m);
-          const idDigits = m.image == null ? "" : String(m.image).replace(/\D/g, "");
-          let img = idDigits ? avail.find(r => String(r.id) === idDigits) : null;
-          const alts = Array.isArray(m.alternatives)
-            ? m.alternatives.map(a => String(a).replace(/\D/g, "")).filter(Boolean)
-            : [];
-          s.alternatives = alts;
-
-          // If primary pick was already used by a higher-confidence slot in the same batch, check alternatives!
-          if (img && !reuse && used.has(img.id)) {
-            const altCandidate = alts.map(aid => avail.find(r => String(r.id) === aid && !used.has(r.id))).find(Boolean);
-            if (altCandidate) img = altCandidate;
-          }
-
-          if (!img) { s.aiNote = reason ? "No match: " + reason : "AI found no good match."; continue; }
-          if (confRank(conf) < confRank(minConf)) { s.aiNote = `Skipped (${conf} confidence): ${reason}`; continue; }
-          if (!reuse && used.has(img.id)) { s.aiNote = "Best image was already used elsewhere."; continue; }
-
-          await assignLibrary(s, img, { conf, note: reason });
-          used.add(img.id);
+        const ok = await aiAssignOneCore(s, avail, reuse, useSrc, minConf);
+        if (ok && s.assigned) {
+          used.add(s.assigned.imageId);
           placed++;
         }
-        chunk.forEach(s => { if (!answered.has(s.id)) s.aiNote = "AI gave no answer for this one."; });
-      } catch (err) {
-        console.error("Match error:", err);
-        failedChunks++;
-        chunk.forEach(s => { s.aiNote = "AI error: " + (err.message || err); });
+        if (i + 1 < targets.length) await sleep(250);
+      }
+    } else {
+      // Pass 1: Global Chapter Matching across chunks
+      const needsVisualVerify = [];
+      for (let c = 0; c < targets.length; c += MATCH_CHUNK) {
+        if (stopFill) break;
+        const chunk = targets.slice(c, c + MATCH_CHUNK);
+        const avail = reuse ? pool : pool.filter(r => !used.has(r.id));
+        setStatus(2, `⚡ Global chapter matching placeholders ${c + 1}–${c + chunk.length} of ${targets.length}…`);
+        syncAiFillButtons(`⏳ Matching (${c + 1}–${c + chunk.length} / ${targets.length})…`);
+        setProgress(2, 0.25 + (c / targets.length) * 0.5);
+
+        if (!avail.length) { chunk.forEach(s => { s.aiNote = "No unused images left."; }); continue; }
+
+        try {
+          const raw = await callAI(buildMatchPrompt(chunk, avail, reuse, useSrc), null, 4096);
+          const obj = parseJsonObject(raw);
+          const arr = Array.isArray(obj.matches) ? obj.matches : [];
+          arr.sort((a, b) => confRank(normConf(b)) - confRank(normConf(a)));
+
+          const answered = new Set();
+          for (const m of arr) {
+            const num = Number(String(m.placeholder).replace(/\D/g, ""));
+            const s = chunk.find(x => x.num === num);
+            if (!s || answered.has(s.id)) continue;
+            answered.add(s.id);
+
+            const reason = String(m.reason || "").trim();
+            const conf = normConf(m);
+            const idDigits = m.image == null ? "" : String(m.image).replace(/\D/g, "");
+            let img = idDigits ? avail.find(r => String(r.id) === idDigits) : null;
+            const alts = Array.isArray(m.alternatives)
+              ? m.alternatives.map(a => String(a).replace(/\D/g, "")).filter(Boolean)
+              : [];
+            s.alternatives = alts;
+
+            if (img && !reuse && used.has(img.id)) {
+              const altCandidate = alts.map(aid => avail.find(r => String(r.id) === aid && !used.has(r.id))).find(Boolean);
+              if (altCandidate) img = altCandidate;
+            }
+
+            if (!img) {
+              s.aiNote = reason ? "No match: " + reason : "AI found no good match.";
+              if (strategy === "smart_hybrid") needsVisualVerify.push(s);
+              continue;
+            }
+            if (confRank(conf) < confRank(minConf)) {
+              s.aiNote = `Skipped (${conf} confidence): ${reason}`;
+              if (strategy === "smart_hybrid") needsVisualVerify.push(s);
+              continue;
+            }
+            if (!reuse && used.has(img.id)) {
+              s.aiNote = "Best image was already used elsewhere.";
+              if (strategy === "smart_hybrid") needsVisualVerify.push(s);
+              continue;
+            }
+
+            await assignLibrary(s, img, { conf, note: reason });
+            used.add(img.id);
+            placed++;
+
+            // In Smart Hybrid mode, if confidence is not "high" and runner-up alternatives exist, queue visual verification
+            if (strategy === "smart_hybrid" && conf !== "high" && alts.length > 0 && $("aiProvider").value !== "puter") {
+              needsVisualVerify.push(s);
+            }
+          }
+          chunk.forEach(s => {
+            if (!answered.has(s.id)) {
+              s.aiNote = "AI gave no answer in global pass.";
+              if (strategy === "smart_hybrid") needsVisualVerify.push(s);
+            }
+          });
+        } catch (err) {
+          console.error("Match error:", err);
+          failedChunks++;
+          chunk.forEach(s => {
+            s.aiNote = "AI batch error: " + (err.message || err);
+            if (strategy === "smart_hybrid") needsVisualVerify.push(s);
+          });
+        }
+
+        renderSlots();
+        redrawAllOverlays();
+        await sleep(300);
       }
 
-      renderSlots();
-      redrawAllOverlays();
-      await sleep(400);
+      // Pass 2 (Smart Hybrid): Automatic Deep Visual Verification & Unfilled Slot Recovery
+      if (strategy === "smart_hybrid" && needsVisualVerify.length > 0 && !stopFill) {
+        for (let i = 0; i < needsVisualVerify.length; i++) {
+          if (stopFill) break;
+          const s = needsVisualVerify[i];
+          const wasAssigned = !!s.assigned;
+          if (wasAssigned && s.assigned.imageId != null) used.delete(s.assigned.imageId);
+
+          const avail = reuse ? pool : pool.filter(r => !used.has(r.id));
+          if (!avail.length) continue;
+
+          setStatus(2, `🔍 Visually verifying placeholder #${s.num} (${i + 1} of ${needsVisualVerify.length})…`);
+          syncAiFillButtons(`⏳ Verifying (${i + 1} / ${needsVisualVerify.length})…`);
+          setProgress(2, 0.75 + (i / needsVisualVerify.length) * 0.25);
+
+          const ok = await aiAssignOneCore(s, avail, reuse, useSrc, minConf);
+          if (ok && s.assigned) {
+            used.add(s.assigned.imageId);
+            if (!wasAssigned) placed++;
+            visualVerified++;
+          }
+          await sleep(200);
+        }
+      }
     }
 
     const left = slots.filter(s => !s.assigned).length;
     setStatus(2,
-      `${stopFill ? "Stopped. " : "Finished. "}Placed ${placed} image${placed === 1 ? "" : "s"}, ${left} placeholder${left === 1 ? "" : "s"} still empty.` +
-      (failedChunks ? ` ${failedChunks} batch(es) failed.` : "") +
+      `${stopFill ? "Stopped. " : "Finished full-file auto-fill! "}Placed ${placed} image${placed === 1 ? "" : "s"} across the file${visualVerified ? ` (${visualVerified} visually verified)` : ""}, ${left} placeholder${left === 1 ? "" : "s"} still empty.` +
+      (failedChunks ? ` ${failedChunks} batch(es) recovered.` : "") +
       (labelFailed ? ` ${labelFailed} image(s) could not be labeled.` : ""),
-      failedChunks > 0
+      failedChunks > 0 && placed === 0
     );
-    toast(`AI placed ${placed} figure${placed === 1 ? "" : "s"}. Review them, then click Export Filled PDF.`, placed ? "success" : "error");
+    toast(`⚡ Full-file AI Auto-Fill placed ${placed} figure${placed === 1 ? "" : "s"}! Review them or click Export Filled PDF.`, placed ? "success" : "error");
   } catch (err) {
     console.error(err);
     setStatus(2, "AI fill failed: " + (err.message || err), true);
@@ -4626,9 +4770,8 @@ async function aiFill() {
   } finally {
     setProgress(2, null);
     isFilling = false;
-    $("aiFillBtn").disabled = false;
     $("scanBtn").disabled = !docBytes;
-    $("stopFillBtn").classList.add("hidden");
+    syncAiFillButtons(null);
     renderSlots();
     redrawAllOverlays();
     updateTabCounts();
