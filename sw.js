@@ -3,7 +3,7 @@
    Strategy: Stale-While-Revalidate with Precache for 100% Offline Clinical Studying
    ============================================================================= */
 
-const CACHE_NAME = 'medicinebank-v2.6';
+const CACHE_NAME = 'medicinebank-v2.7';
 
 const PRECACHE_ASSETS = [
   './',
