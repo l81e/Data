@@ -60,7 +60,29 @@ assert(flashmakeHtml.includes('frontAddCloze') && flashmakeHtml.includes('frontA
 const notFoundHtml = fs.readFileSync('404.html', 'utf-8');
 assert(notFoundHtml.includes('/flash.html'), '404.html routes /flash cleanly to /flash.html');
 assert(notFoundHtml.includes('/flashmake.html'), '404.html routes /flashmake cleanly to /flashmake.html');
+assert(notFoundHtml.includes('/imagetool.html'), '404.html routes /imagetool cleanly to /imagetool.html');
 assert(notFoundHtml.includes('mb_redirect_path'), '404.html captures date deep-links for index.html');
+
+// 4b. Verify imagetool.html (PDF Image Studio with Google Gemini)
+const imagetoolHtml = fs.readFileSync('imagetool.html', 'utf-8');
+assert(imagetoolHtml.includes('<title>PDF Image Studio</title>'), 'imagetool.html has valid title');
+assert(imagetoolHtml.includes('value="gemini" selected'), 'imagetool.html defaults to Google Gemini provider');
+assert(imagetoolHtml.includes('id="modelFieldGemini"'), 'imagetool.html contains Gemini model selection field');
+assert(imagetoolHtml.includes('id="aiModelGemini"'), 'imagetool.html contains aiModelGemini element');
+assert(imagetoolHtml.includes('value="gemini-2.0-flash" selected'), 'imagetool.html defaults to gemini-2.0-flash');
+assert(imagetoolHtml.includes('id="keyFieldGemini"'), 'imagetool.html contains Gemini API key input field');
+assert(imagetoolHtml.includes('id="geminiKey"'), 'imagetool.html contains geminiKey input');
+assert(imagetoolHtml.includes('async function callGemini('), 'imagetool.html defines callGemini function');
+assert(imagetoolHtml.includes('generativelanguage.googleapis.com'), 'imagetool.html calls Google Gemini v1beta endpoint');
+assert(imagetoolHtml.includes('response_mime_type: "application/json"'), 'imagetool.html enforces native JSON output format');
+assert(imagetoolHtml.includes('prov === "gemini"'), 'imagetool.html dispatches callAI to Gemini');
+assert(imagetoolHtml.includes('pdfx_geminikey'), 'imagetool.html persists Gemini API key in localStorage');
+assert(imagetoolHtml.includes('pdfx_model_gemini'), 'imagetool.html persists Gemini model in localStorage');
+assert(imagetoolHtml.includes('sleep(4000)'), 'imagetool.html enforces 4s delay for 15 RPM free tier cap');
+assert(imagetoolHtml.includes('maxDim = 720'), 'imagetool.html optimizes payload size down to 720px');
+assert(imagetoolHtml.includes('findGreenBoxes('), 'imagetool.html contains Step 2 green placeholder scanner');
+assert(imagetoolHtml.includes('buildMatchPrompt('), 'imagetool.html contains Step 2 placeholder AI matching engine');
+assert(indexHtml.includes('/imagetool.html'), 'index.html contains link to PDF Image Studio in admin tools');
 
 // 5. Verify schema.sql
 const schemaSql = fs.readFileSync('schema.sql', 'utf-8');

@@ -195,11 +195,23 @@
     <div class="options">
       <label class="opt">Provider
         <select id="aiProvider">
-          <option value="puter" selected>Puter.js (no key needed)</option>
+          <option value="gemini" selected>Google Gemini API (Free 1,500 req/day)</option>
+          <option value="puter">Puter.js (no key needed)</option>
           <option value="openrouter">OpenRouter (bring your own key)</option>
         </select>
       </label>
-      <label class="opt" id="modelFieldPuter">Model via Puter.js
+
+      <label class="opt" id="modelFieldGemini">Model via Google Gemini
+        <select id="aiModelGemini">
+          <option value="gemini-2.0-flash" selected>Gemini 2.0 Flash (Fastest, Best Vision, Free)</option>
+          <option value="gemini-1.5-flash">Gemini 1.5 Flash (Free)</option>
+        </select>
+      </label>
+
+      <label class="opt" id="keyFieldGemini">Google Gemini API Key
+        <input id="geminiKey" type="password" placeholder="AIzaSy... (free at aistudio.google.com)" autocomplete="off">
+      </label>
+      <label class="opt" id="modelFieldPuter" style="display:none">Model via Puter.js
         <select id="aiModelPuter">
           <option value="anthropic/claude-opus-4-8">Claude Opus 4.8</option>
           <option value="anthropic/claude-sonnet-4-6" selected>Claude Sonnet 4.6</option>
@@ -225,7 +237,7 @@
         <input id="orKey" type="password" placeholder="sk-or-v1-..." autocomplete="off">
       </label>
     </div>
-    <p class="hint">Labeling images in Step 1 needs a model that can read images (Claude, GPT, Gemini). DeepSeek and small Llama models may fail on images. Matching images to placeholders in Step 2 only uses text, so any model works for that. Puter may ask you to sign in the first time. OpenRouter key: <a href="https://openrouter.ai/keys" target="_blank" rel="noopener">openrouter.ai/keys</a> (saved only in this browser).</p>
+    <p class="hint">Recommended: <strong>Google Gemini API</strong> gives you 1,500 free requests/day with no credit card at <a href="https://aistudio.google.com" target="_blank" rel="noopener">aistudio.google.com</a>. Labeling images in Step 1 needs a model that can read images (Gemini, Claude, GPT). Matching images to placeholders in Step 2 only uses text, so any model works. Keys and preferences are stored privately in your browser.</p>
   </details>
 
   <div class="tabs">
@@ -520,17 +532,31 @@ function updateTabCounts() {
    AI  (shared: Puter.js or OpenRouter, same models as Tag Tools)
    ====================================================================== */
 function updateProviderVisibility() {
-  const isOR = $("aiProvider").value === "openrouter";
-  $("modelFieldPuter").style.display = isOR ? "none" : "flex";
-  $("modelFieldOpenrouter").style.display = isOR ? "flex" : "none";
-  $("keyFieldOpenrouter").style.display = isOR ? "flex" : "none";
+  const p = document.getElementById("aiProvider").value;
+  document.getElementById("modelFieldGemini").style.display = p === "gemini" ? "flex" : "none";
+  document.getElementById("keyFieldGemini").style.display = p === "gemini" ? "flex" : "none";
+  document.getElementById("modelFieldPuter").style.display = p === "puter" ? "flex" : "none";
+  document.getElementById("modelFieldOpenrouter").style.display = p === "openrouter" ? "flex" : "none";
+  document.getElementById("keyFieldOpenrouter").style.display = p === "openrouter" ? "flex" : "none";
 }
 function getActiveModel() {
-  return $("aiProvider").value === "openrouter" ? $("aiModelOpenrouter").value : $("aiModelPuter").value;
+  const p = document.getElementById("aiProvider").value;
+  if (p === "gemini") return document.getElementById("aiModelGemini").value;
+  if (p === "openrouter") return document.getElementById("aiModelOpenrouter").value;
+  return document.getElementById("aiModelPuter").value;
 }
 function aiReady() {
-  if ($("aiProvider").value === "openrouter" && !$("orKey").value.trim()) {
-    toast("Enter an OpenRouter API key first", "error");
+  const p = document.getElementById("aiProvider").value;
+  if (p === "gemini" && !document.getElementById("geminiKey").value.trim()) {
+    toast("Enter your free Google Gemini API key in AI settings first.", "error");
+    document.getElementById("aiPanel").open = true;
+    document.getElementById("geminiKey").focus();
+    return false;
+  }
+  if (p === "openrouter" && !document.getElementById("orKey").value.trim()) {
+    toast("Enter your OpenRouter API key in AI settings first.", "error");
+    document.getElementById("aiPanel").open = true;
+    document.getElementById("orKey").focus();
     return false;
   }
   return true;
@@ -604,11 +630,59 @@ async function callOpenRouter(prompt, model, imageUrl, maxTokens) {
   return rc;
 }
 
+async function callGemini(prompt, model, imageUrl, maxTokens) {
+  const apiKey = document.getElementById("geminiKey").value.trim();
+  if (!apiKey) {
+    throw new Error("Please enter your free Google Gemini API key (get one free at aistudio.google.com)");
+  }
+  const parts = [{ text: prompt }];
+  if (imageUrl) {
+    const comma = imageUrl.indexOf(",");
+    const meta = imageUrl.slice(0, comma);
+    const base64Data = imageUrl.slice(comma + 1);
+    const mimeMatch = meta.match(/data:([^;]+);/);
+    const mimeType = mimeMatch ? mimeMatch[1] : "image/jpeg";
+    parts.push({
+      inline_data: { mime_type: mimeType, data: base64Data }
+    });
+  }
+  const targetModel = model || "gemini-2.0-flash";
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${targetModel}:generateContent?key=${encodeURIComponent(apiKey)}`;
+  const resp = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      contents: [{ parts: parts }],
+      generationConfig: {
+        response_mime_type: "application/json"
+      }
+    })
+  });
+  if (!resp.ok) {
+    const errText = await resp.text();
+    let msg = `Gemini API error (${resp.status})`;
+    try {
+      const errObj = JSON.parse(errText);
+      if (errObj.error?.message) msg += ": " + errObj.error.message;
+    } catch(e) {}
+    throw new Error(msg);
+  }
+  const data = await resp.json();
+  const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (!text) throw new Error("Gemini returned no response text");
+  return text;
+}
+
 function callAI(prompt, imageUrl, maxTokens) {
+  const prov = document.getElementById("aiProvider").value;
   const model = getActiveModel();
-  return $("aiProvider").value === "openrouter"
-    ? callOpenRouter(prompt, model, imageUrl, maxTokens || 300)
-    : callPuter(prompt, model, imageUrl);
+  if (prov === "gemini") {
+    return callGemini(prompt, model, imageUrl, maxTokens || 300);
+  } else if (prov === "openrouter") {
+    return callOpenRouter(prompt, model, imageUrl, maxTokens || 300);
+  } else {
+    return callPuter(prompt, model, imageUrl);
+  }
 }
 
 function parseJsonObject(raw) {
@@ -618,7 +692,7 @@ function parseJsonObject(raw) {
   catch (e) { throw new Error("AI returned invalid JSON"); }
 }
 
-async function toDataUrl(url, maxDim) {
+async function toDataUrl(url, maxDim = 720) {
   const im = await loadImg(url);
   const s = Math.min(1, maxDim / Math.max(im.naturalWidth, im.naturalHeight));
   const c = document.createElement("canvas");
@@ -635,17 +709,36 @@ async function toDataUrl(url, maxDim) {
    INIT / WIRING
    ====================================================================== */
 (function init() {
-  const k = lsGet("patholytica_or_key"); if (k) $("orKey").value = k;
-  const p = lsGet("patholytica_ai_provider");
-  if (p === "openrouter" || p === "puter") $("aiProvider").value = p;
-  setSelectIfValid($("aiModelPuter"), lsGet("pdfx_model_puter"));
-  setSelectIfValid($("aiModelOpenrouter"), lsGet("pdfx_model_or"));
+  const p = lsGet("pdfx_provider") || lsGet("patholytica_ai_provider") || "gemini";
+  if (p === "gemini" || p === "openrouter" || p === "puter") document.getElementById("aiProvider").value = p;
+  setSelectIfValid(document.getElementById("aiModelGemini"), lsGet("pdfx_model_gemini"));
+  setSelectIfValid(document.getElementById("aiModelPuter"), lsGet("pdfx_model_puter"));
+  setSelectIfValid(document.getElementById("aiModelOpenrouter"), lsGet("pdfx_model_or"));
+  document.getElementById("geminiKey").value = lsGet("pdfx_geminikey") || "";
+  document.getElementById("orKey").value = lsGet("pdfx_orkey") || lsGet("patholytica_or_key") || "";
   updateProviderVisibility();
 
-  $("orKey").addEventListener("change", e => lsSet("patholytica_or_key", e.target.value.trim()));
-  $("aiProvider").addEventListener("change", e => { lsSet("patholytica_ai_provider", e.target.value); updateProviderVisibility(); });
-  $("aiModelPuter").addEventListener("change", e => lsSet("pdfx_model_puter", e.target.value));
-  $("aiModelOpenrouter").addEventListener("change", e => lsSet("pdfx_model_or", e.target.value));
+  document.getElementById("geminiKey").value = lsGet("pdfx_geminikey") || "";
+  document.getElementById("geminiKey").addEventListener("input", e => lsSet("pdfx_geminikey", e.target.value.trim()));
+  document.getElementById("geminiKey").addEventListener("change", e => lsSet("pdfx_geminikey", e.target.value.trim()));
+  setSelectIfValid(document.getElementById("aiModelGemini"), lsGet("pdfx_model_gemini"));
+  document.getElementById("aiModelGemini").addEventListener("change", e => lsSet("pdfx_model_gemini", e.target.value));
+
+  document.getElementById("orKey").addEventListener("input", e => {
+    lsSet("pdfx_orkey", e.target.value.trim());
+    lsSet("patholytica_or_key", e.target.value.trim());
+  });
+  document.getElementById("orKey").addEventListener("change", e => {
+    lsSet("pdfx_orkey", e.target.value.trim());
+    lsSet("patholytica_or_key", e.target.value.trim());
+  });
+  document.getElementById("aiProvider").addEventListener("change", e => {
+    lsSet("pdfx_provider", e.target.value);
+    lsSet("patholytica_ai_provider", e.target.value);
+    updateProviderVisibility();
+  });
+  document.getElementById("aiModelPuter").addEventListener("change", e => lsSet("pdfx_model_puter", e.target.value));
+  document.getElementById("aiModelOpenrouter").addEventListener("change", e => lsSet("pdfx_model_or", e.target.value));
 
   $("tabBtnImages").addEventListener("click", () => showTab("images"));
   $("tabBtnDoc").addEventListener("click", () => showTab("doc"));
@@ -1092,7 +1185,7 @@ async function analyzeOne(r, forced) {
   paintCard(r);
 
   try {
-    const dataUrl = await toDataUrl(r.url, 1280);
+    const dataUrl = await toDataUrl(r.url, 720);
     const prompt = buildPrompt(r, wants.label, wants.cat, $("optContext").checked);
     const raw = await callAI(prompt, dataUrl, 300);
     const obj = parseJsonObject(raw);
@@ -1148,7 +1241,11 @@ async function analyzeAll() {
     setStatus(1, "AI is analyzing image " + (i + 1) + " of " + todo.length + "…");
     setProgress(1, i / todo.length);
     (await analyzeOne(todo[i])) ? ok++ : failed++;
-    await sleep(800);
+    if (document.getElementById("aiProvider").value === "gemini") {
+      await sleep(4000); // 4-second delay prevents hitting the 15 RPM free tier cap
+    } else {
+      await sleep(800);
+    }
   }
 
   setProgress(1, null);
@@ -1830,7 +1927,11 @@ async function aiFill() {
         setStatus(2, "AI is labeling image " + (i + 1) + " of " + unl.length + "…");
         setProgress(2, i / unl.length);
         await analyzeOne(unl[i], { label: true, cat: false });
-        await sleep(600);
+        if (document.getElementById("aiProvider").value === "gemini") {
+          await sleep(4000);
+        } else {
+          await sleep(600);
+        }
       }
       labelFailed = unl.filter(r => !r.label).length;
     }
