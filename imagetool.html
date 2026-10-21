@@ -1,361 +1,1147 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" dir="ltr">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>PDF Image Studio — MedicineBank</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>MedicineBank — PDF Image Studio</title>
+<script>
+  try {
+    var _t = localStorage.getItem('mb_theme');
+    if (_t && ['light','maroon','blue','orange','champagne','brown'].indexOf(_t) !== -1) {
+      document.documentElement.setAttribute('data-theme', _t);
+    }
+    var _l = localStorage.getItem('mb_lang');
+    if (_l === 'ar') {
+      document.documentElement.setAttribute('lang', 'ar');
+      document.documentElement.setAttribute('dir', 'rtl');
+    }
+  } catch(e) {}
+</script>
 <link rel="icon" type="image/png" href="favicon.png">
 <link rel="icon" type="image/x-icon" href="favicon.ico">
 <link rel="apple-touch-icon" href="favicon.png">
 <link rel="manifest" href="manifest.json">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/theme.css" />
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <script src="https://js.puter.com/v2/"></script>
 <style>
   :root {
-    color-scheme: light dark;
-    --bg: #f6f7f9; --card: #ffffff; --card-hi: #f0f3f8; --text: #1c2430; --muted: #6b7684;
-    --accent: #2563eb; --accent-soft: rgba(37,99,235,0.10); --border: #dfe3e8;
-    --danger: #dc2626; --success: #16a34a; --warn: #d97706; --amber: #f5b400;
+    --bg: #0b0b0b;
+    --panel: #141414;
+    --panel-hi: #1c1c1c;
+    --line: #262626;
+    --line-soft: #1f1f1f;
+    --text: #f2f2f2;
+    --text-dim: #9a9a9a;
+    --text-faint: #636363;
+    --accent: #ffffff;
+    --accent-glow: rgba(255, 255, 255, 0.08);
+    --today-green: #3ba55c;
+    --today-green-hi: #4cc270;
+    --err: #ff6b6b;
+    --warn: #d97706;
+    --amber: #f5b400;
+
+    /* Studio component aliases mapped to MedicineBank theme tokens */
+    --card: var(--panel);
+    --card-hi: var(--panel-hi);
+    --muted: var(--text-dim);
+    --border: var(--line);
+    --accent-soft: var(--accent-glow);
+    --danger: var(--err);
+    --success: var(--today-green);
   }
-  @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) {
-      --bg: #0f1216; --card: #181d24; --card-hi: #212832; --text: #e8ecf1; --muted: #93a0ae;
-      --accent: #5b8cff; --accent-soft: rgba(91,140,255,0.14); --border: #2c343f;
-      --danger: #f06a6a; --success: #4cc27a; --warn: #f0a24a; --amber: #f5c542;
-    }
-  }
-  html[data-theme="dark"] {
-    color-scheme: dark;
-    --bg: #0f1216; --card: #181d24; --card-hi: #212832; --text: #e8ecf1; --muted: #93a0ae;
-    --accent: #5b8cff; --accent-soft: rgba(91,140,255,0.14); --border: #2c343f;
-    --danger: #f06a6a; --success: #4cc27a; --warn: #f0a24a; --amber: #f5c542;
-  }
-  html[data-theme="light"] {
+
+  html[data-theme="light"],
+  html[data-theme="champagne"] {
     color-scheme: light;
-    --bg: #f6f7f9; --card: #ffffff; --card-hi: #f0f3f8; --text: #1c2430; --muted: #6b7684;
-    --accent: #2563eb; --accent-soft: rgba(37,99,235,0.10); --border: #dfe3e8;
-    --danger: #dc2626; --success: #16a34a; --warn: #d97706; --amber: #f5b400;
   }
-  * { box-sizing: border-box; }
+
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  html, body {
+    margin: 0; padding: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+    transition: background-color .22s ease, color .22s ease;
+  }
+  html[dir="rtl"] body {
+    font-family: 'Cairo', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+
   body {
-    margin: 0; padding: 0 0 40px; background: var(--bg); color: var(--text);
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, Arial, sans-serif;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
   }
 
-  /* MedicineBank Top Studio Bar */
-  .studio-nav {
-    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;
-    padding: 10px 20px; background: var(--card); border-bottom: 1px solid var(--border);
-    position: sticky; top: 0; z-index: 40; backdrop-filter: blur(10px);
+  /* ---------- CUSTOM PAGE SLIDER & SCRUBBER ---------- */
+  html {
+    scrollbar-width: thin;
+    scrollbar-color: var(--line) var(--bg);
   }
-  .studio-brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--text); }
-  .studio-brand img { height: 28px; width: auto; object-fit: contain; }
-  .studio-brand-badge {
-    font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 999px;
-    background: var(--accent-soft); color: var(--accent); letter-spacing: 0.02em;
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb {
+    background: var(--line);
+    border-radius: 999px;
+    border: 2px solid var(--bg);
+    transition: background .2s ease;
   }
-  .studio-nav-right { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--text-dim); }
+
+  .scroll-progress-line {
+    position: fixed;
+    top: 0; left: 0;
+    height: 2.5px;
+    width: 0%;
+    background: linear-gradient(90deg, var(--today-green), var(--accent));
+    z-index: 9999;
+    pointer-events: none;
+    transition: width .08s linear;
+    box-shadow: 0 0 8px rgba(59, 165, 92, 0.5);
+  }
+  html[dir="rtl"] .scroll-progress-line {
+    left: auto; right: 0;
+    background: linear-gradient(270deg, var(--today-green), var(--accent));
+  }
+
+  .page-scrubber {
+    position: fixed;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 950;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 5px;
+    border-radius: 999px;
+    background: rgba(20, 20, 20, 0.72);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid var(--line-soft);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.32);
+    opacity: 0.32;
+    transition: opacity .25s ease, transform .25s ease, border-color .2s ease, background .2s ease;
+    user-select: none;
+  }
+  html[data-theme="light"] .page-scrubber,
+  html[data-theme="champagne"] .page-scrubber {
+    background: rgba(255, 255, 255, 0.78);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.10);
+  }
+  html[dir="rtl"] .page-scrubber { right: auto; left: 12px; }
+  .page-scrubber:hover,
+  .page-scrubber.active,
+  .page-scrubber.dragging {
+    opacity: 1;
+    border-color: var(--line);
+  }
+  .page-scrubber.scrubber-disabled { display: none !important; }
+
+  .scrubber-jump-btn {
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--text-dim);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; padding: 0;
+    transition: background .15s ease, color .15s ease, border-color .15s ease, transform .15s ease;
+  }
+  .scrubber-jump-btn:hover {
+    background: var(--panel-hi);
+    color: var(--text);
+    border-color: var(--line);
+    transform: scale(1.08);
+  }
+  .scrubber-jump-btn svg { width: 13px; height: 13px; }
+
+  .scrubber-track-wrap {
+    position: relative;
+    width: 22px; height: 130px;
+    display: flex; justify-content: center;
+    cursor: pointer; touch-action: none;
+  }
+  .scrubber-track {
+    position: relative;
+    width: 4px; height: 100%;
+    background: var(--line-soft);
+    border-radius: 999px;
+    overflow: visible;
+  }
+  .scrubber-fill {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 0%;
+    background: var(--today-green);
+    border-radius: 999px;
+    pointer-events: none;
+  }
+  .scrubber-thumb {
+    position: absolute;
+    left: 50%; top: 0%;
+    transform: translate(-50%, -50%);
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    background: var(--text);
+    border: 2px solid var(--bg);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+    transition: width .15s ease, height .15s ease, background .15s ease;
+    pointer-events: none;
+  }
+  .page-scrubber:hover .scrubber-thumb,
+  .page-scrubber.dragging .scrubber-thumb {
+    width: 15px; height: 15px;
+    background: var(--today-green-hi);
+  }
+  .scrubber-badge {
+    position: absolute;
+    right: 32px; top: 50%;
+    transform: translateY(-50%) translateX(4px);
+    background: var(--panel-hi);
+    color: var(--text);
+    border: 1px solid var(--line);
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .15s ease, transform .15s ease;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  }
+  html[dir="rtl"] .scrubber-badge {
+    right: auto; left: 32px;
+    transform: translateY(-50%) translateX(-4px);
+  }
+  .page-scrubber:hover .scrubber-badge,
+  .page-scrubber.dragging .scrubber-badge {
+    opacity: 1;
+    transform: translateY(-50%) translateX(0);
+  }
+
+  /* ---------- MEDICINEBANK CANONICAL HEADER ---------- */
+  .site-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 28px 14px;
+    max-width: 1120px;
+    width: 100%;
+    margin: 0 auto;
+    border-bottom: 1px solid var(--line-soft);
+    gap: 14px;
+    flex-wrap: wrap;
+  }
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+  }
+  .logo-wrap {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    text-decoration: none;
+    color: var(--text);
+  }
+  .logo-img {
+    height: 42px;
+    width: auto;
+    max-width: 210px;
+    object-fit: contain;
+    display: block;
+    transition: filter .25s ease, transform .2s ease;
+  }
+  .logo-img:hover {
+    transform: translateY(-1px);
+  }
+  html[data-theme="light"] .logo-img,
+  html[data-theme="champagne"] .logo-img,
+  html[data-theme="light"] .mbi-footer-logo-img,
+  html[data-theme="champagne"] .mbi-footer-logo-img {
+    filter: invert(1) hue-rotate(180deg);
+  }
+  .logo-fallback {
+    height: 40px;
+    padding: 0 14px;
+    border: 1.5px solid var(--line);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    font-size: 0.9rem;
+    color: var(--text);
+    background: var(--panel);
+  }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .back-link,
+  .header-tool-btn,
   .nav-pill-btn {
-    padding: 6px 11px; font-size: 12px; font-weight: 600; border-radius: 8px;
-    background: var(--card-hi); color: var(--text); border: 1px solid var(--border);
-    cursor: pointer; display: inline-flex; align-items: center; gap: 5px; text-decoration: none;
+    background: var(--panel);
+    border: 1px solid var(--line-soft);
+    color: var(--text-dim);
+    padding: 8px 13px;
+    border-radius: 7px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    text-decoration: none;
+    font-family: inherit;
+    transition: border-color .15s ease, color .15s ease, background .15s ease, transform .12s ease;
   }
-  .nav-pill-btn:hover:not(:disabled) { border-color: var(--accent); }
-  .nav-pill-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-  .session-indicator {
-    font-size: 12px; color: var(--muted); display: inline-flex; align-items: center; gap: 5px;
-    padding: 4px 9px; border-radius: 999px; background: var(--card-hi); border: 1px solid var(--border);
+  .back-link:hover,
+  .header-tool-btn:hover:not(:disabled),
+  .nav-pill-btn:hover:not(:disabled) {
+    border-color: var(--text-dim);
+    color: var(--text);
+    background: var(--panel-hi);
   }
-  .session-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--success); }
+  .back-link svg { width: 14px; height: 14px; }
+  html[dir="rtl"] .back-link svg { transform: scaleX(-1); }
 
-  main { max-width: 1100px; margin: 18px auto 0; padding: 0 20px; }
-  h1 { margin: 0 0 4px; font-size: 24px; letter-spacing: -0.01em; }
-  h2 { margin: 22px 0 10px; font-size: 18px; }
-  .sub { margin: 0 0 16px; color: var(--muted); font-size: 14px; line-height: 1.5; }
+  .header-tool-btn:disabled,
+  .nav-pill-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .session-indicator {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-dim);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 12px;
+    border-radius: 7px;
+    background: var(--panel);
+    border: 1px solid var(--line-soft);
+  }
+  .session-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--today-green);
+    box-shadow: 0 0 6px rgba(59, 165, 92, 0.55);
+  }
+
+  /* ---------- 7-THEME SWATCH POPUP ---------- */
+  .theme-picker-wrap { position: relative; display: inline-flex; align-items: center; }
+  .theme-swatch-popup {
+    display: none;
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    left: auto;
+    background: var(--panel-hi);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 10px 12px;
+    gap: 8px;
+    z-index: 200;
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45);
+    flex-direction: column;
+    min-width: 225px;
+    max-width: calc(100vw - 24px);
+    box-sizing: border-box;
+    animation: fadeSlideDown .16s ease-out;
+  }
+  html[dir="rtl"] .theme-swatch-popup { right: auto; left: 0; }
+  .theme-swatch-popup.open { display: flex; }
+  .theme-swatch-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+  .theme-swatch-btn {
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    border: 2px solid var(--line);
+    cursor: pointer;
+    padding: 0;
+    transition: transform .15s ease, border-color .15s ease;
+    position: relative;
+  }
+  .theme-swatch-btn:hover { transform: scale(1.12); border-color: var(--text); }
+  .theme-swatch-btn.active {
+    border-color: var(--text);
+    box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--text);
+  }
+  .theme-popup-divider { height: 1px; background: var(--line-soft); margin: 2px 0; }
+  .theme-popup-option { display: flex; align-items: center; justify-content: space-between; padding: 2px 0; }
+  .theme-toggle-label {
+    display: flex; align-items: center; justify-content: space-between; width: 100%;
+    cursor: pointer; font-size: 0.75rem; font-weight: 600; color: var(--text-dim);
+    user-select: none; gap: 8px;
+  }
+  .theme-toggle-label:hover { color: var(--text); }
+  .theme-toggle-input { display: none; }
+  .theme-toggle-slider {
+    position: relative; width: 34px; height: 18px; background: var(--line);
+    border-radius: 18px; transition: background .2s; flex-shrink: 0;
+  }
+  .theme-toggle-slider::after {
+    content: ''; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px;
+    background: #ffffff; border-radius: 50%; transition: transform .2s;
+  }
+  .theme-toggle-input:checked + .theme-toggle-slider { background: var(--today-green); }
+  .theme-toggle-input:checked + .theme-toggle-slider::after { transform: translateX(16px); }
+
+  /* ---------- LANGUAGE BUTTON ---------- */
+  .lang-btn {
+    position: relative;
+    width: 34px; height: 34px;
+    border-radius: 7px;
+    border: 1px solid var(--line-soft);
+    background: var(--panel);
+    color: var(--text-dim);
+    display: inline-flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    transition: border-color .15s, color .15s, background .15s;
+    padding: 0;
+  }
+  .lang-btn:hover { border-color: var(--text-dim); color: var(--text); background: var(--panel-hi); }
+  .lang-btn svg { width: 17px; height: 17px; }
+
+  /* ---------- PAGE HERO & MAIN CONTAINER ---------- */
+  .page-hero {
+    max-width: 1120px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 20px 28px 10px;
+  }
+  .hero-top-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .page-title {
+    font-size: clamp(1.35rem, 3vw, 1.85rem);
+    font-weight: 800;
+    letter-spacing: -0.025em;
+    line-height: 1.15;
+    margin: 0;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .studio-brand-badge {
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: var(--panel);
+    color: var(--today-green-hi);
+    border: 1px solid rgba(59, 165, 92, 0.35);
+    letter-spacing: 0.02em;
+  }
+  .page-sub {
+    color: var(--text-dim);
+    font-size: 0.85rem;
+    margin: 6px 0 0;
+    line-height: 1.55;
+    max-width: 880px;
+  }
+
+  main {
+    max-width: 1120px;
+    width: 100%;
+    margin: 8px auto 0;
+    padding: 0 28px 80px;
+    flex: 1;
+  }
+
+  h1 { margin: 0 0 4px; font-size: 1.5rem; font-weight: 800; letter-spacing: -0.02em; }
+  h2 { margin: 22px 0 10px; font-size: 1.05rem; font-weight: 700; letter-spacing: -0.01em; color: var(--text); }
+  .sub { margin: 0 0 16px; color: var(--text-dim); font-size: 0.85rem; line-height: 1.5; }
   .hidden { display: none !important; }
+
+  @keyframes fadeSlideDown {
+    from { opacity: 0; transform: translateY(-6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fadeSlideUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
 
   /* Session Restore Banner */
   .restore-banner {
     display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;
-    padding: 12px 16px; margin-bottom: 16px; border-radius: 12px;
-    background: var(--accent-soft); border: 1px solid var(--accent); font-size: 13px;
+    padding: 12px 16px; margin-bottom: 16px; border-radius: 10px;
+    background: var(--panel-hi); border: 1px solid var(--today-green); font-size: 0.82rem;
+    animation: fadeSlideDown .2s ease-out;
   }
   .restore-banner strong { color: var(--text); }
 
-  /* Top step tabs */
+  /* ---------- MEDICINEBANK STEP TABS ---------- */
   .steps {
-    display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 16px 0 18px;
+    display: flex;
+    gap: 6px;
+    margin: 14px 0 20px;
+    border-bottom: 1px solid var(--line-soft);
   }
   .step-btn {
-    padding: 13px 16px; border-radius: 12px; border: 1px solid var(--border);
-    background: var(--card); color: var(--text); font-size: 15px; font-weight: 700;
-    cursor: pointer; text-align: left; display: flex; justify-content: space-between; align-items: center; gap: 10px;
-    transition: border-color .15s, background .15s;
+    flex: 1;
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    color: var(--text-faint);
+    padding: 13px 14px;
+    font-size: 0.84rem;
+    font-weight: 700;
+    cursor: pointer;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    transition: color .18s ease, background .18s ease;
+    font-family: inherit;
+  }
+  .step-btn:hover {
+    color: var(--text-dim);
+    background: var(--accent-glow);
+  }
+  .step-btn-left {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+  }
+  .step-num {
+    width: 21px; height: 21px;
+    border-radius: 50%;
+    border: 1.5px solid currentColor;
+    font-size: 0.7rem;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-weight: 800;
+    flex-shrink: 0;
   }
   .step-btn .count {
-    font-size: 12px; font-weight: 600; padding: 3px 9px; border-radius: 999px;
-    background: var(--bg); color: var(--muted); border: 1px solid var(--border);
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 3px 9px;
+    border-radius: 999px;
+    background: var(--panel);
+    color: var(--text-dim);
+    border: 1px solid var(--line-soft);
   }
-  .step-btn.active { border-color: var(--accent); background: var(--accent); color: #fff; }
-  .step-btn.active .count { background: rgba(255,255,255,.18); color: #fff; border-color: transparent; }
+  .step-btn.active {
+    color: var(--text);
+    background: transparent;
+  }
+  .step-btn.active .step-num {
+    background: var(--text);
+    color: var(--bg);
+    border-color: var(--text);
+  }
+  .step-btn.active .count {
+    background: var(--panel-hi);
+    color: var(--today-green-hi);
+    border-color: rgba(59, 165, 92, 0.4);
+  }
+  .step-btn.active::after {
+    content: '';
+    position: absolute;
+    left: 10px; right: 10px; bottom: -1px;
+    height: 2px;
+    background: var(--text);
+    border-radius: 2px;
+  }
 
+  /* ---------- DROPZONES & PANELS ---------- */
   .drop {
-    display: block; padding: 26px 16px; text-align: center; cursor: pointer;
-    background: var(--card); border: 2px dashed var(--border); border-radius: 14px;
-    transition: border-color .15s, background .15s;
+    display: block;
+    padding: 28px 18px;
+    text-align: center;
+    cursor: pointer;
+    background: var(--panel);
+    border: 1.5px dashed var(--line);
+    border-radius: 10px;
+    transition: border-color .18s ease, background .18s ease, transform .15s ease;
   }
-  .drop.over { border-color: var(--accent); background: var(--accent-soft); }
+  .drop:hover, .drop.over {
+    border-color: var(--text-dim);
+    background: var(--panel-hi);
+  }
   .drop input { display: none; }
-  .drop strong { display: block; font-size: 16px; margin-bottom: 4px; }
-  .drop span { color: var(--muted); font-size: 13px; word-break: break-all; }
+  .drop strong {
+    display: block;
+    font-size: 0.94rem;
+    font-weight: 700;
+    margin-bottom: 5px;
+    color: var(--text);
+  }
+  .drop span {
+    color: var(--text-dim);
+    font-size: 0.78rem;
+    word-break: break-all;
+  }
 
   .options {
-    display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
-    gap: 12px; margin: 14px 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 12px;
+    margin: 14px 0;
   }
-  label.opt { font-size: 13px; color: var(--muted); display: flex; flex-direction: column; gap: 6px; }
+  label.opt {
+    font-size: 0.74rem;
+    font-weight: 700;
+    color: var(--text-dim);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    letter-spacing: 0.01em;
+  }
   select, input[type=number], input[type=text], input[type=password] {
-    padding: 10px; border-radius: 10px; border: 1px solid var(--border);
-    background: var(--card); color: var(--text); font-size: 14px; width: 100%;
+    padding: 10px 12px;
+    border-radius: 7px;
+    border: 1.5px solid var(--line-soft);
+    background: var(--panel-hi);
+    color: var(--text);
+    font-size: 0.81rem;
+    font-family: inherit;
+    width: 100%;
+    outline: none;
+    transition: border-color .15s ease, background .15s ease;
+  }
+  select { cursor: pointer; }
+  select:focus, input[type=number]:focus, input[type=text]:focus, input[type=password]:focus {
+    border-color: var(--text-dim);
   }
   .key-row { display: flex; gap: 6px; align-items: center; }
   .key-row input { flex: 1; }
-  .check { display: flex; gap: 8px; align-items: center; font-size: 14px; cursor: pointer; }
-  .checks { display: flex; flex-direction: column; gap: 9px; margin: 6px 0 12px; font-size: 14px; }
+  .check {
+    display: flex; gap: 8px; align-items: center;
+    font-size: 0.82rem; color: var(--text-dim); cursor: pointer;
+  }
+  .checks {
+    display: flex; flex-direction: column; gap: 9px;
+    margin: 6px 0 12px; font-size: 0.82rem; color: var(--text-dim);
+  }
   .checks label { display: flex; gap: 8px; align-items: flex-start; cursor: pointer; }
-  .checks input { margin-top: 3px; }
+  .checks label strong { color: var(--text); }
+  .checks input, .check input {
+    margin-top: 2px;
+    accent-color: var(--today-green);
+  }
 
+  /* ---------- MEDICINEBANK BUTTONS ---------- */
   .actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
   button {
-    padding: 11px 16px; border: 0; border-radius: 10px; font-size: 14px; font-weight: 600;
-    background: var(--accent); color: #fff; cursor: pointer; transition: opacity .15s, transform .1s;
+    padding: 10px 16px;
+    border: 1.5px solid var(--text);
+    border-radius: 7px;
+    font-size: 0.82rem;
+    font-weight: 700;
+    font-family: inherit;
+    background: var(--text);
+    color: var(--bg);
+    cursor: pointer;
+    transition: background .15s ease, color .15s ease, border-color .15s ease, transform .1s ease, opacity .15s ease;
+  }
+  button:hover:not(:disabled) {
+    opacity: 0.92;
   }
   button:active:not(:disabled) { transform: scale(0.99); }
-  button.secondary { background: var(--card); color: var(--text); border: 1px solid var(--border); }
-  button.success { background: var(--success); color: #fff; }
-  button.warn { background: var(--warn); color: #fff; }
-  button.danger { background: var(--danger); color: #fff; }
-  button.danger-outline { background: var(--card); color: var(--danger); border: 1px solid var(--border); }
-  button.sm { padding: 6px 10px; font-size: 12px; border-radius: 8px; }
-  button.xs { padding: 4px 8px; font-size: 11px; border-radius: 6px; }
-  button:disabled { opacity: .5; cursor: not-allowed; }
-  button.active-mode { outline: 2px solid var(--amber); background: var(--warn); color: #fff; }
+  button.secondary {
+    background: var(--panel);
+    color: var(--text-dim);
+    border: 1.5px solid var(--line-soft);
+  }
+  button.secondary:hover:not(:disabled) {
+    border-color: var(--text-dim);
+    color: var(--text);
+    background: var(--panel-hi);
+  }
+  button.success {
+    background: var(--today-green);
+    border-color: var(--today-green);
+    color: #ffffff;
+  }
+  button.success:hover:not(:disabled) {
+    background: var(--today-green-hi);
+    border-color: var(--today-green-hi);
+  }
+  button.warn {
+    background: var(--warn);
+    border-color: var(--warn);
+    color: #ffffff;
+  }
+  button.danger {
+    background: var(--err);
+    border-color: var(--err);
+    color: #ffffff;
+  }
+  button.danger-outline {
+    background: var(--panel);
+    color: var(--err);
+    border: 1.5px solid var(--line-soft);
+  }
+  button.danger-outline:hover:not(:disabled) {
+    border-color: var(--err);
+    background: rgba(255, 107, 107, 0.08);
+  }
+  button.sm { padding: 7px 11px; font-size: 0.76rem; border-radius: 6px; }
+  button.xs { padding: 4px 8px; font-size: 0.7rem; border-radius: 5px; }
+  button:disabled { opacity: 0.42; cursor: not-allowed; }
+  button.active-mode {
+    outline: 2px solid var(--amber);
+    background: var(--warn);
+    border-color: var(--warn);
+    color: #ffffff;
+  }
 
-  progress { width: 100%; height: 8px; margin-top: 14px; display: none; border-radius: 999px; }
-  .status { margin-top: 10px; font-size: 14px; color: var(--muted); min-height: 20px; line-height: 1.5; }
-  .status.error { color: var(--danger); }
+  progress {
+    width: 100%; height: 7px; margin-top: 14px;
+    display: none; border-radius: 999px;
+    accent-color: var(--today-green);
+  }
+  .status {
+    margin-top: 10px; font-size: 0.82rem; color: var(--text-dim);
+    min-height: 20px; line-height: 1.5;
+  }
+  .status.error { color: var(--err); }
 
   .panel {
-    background: var(--card); border: 1px solid var(--border); border-radius: 14px;
-    padding: 14px 16px; margin-bottom: 16px;
+    background: var(--panel);
+    border: 1px solid var(--line-soft);
+    border-radius: 10px;
+    padding: 15px 18px;
+    margin-bottom: 16px;
+    transition: border-color .18s ease, background .18s ease;
   }
-  .panel summary { cursor: pointer; font-weight: 600; font-size: 15px; }
-  .hint { font-size: 12px; color: var(--muted); line-height: 1.5; margin: 10px 0 0; }
-  .hint a { color: var(--accent); }
+  .panel summary {
+    cursor: pointer;
+    font-weight: 700;
+    font-size: 0.88rem;
+    color: var(--text);
+    user-select: none;
+  }
+  .hint {
+    font-size: 0.76rem;
+    color: var(--text-dim);
+    line-height: 1.55;
+    margin: 10px 0 0;
+  }
+  .hint a {
+    color: var(--today-green-hi);
+    text-decoration: underline;
+    font-weight: 600;
+  }
 
-  /* Step 1 image grid */
+  /* ---------- STEP 1 IMAGE GRID ---------- */
   .toolbar {
     display: none; flex-wrap: wrap; gap: 10px 14px; align-items: center;
     justify-content: space-between; margin-top: 18px;
+    padding: 12px 14px; background: var(--panel);
+    border: 1px solid var(--line-soft); border-radius: 10px;
   }
   .toolbar .left, .toolbar .right { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
-  .toolbar select { width: auto; padding: 8px 10px; font-size: 14px; }
-  .toolbar label.inline { font-size: 13px; color: var(--muted); display: flex; gap: 6px; align-items: center; cursor: pointer; }
-  #imgSummary { font-size: 14px; font-weight: 600; }
+  .toolbar select { width: auto; padding: 7px 10px; font-size: 0.8rem; }
+  .toolbar label.inline {
+    font-size: 0.78rem; color: var(--text-dim);
+    display: flex; gap: 6px; align-items: center; cursor: pointer;
+  }
+  #imgSummary { font-size: 0.84rem; font-weight: 700; color: var(--text); }
 
   .grid {
-    display: grid; grid-template-columns: repeat(auto-fill, minmax(225px, 1fr));
-    gap: 14px; margin-top: 14px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(225px, 1fr));
+    gap: 14px;
+    margin-top: 14px;
   }
   .card {
-    background: var(--card); border: 1px solid var(--border); border-radius: 12px;
-    padding: 10px; display: flex; flex-direction: column; gap: 8px; position: relative;
+    background: var(--panel);
+    border: 1px solid var(--line-soft);
+    border-radius: 10px;
+    padding: 11px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    position: relative;
+    transition: border-color .16s ease, transform .16s ease;
+    animation: fadeSlideUp .2s ease-out;
   }
+  .card:hover { border-color: var(--line); transform: translateY(-1px); }
   .card.flagged { border-color: var(--warn); }
-  .card.cropped { border-color: var(--accent); }
-  .card.removed { opacity: .45; }
+  .card.cropped { border-color: var(--today-green); }
+  .card.removed { opacity: 0.42; }
   .card .thumb {
-    width: 100%; height: 150px; object-fit: contain; border-radius: 8px; cursor: zoom-in;
+    width: 100%; height: 150px; object-fit: contain; border-radius: 7px; cursor: zoom-in;
     background: repeating-conic-gradient(#8882 0% 25%, transparent 0% 50%) 50% / 16px 16px;
+    border: 1px solid var(--line-soft);
   }
-  .meta { font-size: 12px; color: var(--muted); display: flex; justify-content: space-between; gap: 6px; flex-wrap: wrap; }
+  .meta { font-size: 0.73rem; color: var(--text-dim); display: flex; justify-content: space-between; gap: 6px; flex-wrap: wrap; }
   .badges { display: flex; flex-wrap: wrap; gap: 5px; min-height: 20px; }
   .badge {
-    font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px;
-    background: var(--border); color: var(--text);
+    font-size: 0.68rem; font-weight: 700; padding: 2px 8px; border-radius: 999px;
+    background: var(--panel-hi); color: var(--text-dim); border: 1px solid var(--line-soft);
   }
-  .badge.ok   { background: rgba(22,163,74,.16); color: var(--success); }
-  .badge.warn { background: rgba(217,119,6,.18); color: var(--warn); }
-  .badge.info { background: var(--accent-soft); color: var(--accent); }
-  .badge.err  { background: rgba(220,38,38,.16); color: var(--danger); }
-  .label-input { font-size: 13px !important; padding: 7px 9px !important; border-radius: 8px !important; }
-  .reason { font-size: 11px; color: var(--muted); line-height: 1.35; }
+  .badge.ok   { background: rgba(59, 165, 92, 0.16); color: var(--today-green-hi); border-color: rgba(59, 165, 92, 0.35); }
+  .badge.warn { background: rgba(217, 119, 6, 0.18); color: var(--warn); border-color: rgba(217, 119, 6, 0.35); }
+  .badge.info { background: var(--panel-hi); color: var(--text); border-color: var(--line); }
+  .badge.err  { background: rgba(255, 107, 107, 0.16); color: var(--err); border-color: rgba(255, 107, 107, 0.35); }
+  .label-input { font-size: 0.78rem !important; padding: 7px 9px !important; border-radius: 6px !important; }
+  .reason { font-size: 0.7rem; color: var(--text-dim); line-height: 1.38; }
   .card-actions { display: flex; gap: 5px; margin-top: auto; flex-wrap: wrap; }
   .card-actions button, .card-actions a {
     flex: 1; text-align: center; text-decoration: none;
-    padding: 6px 7px; font-size: 11.5px; border-radius: 8px; font-weight: 600;
+    padding: 6px 7px; font-size: 0.72rem; border-radius: 6px; font-weight: 700;
   }
-  .card-actions a { background: var(--card); color: var(--text); border: 1px solid var(--border); }
+  .card-actions a {
+    background: var(--panel-hi); color: var(--text-dim); border: 1px solid var(--line-soft);
+    transition: border-color .15s, color .15s;
+  }
+  .card-actions a:hover { border-color: var(--text-dim); color: var(--text); }
 
-  /* Step 2 slots + preview */
-  #docSummary { font-size: 19px; margin: 0 0 4px; }
-  .pages-line { color: var(--muted); font-size: 13px; margin-bottom: 14px; }
+  /* ---------- STEP 2 SLOTS + PREVIEW ---------- */
+  #docSummary { font-size: 1.1rem; margin: 0 0 4px; }
+  .pages-line { color: var(--text-dim); font-size: 0.78rem; margin-bottom: 14px; }
   .slot {
     display: flex; gap: 12px; align-items: flex-start; flex-wrap: wrap;
-    background: var(--card); border: 1px solid var(--border); border-radius: 12px;
-    padding: 12px; margin-bottom: 10px; transition: border-color .15s;
+    background: var(--panel); border: 1px solid var(--line-soft); border-radius: 10px;
+    padding: 13px; margin-bottom: 10px; transition: border-color .16s ease;
+    animation: fadeSlideUp .18s ease-out;
   }
-  .slot.has { border-color: var(--success); }
+  .slot.has { border-color: var(--today-green); }
   .slot .sthumb {
-    width: 82px; height: 82px; border-radius: 8px; flex-shrink: 0; overflow: hidden;
+    width: 82px; height: 82px; border-radius: 7px; flex-shrink: 0; overflow: hidden;
     display: flex; align-items: center; justify-content: center; cursor: pointer;
     background: repeating-conic-gradient(#8883 0% 25%, transparent 0% 50%) 50% / 14px 14px;
+    border: 1px solid var(--line-soft);
   }
   .slot .sthumb img { width: 100%; height: 100%; object-fit: contain; }
-  .slot .sthumb .sq { width: 46px; height: 46px; background: #00c853; border-radius: 4px; }
+  .slot .sthumb .sq { width: 46px; height: 46px; background: var(--today-green); border-radius: 4px; }
   .slot-info { flex: 1; min-width: 200px; }
-  .slot-title { font-weight: 700; font-size: 15px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-  .slot-sub { color: var(--muted); font-size: 13px; margin-top: 3px; word-break: break-all; }
+  .slot-title { font-weight: 700; font-size: 0.9rem; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; color: var(--text); }
+  .slot-sub { color: var(--text-dim); font-size: 0.78rem; margin-top: 3px; word-break: break-all; }
   .slot-directive {
-    font-size: 12px; font-weight: 600; color: var(--accent); background: var(--accent-soft);
+    font-size: 0.74rem; font-weight: 700; color: var(--today-green-hi);
+    background: rgba(59, 165, 92, 0.12); border: 1px solid rgba(59, 165, 92, 0.3);
     padding: 4px 8px; border-radius: 6px; margin-top: 5px; display: inline-block;
   }
-  .slot-ctx { color: var(--muted); font-size: 12px; margin-top: 5px; line-height: 1.4; }
-  .slot-note { font-size: 12px; color: var(--muted); margin-top: 4px; font-style: italic; }
+  .slot-ctx { color: var(--text-dim); font-size: 0.75rem; margin-top: 5px; line-height: 1.45; }
+  .slot-note { font-size: 0.74rem; color: var(--text-dim); margin-top: 4px; font-style: italic; }
   .slot-alts { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; align-items: center; }
-  .slot-alts span { font-size: 11px; color: var(--muted); }
+  .slot-alts span { font-size: 0.7rem; color: var(--text-faint); font-weight: 600; }
   .alt-chip {
-    padding: 3px 8px; font-size: 11px; border-radius: 999px; background: var(--card-hi);
-    color: var(--text); border: 1px solid var(--border); cursor: pointer; font-weight: 600;
+    padding: 3px 9px; font-size: 0.7rem; border-radius: 999px; background: var(--panel-hi);
+    color: var(--text-dim); border: 1px solid var(--line-soft); cursor: pointer; font-weight: 600;
   }
-  .alt-chip:hover { border-color: var(--accent); color: var(--accent); }
+  .alt-chip:hover { border-color: var(--today-green); color: var(--text); }
   .slot-actions { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
 
   #pages { display: flex; flex-direction: column; gap: 16px; }
   .page {
-    background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 12px;
+    background: var(--panel); border: 1px solid var(--line-soft); border-radius: 10px; padding: 12px;
   }
   .pagehead {
     display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;
-    font-size: 13px; color: var(--muted); margin-bottom: 8px;
+    font-size: 0.78rem; color: var(--text-dim); margin-bottom: 8px; font-weight: 600;
   }
   .canvaswrap { position: relative; width: 100%; user-select: none; }
   .canvaswrap canvas { width: 100%; height: auto; display: block; border-radius: 6px; }
   .canvaswrap canvas.ov { position: absolute; inset: 0; cursor: pointer; }
   .canvaswrap canvas.ov.draw-mode { cursor: crosshair; outline: 2px dashed var(--amber); }
-  .canvaswrap canvas.ov.eyedropper-mode { cursor: copy; outline: 2px dashed var(--accent); }
+  .canvaswrap canvas.ov.eyedropper-mode { cursor: copy; outline: 2px dashed var(--today-green-hi); }
 
-  /* Modals (Library Picker & Interactive Cropper) */
+  /* ---------- MODALS ---------- */
   .modal-back {
-    position: fixed; inset: 0; background: rgba(0,0,0,.62); z-index: 60;
+    position: fixed; inset: 0; background: rgba(0, 0, 0, 0.72); z-index: 60;
     display: flex; align-items: center; justify-content: center; padding: 16px;
+    backdrop-filter: blur(4px);
   }
   .modal {
-    background: var(--card); color: var(--text); border: 1px solid var(--border);
+    background: var(--panel-hi); color: var(--text); border: 1px solid var(--line);
     border-radius: 14px; max-width: 920px; width: 100%; max-height: 88vh;
-    display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.4);
+    display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.5);
   }
   .modal-head {
-    padding: 12px 16px; border-bottom: 1px solid var(--border);
+    padding: 13px 18px; border-bottom: 1px solid var(--line-soft);
     display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap;
   }
   .modal-ctx {
-    padding: 10px 16px; border-bottom: 1px solid var(--border);
-    font-size: 12px; color: var(--muted); line-height: 1.45; background: var(--bg);
+    padding: 10px 18px; border-bottom: 1px solid var(--line-soft);
+    font-size: 0.76rem; color: var(--text-dim); line-height: 1.45; background: var(--panel);
   }
   .modal-ctx strong { color: var(--text); }
   .modal-ctx .ctx-lines { margin-top: 4px; max-height: 76px; overflow: auto; white-space: pre-wrap; }
-  .modal-body { padding: 14px 16px; overflow: auto; flex: 1; }
+  .modal-body { padding: 14px 18px; overflow: auto; flex: 1; }
   .mgrid {
     display: grid; grid-template-columns: repeat(auto-fill, minmax(165px, 1fr)); gap: 10px;
   }
   .mcard {
-    border: 1px solid var(--border); border-radius: 10px; padding: 8px; cursor: pointer;
-    background: var(--bg); display: flex; flex-direction: column; gap: 5px;
-    transition: border-color .12s, transform .1s;
+    border: 1px solid var(--line-soft); border-radius: 9px; padding: 8px; cursor: pointer;
+    background: var(--panel); display: flex; flex-direction: column; gap: 5px;
+    transition: border-color .14s ease, transform .12s ease;
   }
-  .mcard:hover { border-color: var(--accent); transform: translateY(-1px); }
+  .mcard:hover { border-color: var(--text-dim); transform: translateY(-1px); }
   .mcard img {
     width: 100%; height: 110px; object-fit: contain; border-radius: 6px;
     background: repeating-conic-gradient(#8882 0% 25%, transparent 0% 50%) 50% / 14px 14px;
   }
-  .mcard .mlabel { font-size: 12px; font-weight: 600; word-break: break-word; }
-  .mcard .mlabel.none { color: var(--muted); font-weight: 400; font-style: italic; }
-  .mcard .msrc { font-size: 11px; color: var(--muted); }
-  .mcard .mused { font-size: 11px; color: var(--warn); font-weight: 600; }
+  .mcard .mlabel { font-size: 0.75rem; font-weight: 600; word-break: break-word; color: var(--text); }
+  .mcard .mlabel.none { color: var(--text-faint); font-weight: 400; font-style: italic; }
+  .mcard .msrc { font-size: 0.68rem; color: var(--text-dim); }
+  .mcard .mused { font-size: 0.68rem; color: var(--warn); font-weight: 700; }
 
   /* Crop Canvas Area */
   .crop-stage-wrap {
     display: flex; align-items: center; justify-content: center; background: var(--bg);
-    border: 1px solid var(--border); border-radius: 10px; padding: 10px; min-height: 320px; max-height: 62vh; overflow: auto;
+    border: 1px solid var(--line-soft); border-radius: 10px; padding: 10px; min-height: 320px; max-height: 62vh; overflow: auto;
   }
   .crop-stage { position: relative; display: inline-block; user-select: none; touch-action: none; }
   .crop-stage canvas { display: block; max-width: 100%; max-height: 56vh; width: auto; height: auto; border-radius: 4px; }
   .crop-stage canvas.crop-ov { position: absolute; inset: 0; width: 100%; height: 100%; cursor: crosshair; }
 
+  /* ---------- TOAST NOTIFICATIONS ---------- */
   #toasts {
-    position: fixed; right: 16px; bottom: 16px; display: flex; flex-direction: column;
+    position: fixed; right: 18px; bottom: 18px; display: flex; flex-direction: column;
     gap: 8px; z-index: 80; max-width: 380px; pointer-events: none;
   }
+  html[dir="rtl"] #toasts { right: auto; left: 18px; }
   .toast {
-    padding: 10px 14px; border-radius: 10px; background: var(--card); color: var(--text);
-    border: 1px solid var(--border); border-left: 4px solid var(--accent);
-    box-shadow: 0 6px 20px rgba(0,0,0,.22); font-size: 13px; pointer-events: auto;
+    padding: 11px 16px; border-radius: 10px; background: var(--panel-hi); color: var(--text);
+    border: 1px solid var(--line); border-left: 4px solid var(--text);
+    box-shadow: 0 8px 24px rgba(0,0,0,.38); font-size: 0.8rem; font-weight: 600; pointer-events: auto;
+    animation: fadeSlideUp .18s ease-out;
   }
-  .toast.error   { border-left-color: var(--danger); }
-  .toast.success { border-left-color: var(--success); }
+  .toast.error   { border-left-color: var(--err); }
+  .toast.success { border-left-color: var(--today-green); }
+
+  /* ---------- MEDICINEBANK INSTITUTIONAL FOOTER ---------- */
+  .mbi-site-footer {
+    margin-top: auto;
+    border-top: 1px solid var(--line);
+    background: var(--bg);
+    color: var(--text-dim);
+    padding: 28px 28px calc(24px + env(safe-area-inset-bottom, 0px));
+    font-size: 0.78rem;
+    transition: background-color 0.25s ease, border-color 0.25s ease, color 0.25s ease;
+  }
+  .mbi-footer-inner {
+    max-width: 1120px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+  .mbi-footer-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+  .mbi-footer-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+    color: var(--text);
+  }
+  .mbi-footer-logo-img {
+    height: 36px;
+    width: auto;
+    max-width: 180px;
+    object-fit: contain;
+    display: block;
+    transition: filter 0.25s ease, opacity 0.2s ease;
+  }
+  .mbi-footer-logo-img:hover { opacity: 0.85; }
+  .mbi-footer-socials {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .mbi-social-btn {
+    width: 34px; height: 34px;
+    border-radius: 8px;
+    border: 1px solid var(--line);
+    background: var(--panel);
+    color: var(--text-dim);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    transition: transform 0.16s ease, border-color 0.16s ease, color 0.16s ease, background 0.16s ease;
+  }
+  .mbi-social-btn:hover {
+    transform: translateY(-2px);
+    color: var(--text);
+    border-color: var(--text-dim);
+    background: var(--panel-hi);
+  }
+  .mbi-social-btn svg { width: 15px; height: 15px; fill: currentColor; }
+  .mbi-footer-divider { height: 1px; background: var(--line-soft); width: 100%; }
+  .mbi-footer-bottom {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    font-size: 0.72rem;
+    color: var(--text-faint);
+  }
+  .mbi-footer-credit {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .mbi-footer-credit strong { color: var(--text-dim); font-weight: 600; }
+
+  @media (max-width: 640px) {
+    .site-header { padding: 14px 16px 12px; }
+    .page-hero { padding: 14px 16px 6px; }
+    main { padding: 0 16px 64px; }
+    .logo-img { height: 34px; }
+    .steps { flex-direction: column; border-bottom: none; gap: 8px; }
+    .step-btn { border: 1px solid var(--line-soft); border-radius: 8px; }
+    .step-btn.active { border-color: var(--text); }
+    .step-btn.active::after { display: none; }
+    .mbi-site-footer { padding: 22px 16px calc(20px + env(safe-area-inset-bottom, 0px)); }
+    .mbi-footer-bottom { flex-direction: column; align-items: flex-start; gap: 6px; }
+  }
 </style>
 </head>
 <body>
 
-<nav class="studio-nav">
-  <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
-    <a href="/index.html" class="studio-brand" title="Back to MedicineBank Curriculum">
-      <img src="IMG_3083.png" alt="MBI" onerror="this.style.display='none'">
-      <strong>PDF Image Studio</strong>
-    </a>
-    <span class="studio-brand-badge">v2.0 · AI Vision &amp; Textbook Layout Engine</span>
+<!-- Top Scroll Progress Line -->
+<div class="scroll-progress-line" id="scrollProgressLine" aria-hidden="true"></div>
+
+<!-- Interactive Floating Page Scrubber Dock -->
+<aside class="page-scrubber" id="pageScrubber" aria-label="Page position controller">
+  <button type="button" class="scrubber-jump-btn" id="scrubberJumpTop" title="Scroll to Top" aria-label="Scroll to Top">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 15l-6-6-6 6"/></svg>
+  </button>
+  <div class="scrubber-track-wrap" id="scrubberTrackWrap" role="slider" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" tabindex="0" aria-label="Page scroll position">
+    <div class="scrubber-track" id="scrubberTrack">
+      <div class="scrubber-fill" id="scrubberFill"></div>
+      <div class="scrubber-thumb" id="scrubberThumb"></div>
+    </div>
+    <div class="scrubber-badge" id="scrubberBadge">0%</div>
   </div>
-  <div class="studio-nav-right">
+  <button type="button" class="scrubber-jump-btn" id="scrubberJumpBottom" title="Scroll to Bottom" aria-label="Scroll to Bottom">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+  </button>
+</aside>
+
+<!-- MedicineBank Canonical Header -->
+<header class="site-header">
+  <div class="header-left">
+    <div class="logo-wrap">
+      <a href="index.html" style="display:inline-flex;align-items:center;text-decoration:none;" title="Back to MedicineBank">
+        <img src="IMG_3083.png" alt="MedicineBank Logo" class="logo-img" onerror="this.style.display='none'; document.getElementById('logoFallback').style.display='flex';" />
+        <div class="logo-fallback" id="logoFallback" style="display:none;">MBI</div>
+      </a>
+      <a href="index.html" class="back-link" title="Back to MedicineBank">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+        <span data-en="Back to MedicineBank" data-ar="العودة إلى بنك الطب">Back to MedicineBank</span>
+      </a>
+    </div>
+  </div>
+
+  <div class="header-right">
     <span class="session-indicator" id="sessionIndicator" title="Workspace is automatically saved in your browser (IndexedDB)">
       <span class="session-dot"></span>
-      <span id="sessionStatusText">Auto-save ready</span>
+      <span id="sessionStatusText" data-en="Auto-save ready" data-ar="الحفظ التلقائي جاهز">Auto-save ready</span>
     </span>
-    <button type="button" class="nav-pill-btn" id="undoBtn" disabled title="Undo last slot change (Ctrl+Z)">↶ Undo</button>
-    <button type="button" class="nav-pill-btn" id="redoBtn" disabled title="Redo slot change (Ctrl+Y)">↷ Redo</button>
-    <button type="button" class="nav-pill-btn" id="clearWorkspaceBtn" title="Clear saved session & reset studio">🗑 Reset</button>
-    <button type="button" class="nav-pill-btn" id="themeToggleBtn" title="Switch Light / Dark Theme">🌓 Theme</button>
-    <a href="/index.html" class="nav-pill-btn">← MedicineBank</a>
+    <button type="button" class="header-tool-btn" id="undoBtn" disabled title="Undo last slot change (Ctrl+Z)">↶ <span data-en="Undo" data-ar="تراجع">Undo</span></button>
+    <button type="button" class="header-tool-btn" id="redoBtn" disabled title="Redo slot change (Ctrl+Y)">↷ <span data-en="Redo" data-ar="إعادة">Redo</span></button>
+    <button type="button" class="header-tool-btn" id="clearWorkspaceBtn" title="Clear saved session & reset studio">🗑 <span data-en="Reset" data-ar="إعادة ضبط">Reset</span></button>
+
+    <!-- 7-Theme Swatch Picker (Matches MedicineBank index.html) -->
+    <div class="theme-picker-wrap" id="themePickerWrap">
+      <button type="button" class="header-tool-btn" id="themeMenuBtn" title="Change Theme">
+        🎨 <span data-en="Theme" data-ar="المظهر">Theme</span>
+      </button>
+      <!-- Hidden legacy button ID preserved for compatibility -->
+      <button type="button" id="themeToggleBtn" class="hidden" aria-hidden="true"></button>
+      <div class="theme-swatch-popup" id="themeSwatchRow">
+        <div class="theme-swatch-grid">
+          <button type="button" class="theme-swatch-btn" data-theme-val="dark" title="Dark" style="background:#0b0b0b;"></button>
+          <button type="button" class="theme-swatch-btn" data-theme-val="light" title="Light" style="background:#f4f4f2;"></button>
+          <button type="button" class="theme-swatch-btn" data-theme-val="maroon" title="Maroon" style="background:#5c1a24;"></button>
+          <button type="button" class="theme-swatch-btn" data-theme-val="blue" title="Navy Blue" style="background:#173a5e;"></button>
+          <button type="button" class="theme-swatch-btn" data-theme-val="orange" title="Burnt Orange" style="background:#7a3410;"></button>
+          <button type="button" class="theme-swatch-btn" data-theme-val="champagne" title="Champagne" style="background:#e8dcc4;"></button>
+          <button type="button" class="theme-swatch-btn" data-theme-val="brown" title="Espresso Brown" style="background:#2b1c14;"></button>
+        </div>
+        <div class="theme-popup-divider"></div>
+        <div class="theme-popup-option">
+          <label class="theme-toggle-label" for="floatingScrubberToggle">
+            <span data-en="Floating Slider" data-ar="شريط التمرير العائم">Floating Slider</span>
+            <input type="checkbox" id="floatingScrubberToggle" class="theme-toggle-input" checked />
+            <span class="theme-toggle-slider"></span>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <button type="button" class="lang-btn" id="langToggleBtn" aria-label="Language" title="Switch Language (EN / AR)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 010 20 15 15 0 010-20z"/></svg>
+    </button>
   </div>
-</nav>
+</header>
+
+<section class="page-hero">
+  <div class="hero-top-row">
+    <h1 class="page-title">
+      <span data-en="PDF Image Studio" data-ar="استوديو صور ملفات PDF">PDF Image Studio</span>
+      <span class="studio-brand-badge">v2.0 · AI Vision &amp; Textbook Layout Engine</span>
+    </h1>
+  </div>
+  <p class="page-sub" data-en="Step 1: extract & batch-label medical figures from a lecture PDF (with automatic duplicate template filtering & interactive figure cropping) → Step 2: open a textbook PDF with green placeholders, match globally with AI, and export a compact, print-sharp PDF. Runs 100% in your browser." data-ar="الخطوة ١: استخراج وتسمية الأشكال الطبية بالذكاء الاصطناعي من ملف المحاضرة (مع تصفية القوالب المتكررة وقص الأشكال التفاعلي) ← الخطوة ٢: فتح ملف الكتاب ذي المربعات الخضراء، والمطابقة الشاملة بالذكاء الاصطناعي، وتصدير ملف PDF فائق الوضوح.">
+    <strong>Step 1:</strong> extract &amp; batch-label medical figures from a lecture PDF (with automatic duplicate template filtering &amp; interactive figure cropping) &rarr;
+    <strong>Step 2:</strong> open a textbook PDF with green placeholders, match globally with AI, and export a compact, print-sharp PDF.
+    Runs 100% in your browser.
+  </p>
+</section>
 
 <main>
   <!-- Auto-Restore Session Banner -->
   <div id="restoreBanner" class="restore-banner hidden">
     <div>
-      <strong>💾 Previous workspace session found:</strong>
+      <strong data-en="💾 Previous workspace session found:" data-ar="💾 تم العثور على جلسة عمل سابقة:">💾 Previous workspace session found:</strong>
       <span id="restoreSummaryText">0 extracted images, 0 document placeholders</span>
     </div>
     <div style="display:flex; gap:8px;">
-      <button type="button" class="sm success" id="restoreAcceptBtn">Restore Session</button>
-      <button type="button" class="sm secondary" id="restoreDismissBtn">Discard</button>
+      <button type="button" class="sm success" id="restoreAcceptBtn" data-en="Restore Session" data-ar="استعادة الجلسة">Restore Session</button>
+      <button type="button" class="sm secondary" id="restoreDismissBtn" data-en="Discard" data-ar="تجاهل">Discard</button>
     </div>
   </div>
 
-  <h1>PDF Image Studio</h1>
-  <p class="sub">
-    <strong>Step 1:</strong> extract &amp; batch-label medical figures from a lecture PDF (with automatic duplicate template filtering &amp; interactive figure cropping) &rarr;
-    <strong>Step 2:</strong> open a textbook PDF with green placeholders, match globally with AI, and export a compact, print-sharp PDF.
-    Runs 100% in your browser.
-  </p>
-
   <!-- Shared AI settings -->
   <details class="panel" id="aiPanel">
-    <summary>AI Settings (shared by Step 1 &amp; Step 2 — Google Gemini 2.5 Flash Free Tier Recommended)</summary>
+    <summary data-en="AI Settings (shared by Step 1 & Step 2 — Google Gemini 2.5 Flash Free Tier Recommended)" data-ar="إعدادات الذكاء الاصطناعي (مشتركة للخطوتين ١ و ٢ — يوصى بـ Google Gemini 2.5 Flash المجاني)">AI Settings (shared by Step 1 &amp; Step 2 — Google Gemini 2.5 Flash Free Tier Recommended)</summary>
     <div class="options">
-      <label class="opt">Provider
+      <label class="opt"><span data-en="Provider" data-ar="مزود الذكاء الاصطناعي">Provider</span>
         <select id="aiProvider">
           <option value="gemini" selected>Google Gemini API (Free 1,500 req/day · Recommended)</option>
           <option value="puter">Puter.js (Built-in, no key needed)</option>
@@ -363,7 +1149,7 @@
         </select>
       </label>
 
-      <label class="opt" id="modelFieldGemini">Model via Google Gemini
+      <label class="opt" id="modelFieldGemini"><span data-en="Model via Google Gemini" data-ar="نموذج Google Gemini">Model via Google Gemini</span>
         <select id="aiModelGemini">
           <option value="gemini-2.5-flash" selected>Gemini 2.5 Flash (Best Medical Vision &amp; Reasoning · Free)</option>
           <option value="gemini-2.5-flash-lite">Gemini 2.5 Flash-Lite (Ultra-Fast · Highest Free Quota)</option>
@@ -372,10 +1158,10 @@
         </select>
       </label>
 
-      <label class="opt" id="keyFieldGemini">Google Gemini API Key
+      <label class="opt" id="keyFieldGemini"><span data-en="Google Gemini API Key" data-ar="مفتاح Google Gemini API">Google Gemini API Key</span>
         <div class="key-row">
           <input id="geminiKey" type="password" placeholder="AIzaSy... (free at aistudio.google.com)" autocomplete="off">
-          <button type="button" class="sm secondary" id="testGeminiKeyBtn" title="Verify your Gemini API key">Test</button>
+          <button type="button" class="sm secondary" id="testGeminiKeyBtn" title="Verify your Gemini API key" data-en="Test" data-ar="اختبار">Test</button>
         </div>
       </label>
 
@@ -412,7 +1198,7 @@
         <input id="orKey" type="password" placeholder="sk-or-v1-..." autocomplete="off">
       </label>
 
-      <label class="opt">Vision Batch Size (Step 1 Speedup)
+      <label class="opt"><span data-en="Vision Batch Size (Step 1 Speedup)" data-ar="حجم الدفعة البصرية (تسريع الخطوة ١)">Vision Batch Size (Step 1 Speedup)</span>
         <select id="aiBatchSize">
           <option value="6" selected>6 images / request (6x faster · saves 83% quota)</option>
           <option value="4">4 images / request (Balanced)</option>
@@ -427,14 +1213,20 @@
     </p>
   </details>
 
-  <!-- Step switcher -->
+  <!-- Step switcher (MedicineBank Step Tabs) -->
   <div class="steps">
     <button type="button" class="step-btn active" id="tabBtnImages">
-      <span>Step 1 &middot; Extract &amp; Label Source Figures</span>
+      <span class="step-btn-left">
+        <span class="step-num">1</span>
+        <span data-en="Step 1 · Extract & Label Source Figures" data-ar="الخطوة ١ · استخراج وتسمية الأشكال">Step 1 &middot; Extract &amp; Label Source Figures</span>
+      </span>
       <span class="count" id="tabCountImages">0 kept</span>
     </button>
     <button type="button" class="step-btn" id="tabBtnDoc">
-      <span>Step 2 &middot; Textbook Placeholders + AI Fill</span>
+      <span class="step-btn-left">
+        <span class="step-num">2</span>
+        <span data-en="Step 2 · Textbook Placeholders + AI Fill" data-ar="الخطوة ٢ · مربعات الكتاب والملء الذكي">Step 2 &middot; Textbook Placeholders + AI Fill</span>
+      </span>
       <span class="count" id="tabCountDoc">0 / 0 filled</span>
     </button>
   </div>
@@ -445,22 +1237,22 @@
   <section id="paneImages">
     <label class="drop" id="srcDrop">
       <input type="file" id="srcFile" accept="application/pdf,.pdf">
-      <strong>Drop source lecture PDF here or click to browse</strong>
-      <span id="srcFileLabel">No file chosen</span>
+      <strong data-en="Drop source lecture PDF here or click to browse" data-ar="أسقط ملف محاضرة PDF هنا أو اضغط لاختيار ملف">Drop source lecture PDF here or click to browse</strong>
+      <span id="srcFileLabel" data-en="No file chosen" data-ar="لم يتم اختيار ملف">No file chosen</span>
     </label>
 
     <div class="options">
-      <label class="opt">Extraction Mode
+      <label class="opt"><span data-en="Extraction Mode" data-ar="وضع الاستخراج">Extraction Mode</span>
         <select id="extractMode">
           <option value="smart" selected>Smart (embedded figures, fallback to page render)</option>
           <option value="embedded">Embedded images only (incl. nested Form XObjects)</option>
           <option value="pages">Render every page as a slide image</option>
         </select>
       </label>
-      <label class="opt">Skip icons smaller than (px)
+      <label class="opt"><span data-en="Skip icons smaller than (px)" data-ar="تجاهل الأيقونات الأصغر من (بكسل)">Skip icons smaller than (px)</span>
         <input type="number" id="minSize" value="65" min="0" max="1000" step="10">
       </label>
-      <label class="opt">Page render quality
+      <label class="opt"><span data-en="Page render quality" data-ar="جودة عرض الصفحات">Page render quality</span>
         <select id="renderScale">
           <option value="1.5">Standard (1.5x)</option>
           <option value="2" selected>High (2x)</option>
@@ -470,12 +1262,12 @@
     </div>
 
     <div class="actions">
-      <button id="extractBtn" disabled>Extract Images</button>
-      <button id="goStep2Btn" class="secondary hidden" type="button">Continue to Step 2 &rarr;</button>
+      <button id="extractBtn" disabled data-en="Extract Images" data-ar="استخراج الصور">Extract Images</button>
+      <button id="goStep2Btn" class="secondary hidden" type="button" data-en="Continue to Step 2 →" data-ar="المتابعة إلى الخطوة ٢ ←">Continue to Step 2 &rarr;</button>
     </div>
 
     <details class="panel" style="margin-top:16px" open>
-      <summary>AI Vision Labeling &amp; Smart Filtering (Step 1)</summary>
+      <summary data-en="AI Vision Labeling & Smart Filtering (Step 1)" data-ar="التسمية البصرية والتصفية الذكية (الخطوة ١)">AI Vision Labeling &amp; Smart Filtering (Step 1)</summary>
       <div class="checks" style="margin-top:10px">
         <label><input type="checkbox" id="aiLabel" checked>
           <span><strong>Auto-label images</strong> with a short medical description (used for ZIP filenames and Step 2 textbook matching)</span>
@@ -488,10 +1280,10 @@
         </label>
       </div>
       <div class="actions">
-        <button id="aiAnalyzeBtn" class="secondary" disabled>Analyze Extracted Images with AI</button>
-        <button id="aiStopBtn" class="danger hidden" type="button">Stop AI</button>
+        <button id="aiAnalyzeBtn" class="secondary" disabled data-en="Analyze Extracted Images with AI" data-ar="تحليل الصور المستخرجة بالذكاء الاصطناعي">Analyze Extracted Images with AI</button>
+        <button id="aiStopBtn" class="danger hidden" type="button" data-en="Stop AI" data-ar="إيقاف">Stop AI</button>
         <button id="removeFlaggedBtn" class="secondary hidden" type="button">Remove All Flagged (0)</button>
-        <button id="restoreAllBtn" class="secondary hidden" type="button">Restore All Removed</button>
+        <button id="restoreAllBtn" class="secondary hidden" type="button" data-en="Restore All Removed" data-ar="استعادة جميع المحذوفات">Restore All Removed</button>
       </div>
     </details>
 
@@ -507,10 +1299,10 @@
           <option value="flagged">Showing: Flagged by AI / Template</option>
           <option value="removed">Showing: Removed only</option>
         </select>
-        <label class="inline"><input type="checkbox" id="useAiNames" checked> Use AI labels as file names</label>
+        <label class="inline"><input type="checkbox" id="useAiNames" checked> <span data-en="Use AI labels as file names" data-ar="استخدام تسميات الذكاء الاصطناعي كأسماء ملفات">Use AI labels as file names</span></label>
       </div>
       <div class="right">
-        <button id="zipBtn" type="button">Download Kept as .ZIP</button>
+        <button id="zipBtn" type="button" data-en="Download Kept as .ZIP" data-ar="تحميل الصور المحفوظة كملف ZIP">Download Kept as .ZIP</button>
       </div>
     </div>
 
@@ -523,19 +1315,19 @@
   <section id="paneDoc" class="hidden">
     <label class="drop" id="docDrop">
       <input type="file" id="docFile" accept="application/pdf,.pdf">
-      <strong>Drop target textbook PDF (with green placeholders) here or click to browse</strong>
-      <span id="docFileLabel">No file chosen</span>
+      <strong data-en="Drop target textbook PDF (with green placeholders) here or click to browse" data-ar="أسقط ملف الكتاب PDF (ذو المربعات الخضراء) هنا أو اضغط لاختيار ملف">Drop target textbook PDF (with green placeholders) here or click to browse</strong>
+      <span id="docFileLabel" data-en="No file chosen" data-ar="لم يتم اختيار ملف">No file chosen</span>
     </label>
 
     <div class="options">
-      <label class="opt">Placeholder Color Tolerance
+      <label class="opt"><span data-en="Placeholder Color Tolerance" data-ar="حساسية لون المربعات">Placeholder Color Tolerance</span>
         <select id="sensitivity">
           <option value="strict">Strict (bright green only)</option>
           <option value="normal" selected>Normal (all shades + hollow borders)</option>
           <option value="loose">Loose (includes lime / olive / teal)</option>
         </select>
       </label>
-      <label class="opt">Minimum Box Size (% of page width)
+      <label class="opt"><span data-en="Minimum Box Size (% of page width)" data-ar="الحد الأدنى لحجم المربع (% من عرض الصفحة)">Minimum Box Size (% of page width)</span>
         <select id="minBoxPct">
           <option value="0.015">Tiny (1.5%)</option>
           <option value="0.03" selected>Small (3%)</option>
@@ -543,14 +1335,14 @@
           <option value="0.10">Large (10%)</option>
         </select>
       </label>
-      <label class="opt">How Replaced Images Fit
+      <label class="opt"><span data-en="How Replaced Images Fit" data-ar="طريقة ملاءمة الصور البديلة">How Replaced Images Fit</span>
         <select id="fitMode">
           <option value="contain" selected>Fit entire figure inside (preserve aspect)</option>
           <option value="cover">Fill entire box (crop overflow)</option>
           <option value="stretch">Stretch to exact box dimensions</option>
         </select>
       </label>
-      <label class="opt">Export PDF Quality &amp; Size
+      <label class="opt"><span data-en="Export PDF Quality & Size" data-ar="جودة وحجم ملف PDF المصدر">Export PDF Quality &amp; Size</span>
         <select id="exportQuality">
           <option value="balanced" selected>Balanced Textbook (1600px · Smart JPEG/PNG)</option>
           <option value="print">Max Print Quality (2400px · Lossless PNG)</option>
@@ -562,27 +1354,27 @@
     <div style="display:flex; gap:18px; flex-wrap:wrap; margin: 10px 0 14px;">
       <label class="check">
         <input type="checkbox" id="hideEmpty" checked>
-        Erase empty green boxes with background color on export
+        <span data-en="Erase empty green boxes with background color on export" data-ar="مسح المربعات الخضراء الفارغة بلون الخلفية عند التصدير">Erase empty green boxes with background color on export</span>
       </label>
       <label class="check">
         <input type="checkbox" id="pureWhiteMask">
-        Force pure white (#FFFFFF) mask instead of adaptive page background color
+        <span data-en="Force pure white (#FFFFFF) mask instead of adaptive page background color" data-ar="فرض قناع أبيض نقي (#FFFFFF) بدلاً من لون خلفية الصفحة التلقائي">Force pure white (#FFFFFF) mask instead of adaptive page background color</span>
       </label>
     </div>
 
     <div class="actions">
-      <button id="scanBtn" disabled>Scan PDF for Green Placeholders</button>
-      <button id="exportBtn" class="success" disabled>Export Filled PDF</button>
+      <button id="scanBtn" disabled data-en="Scan PDF for Green Placeholders" data-ar="فحص الملف بحثاً عن المربعات الخضراء">Scan PDF for Green Placeholders</button>
+      <button id="exportBtn" class="success" disabled data-en="Export Filled PDF" data-ar="تصدير ملف PDF المكتمل">Export Filled PDF</button>
       <button id="editBoxesBtn" class="secondary hidden" type="button" title="Draw new placeholder boxes, resize corners, or delete boxes directly on the page preview">✥ Draw / Edit Boxes: Off</button>
       <button id="eyedropperBtn" class="secondary hidden" type="button" title="Click any colored box on a page to also detect that color as a placeholder">💧 Pick Custom Color</button>
-      <button id="sampleBtn" class="secondary" type="button">Download Sample PDF (for testing)</button>
+      <button id="sampleBtn" class="secondary" type="button" data-en="Download Sample PDF (for testing)" data-ar="تحميل ملف PDF تجريبي (للاختبار)">Download Sample PDF (for testing)</button>
     </div>
 
     <!-- AI auto-fill panel -->
     <details class="panel" style="margin-top:16px" open>
-      <summary>AI Auto-Fill (Global Chapter Matching + Top-3 Candidate Alternatives)</summary>
+      <summary data-en="AI Auto-Fill (Global Chapter Matching + Top-3 Candidate Alternatives)" data-ar="الملء التلقائي بالذكاء الاصطناعي (مطابقة شاملة للفصل + أفضل ٣ بدائل)">AI Auto-Fill (Global Chapter Matching + Top-3 Candidate Alternatives)</summary>
       <div class="options" style="margin-top:10px">
-        <label class="opt">Minimum AI confidence to place
+        <label class="opt"><span data-en="Minimum AI confidence to place" data-ar="الحد الأدنى لثقة الذكاء الاصطناعي">Minimum AI confidence to place</span>
           <select id="minConf">
             <option value="low">Low (place best guess even if unsure)</option>
             <option value="medium" selected>Medium (balanced — recommended)</option>
@@ -605,8 +1397,8 @@
         </label>
       </div>
       <div class="actions">
-        <button id="aiFillBtn" type="button" disabled>✨ AI Auto-Fill All Placeholders</button>
-        <button id="stopFillBtn" class="danger hidden" type="button">Stop</button>
+        <button id="aiFillBtn" type="button" disabled data-en="✨ AI Auto-Fill All Placeholders" data-ar="✨ ملء جميع المربعات تلقائياً بالذكاء الاصطناعي">✨ AI Auto-Fill All Placeholders</button>
+        <button id="stopFillBtn" class="danger hidden" type="button" data-en="Stop" data-ar="إيقاف">Stop</button>
       </div>
       <p class="hint">
         Global Chapter Matching evaluates all placeholders together so early slots never steal a figure meant for a later section, and provides 1-click runner-up alternatives on every slot.
@@ -617,21 +1409,21 @@
     <div id="status2" class="status"></div>
 
     <div id="results" class="hidden">
-      <div class=" actions" style="justify-content:space-between; margin: 18px 0 8px">
+      <div class="actions" style="justify-content:space-between; margin: 18px 0 8px">
         <div>
           <h2 id="docSummary"></h2>
           <div id="pagesLine" class="pages-line"></div>
         </div>
         <div class="actions">
           <input type="file" id="bulkFiles" accept="image/*" multiple class="hidden">
-          <button id="bulkBtn" class="secondary sm" type="button">Upload multiple from device…</button>
-          <button id="clearAllBtn" class="danger-outline sm" type="button">Clear all placed images</button>
+          <button id="bulkBtn" class="secondary sm" type="button" data-en="Upload multiple from device…" data-ar="رفع عدة صور من الجهاز…">Upload multiple from device…</button>
+          <button id="clearAllBtn" class="danger-outline sm" type="button" data-en="Clear all placed images" data-ar="مسح جميع الصور الموضوعة">Clear all placed images</button>
         </div>
       </div>
 
       <div id="slots"></div>
 
-      <h2>Live Page Preview (click any green box to assign; toggle “Draw / Edit Boxes” to add/resize/delete boxes)</h2>
+      <h2 data-en="Live Page Preview (click any green box to assign; toggle “Draw / Edit Boxes” to add/resize/delete boxes)" data-ar="معاينة الصفحات المباشرة (اضغط على أي مربع أخضر لتعيين صورة؛ أو فعّل وضع الرسم لتعديل المربعات)">Live Page Preview (click any green box to assign; toggle “Draw / Edit Boxes” to add/resize/delete boxes)</h2>
       <div id="pages"></div>
     </div>
   </section>
@@ -689,6 +1481,44 @@
 
 <input type="file" id="singleUpload" accept="image/*" class="hidden">
 <div id="toasts"></div>
+
+<!-- MedicineBank Institutional Colophon Footer -->
+<footer class="mbi-site-footer" id="siteColophonFooter">
+  <div class="mbi-footer-inner">
+    <div class="mbi-footer-top">
+      <a href="index.html" class="mbi-footer-brand" aria-label="MedicineBank Home">
+        <img src="IMG_3083.png" alt="MedicineBank" class="mbi-footer-logo-img" loading="lazy" />
+      </a>
+      <div class="mbi-footer-socials" aria-label="Social Media Links">
+        <a href="https://t.me/+201014933410" target="_blank" rel="noopener noreferrer" class="mbi-social-btn" title="Telegram" aria-label="Telegram">
+          <svg viewBox="0 0 24 24"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>
+        </a>
+        <a href="https://wa.me/201014933410" target="_blank" rel="noopener noreferrer" class="mbi-social-btn" title="WhatsApp" aria-label="WhatsApp">
+          <svg viewBox="0 0 24 24"><path d="M12.031 0C5.385 0 0 5.385 0 12.031c0 2.123.553 4.195 1.604 6.018L.098 24l6.105-1.601a11.98 11.98 0 0 0 5.828 1.511h.005c6.645 0 12.03-5.385 12.03-12.031C24.066 5.385 18.676 0 12.031 0zm6.985 17.114c-.293.826-1.706 1.58-2.369 1.679-.607.09-1.375.128-2.218-.14-.511-.162-1.167-.379-2.008-.742-3.534-1.526-5.842-5.086-6.019-5.322-.176-.236-1.438-1.913-1.438-3.649 0-1.736.909-2.59 1.232-2.943.323-.353.705-.441.94-.441.235 0 .47 0 .675.01.217.01.507-.082.793.606.294.706.999 2.441 1.087 2.618.088.176.147.382.029.618-.118.235-.176.382-.353.588-.176.206-.37.46-.529.618-.176.176-.36.367-.155.72.206.353.913 1.506 1.96 2.439 1.347 1.2 2.482 1.572 2.835 1.749.353.176.558.147.764-.088.206-.235.881-1.029 1.116-1.382.235-.353.47-.294.793-.176.323.118 2.056.97 2.409 1.147.353.176.588.265.675.412.088.147.088.853-.205 1.679z"/></svg>
+        </a>
+        <a href="https://www.instagram.com/mbi.eg?igsh=MWd2bXdyN212c2M2bQ==" target="_blank" rel="noopener noreferrer" class="mbi-social-btn" title="Instagram" aria-label="Instagram">
+          <svg viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 1 0 0 12.324 6.162 6.162 0 0 0 0-12.324zM12 16a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm6.406-11.845a1.44 1.44 0 1 0 0 2.881 1.44 1.44 0 0 0 0-2.881z"/></svg>
+        </a>
+        <a href="https://www.tiktok.com/@medicinebank?_r=1&_t=ZS-95gl211728s" target="_blank" rel="noopener noreferrer" class="mbi-social-btn" title="TikTok" aria-label="TikTok">
+          <svg viewBox="0 0 24 24"><path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z"/></svg>
+        </a>
+        <a href="https://www.facebook.com/share/1718ce3p2k/" target="_blank" rel="noopener noreferrer" class="mbi-social-btn" title="Facebook" aria-label="Facebook">
+          <svg viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+        </a>
+      </div>
+    </div>
+    <div class="mbi-footer-divider"></div>
+    <div class="mbi-footer-bottom">
+      <div class="mbi-footer-credit">
+        <span data-en="Accredited by" data-ar="معتمد من">Accredited by</span>
+        <strong data-en="Horus University in Egypt — Faculty of Medicine (HUE MED)" data-ar="جامعة حورس في مصر — كلية الطب البشري (HUE MED)">Horus University in Egypt — Faculty of Medicine (HUE MED)</strong>
+      </div>
+      <div class="mbi-footer-copy" data-en="© 2026 MedicineBank. All rights reserved." data-ar="© ٢٠٢٦ بنك الطب (MedicineBank). جميع الحقوق محفوظة.">
+        © 2026 MedicineBank. All rights reserved.
+      </div>
+    </div>
+  </div>
+</footer>
 
 <script>
 pdfjsLib.GlobalWorkerOptions.workerSrc =
@@ -1118,18 +1948,186 @@ function updateTabCounts() {
   $("aiFillBtn").disabled = !canFill;
 }
 
+/* ---------- MedicineBank 7-Theme Engine, Floating Scrubber & Bilingual Support ---------- */
+const VALID_THEMES = ["dark", "light", "maroon", "blue", "orange", "champagne", "brown"];
+let currentTheme = lsGet("mb_theme") || "dark";
+if (!VALID_THEMES.includes(currentTheme)) currentTheme = "dark";
+let currentLang = lsGet("mb_lang") === "ar" ? "ar" : "en";
+
+function applyStudioTheme(themeName, skipSave = false) {
+  const valid = VALID_THEMES.includes(themeName) ? themeName : "dark";
+  currentTheme = valid;
+  if (valid === "dark") {
+    document.documentElement.removeAttribute("data-theme");
+  } else {
+    document.documentElement.setAttribute("data-theme", valid);
+  }
+  if (!skipSave) lsSet("mb_theme", valid);
+  document.querySelectorAll(".theme-swatch-btn").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.themeVal === valid);
+  });
+}
+
+function adjustThemePopupPosition() {
+  const popup = $("themeSwatchRow");
+  const btn = $("themeMenuBtn");
+  if (!popup || !btn || !popup.classList.contains("open")) return;
+  popup.style.left = "";
+  popup.style.right = "";
+  const rect = popup.getBoundingClientRect();
+  const vw = window.innerWidth || document.documentElement.clientWidth;
+  const margin = 12;
+  if (rect.left < margin) {
+    popup.style.right = "auto";
+    popup.style.left = (margin - btn.getBoundingClientRect().left) + "px";
+  } else if (rect.right > vw - margin) {
+    popup.style.left = "auto";
+    popup.style.right = (btn.getBoundingClientRect().right - (vw - margin)) + "px";
+  }
+}
+
+function setFloatingScrubberEnabled(enabled, skipSave = false) {
+  if (!skipSave) lsSet("mb_floating_scrubber_enabled", enabled ? "true" : "false");
+  const sc = $("pageScrubber");
+  if (sc) sc.classList.toggle("scrubber-disabled", !enabled);
+  const tgl = $("floatingScrubberToggle");
+  if (tgl) tgl.checked = !!enabled;
+}
+
+function setStudioLang(lang, skipSave = false) {
+  currentLang = lang === "ar" ? "ar" : "en";
+  if (!skipSave) lsSet("mb_lang", currentLang);
+  document.documentElement.setAttribute("lang", currentLang);
+  document.documentElement.setAttribute("dir", currentLang === "ar" ? "rtl" : "ltr");
+  document.querySelectorAll("[data-en]").forEach(node => {
+    const val = currentLang === "ar" ? node.getAttribute("data-ar") : node.getAttribute("data-en");
+    if (val != null) node.textContent = val;
+  });
+}
+
+function initPageSlider() {
+  const scrubber = $("pageScrubber");
+  const trackWrap = $("scrubberTrackWrap");
+  const track = $("scrubberTrack");
+  const thumb = $("scrubberThumb");
+  const fill = $("scrubberFill");
+  const badge = $("scrubberBadge");
+  const progressLine = $("scrollProgressLine");
+  const topBtn = $("scrubberJumpTop");
+  const bottomBtn = $("scrubberJumpBottom");
+  if (!scrubber || !trackWrap || !track) return;
+
+  let isDragging = false, wakeTimer = null;
+
+  function getMetrics() {
+    const docEl = document.documentElement, body = document.body;
+    const scrollTop = window.pageYOffset || docEl.scrollTop || body.scrollTop || 0;
+    const scrollHeight = Math.max(docEl.scrollHeight, body.scrollHeight, docEl.offsetHeight, body.offsetHeight);
+    const clientHeight = window.innerHeight || docEl.clientHeight || 1;
+    const maxScroll = Math.max(0, scrollHeight - clientHeight);
+    const progress = maxScroll > 0 ? Math.min(1, Math.max(0, scrollTop / maxScroll)) : 0;
+    return { maxScroll, progress };
+  }
+
+  function scrollToRatio(ratio, smooth = true) {
+    const { maxScroll } = getMetrics();
+    window.scrollTo({ top: Math.round(Math.min(1, Math.max(0, ratio)) * maxScroll), behavior: smooth ? "smooth" : "auto" });
+  }
+
+  function updateUI() {
+    const { progress } = getMetrics();
+    const pct = Math.round(progress * 100);
+    if (progressLine) progressLine.style.width = (progress * 100).toFixed(1) + "%";
+    if (thumb) thumb.style.top = (progress * 100).toFixed(1) + "%";
+    if (fill) fill.style.height = (progress * 100).toFixed(1) + "%";
+    if (badge) badge.textContent = pct + "%";
+    trackWrap.setAttribute("aria-valuenow", String(pct));
+    if (!isDragging) {
+      scrubber.classList.add("active");
+      clearTimeout(wakeTimer);
+      wakeTimer = setTimeout(() => scrubber.classList.remove("active"), 1800);
+    }
+  }
+
+  window.addEventListener("scroll", () => requestAnimationFrame(updateUI), { passive: true });
+  window.addEventListener("resize", () => requestAnimationFrame(updateUI), { passive: true });
+  if (topBtn) topBtn.addEventListener("click", () => scrollToRatio(0, true));
+  if (bottomBtn) bottomBtn.addEventListener("click", () => scrollToRatio(1, true));
+
+  function ratioFromEvent(e) {
+    const rect = track.getBoundingClientRect();
+    const y = e.touches ? e.touches[0].clientY : e.clientY;
+    return Math.min(1, Math.max(0, (y - rect.top) / rect.height));
+  }
+  function onMove(e) {
+    if (!isDragging) return;
+    e.preventDefault();
+    scrollToRatio(ratioFromEvent(e), false);
+    updateUI();
+  }
+  function onUp() {
+    if (!isDragging) return;
+    isDragging = false;
+    scrubber.classList.remove("dragging");
+    document.removeEventListener("mousemove", onMove);
+    document.removeEventListener("mouseup", onUp);
+    document.removeEventListener("touchmove", onMove);
+    document.removeEventListener("touchend", onUp);
+  }
+  function onDown(e) {
+    isDragging = true;
+    scrubber.classList.add("dragging", "active");
+    scrollToRatio(ratioFromEvent(e), false);
+    updateUI();
+    document.addEventListener("mousemove", onMove, { passive: false });
+    document.addEventListener("mouseup", onUp);
+    document.addEventListener("touchmove", onMove, { passive: false });
+    document.addEventListener("touchend", onUp);
+  }
+  trackWrap.addEventListener("mousedown", onDown);
+  trackWrap.addEventListener("touchstart", onDown, { passive: false });
+  updateUI();
+}
+
 /* ---------- Init & Event Wiring ---------- */
 (function init() {
-  // Theme initialization
-  const savedTheme = lsGet("mb_theme") || "";
-  if (savedTheme === "dark" || savedTheme === "light") {
-    document.documentElement.setAttribute("data-theme", savedTheme);
-  }
+  // 1. Initialize MedicineBank 7-Theme Engine, Scrubber & Language
+  applyStudioTheme(currentTheme, true);
+  setStudioLang(currentLang, true);
+  const scrubberSaved = lsGet("mb_floating_scrubber_enabled");
+  setFloatingScrubberEnabled(scrubberSaved !== "false", true);
+  initPageSlider();
+
+  $("themeMenuBtn").addEventListener("click", e => {
+    e.stopPropagation();
+    const popup = $("themeSwatchRow");
+    popup.classList.toggle("open");
+    if (popup.classList.contains("open")) {
+      requestAnimationFrame(adjustThemePopupPosition);
+    }
+  });
+  $("themeSwatchRow").addEventListener("click", e => e.stopPropagation());
+  document.querySelectorAll(".theme-swatch-btn").forEach(btn => {
+    btn.addEventListener("click", e => {
+      e.stopPropagation();
+      applyStudioTheme(btn.dataset.themeVal);
+    });
+  });
+  document.addEventListener("click", () => {
+    $("themeSwatchRow").classList.remove("open");
+  });
+  window.addEventListener("resize", adjustThemePopupPosition);
+
+  $("floatingScrubberToggle").addEventListener("change", e => {
+    setFloatingScrubberEnabled(e.target.checked);
+  });
+
+  $("langToggleBtn").addEventListener("click", () => {
+    setStudioLang(currentLang === "en" ? "ar" : "en");
+  });
+
   $("themeToggleBtn").addEventListener("click", () => {
-    const cur = document.documentElement.getAttribute("data-theme");
-    const next = cur === "dark" ? "light" : "dark";
-    document.documentElement.setAttribute("data-theme", next);
-    lsSet("mb_theme", next);
+    applyStudioTheme(currentTheme === "light" ? "dark" : "light");
   });
 
   $("undoBtn").addEventListener("click", undoLastAction);
