@@ -1232,11 +1232,11 @@
 
   <!-- Shared AI settings -->
   <details class="panel" id="aiPanel">
-    <summary data-en="AI Settings (shared by Step 1 & Step 2 — Google Gemini 2.5 Flash Free Tier Recommended)" data-ar="إعدادات الذكاء الاصطناعي (مشتركة للخطوتين ١ و ٢ — يوصى بـ Google Gemini 2.5 Flash المجاني)">AI Settings (shared by Step 1 &amp; Step 2 — Google Gemini 2.5 Flash Free Tier Recommended)</summary>
+    <summary data-en="AI Settings (shared by Step 1 & Step 2 — Google Gemini 3.8 Flash Free Tier Recommended)" data-ar="إعدادات الذكاء الاصطناعي (مشتركة للخطوتين ١ و ٢ — يوصى بـ Google Gemini 3.8 Flash المجاني)">AI Settings (shared by Step 1 &amp; Step 2 — Google Gemini 3.8 Flash Free Tier Recommended)</summary>
     <div class="options">
       <label class="opt"><span data-en="Provider" data-ar="مزود الذكاء الاصطناعي">Provider</span>
         <select id="aiProvider">
-          <option value="gemini" selected>Google Gemini API (Free 1,500 req/day · Recommended)</option>
+          <option value="gemini" selected>Google Gemini API (Free Tier · Gemini 3.8 Flash Recommended)</option>
           <option value="puter">Puter.js (Built-in, no key needed)</option>
           <option value="openrouter">OpenRouter (Bring your own key)</option>
         </select>
@@ -1244,10 +1244,17 @@
 
       <label class="opt" id="modelFieldGemini"><span data-en="Model via Google Gemini" data-ar="نموذج Google Gemini">Model via Google Gemini</span>
         <select id="aiModelGemini">
-          <option value="gemini-2.5-flash" selected>Gemini 2.5 Flash (Best Medical Vision &amp; Reasoning · Free)</option>
-          <option value="gemini-2.5-flash-lite">Gemini 2.5 Flash-Lite (Ultra-Fast · Highest Free Quota)</option>
-          <option value="gemini-2.0-flash">Gemini 2.0 Flash (Proven Vision Workhorse · Free)</option>
-          <option value="gemini-1.5-flash">Gemini 1.5 Flash (Legacy Fallback · Free)</option>
+          <optgroup label="Free Tier — Latest Gemini 3 Series (Recommended)">
+            <option value="gemini-3.8-flash" selected>Gemini 3.8 Flash (Latest Flagship Vision &amp; Reasoning · Free Tier)</option>
+            <option value="gemini-3.5-flash-lite">Gemini 3.5 Flash-Lite (Ultra-Fast · Highest Free Quota)</option>
+            <option value="gemini-3.6-flash">Gemini 3.6 Flash (Stable Multimodal · Free Tier)</option>
+            <option value="gemini-3.5-flash">Gemini 3.5 Flash (Balanced Multimodal · Free Tier)</option>
+            <option value="gemini-3.1-flash-lite">Gemini 3.1 Flash-Lite (Lightweight &amp; Fast · Free Tier)</option>
+            <option value="gemma-4-31b-it">Gemma 4 31B IT (Open Multimodal · Free Tier)</option>
+          </optgroup>
+          <optgroup label="Paid Tier — Frontier Reasoning">
+            <option value="gemini-4-argon">Gemini 4 Argon (Most Powerful Frontier Model · Paid Tier)</option>
+          </optgroup>
         </select>
       </label>
 
@@ -1264,14 +1271,16 @@
             <option value="anthropic/claude-opus-4-8">Claude Opus 4.8</option>
             <option value="anthropic/claude-sonnet-4-6" selected>Claude Sonnet 4.6</option>
             <option value="openai/gpt-5.5">GPT-5.5</option>
+            <option value="google/gemini-3.8-flash">Gemini 3.8 Flash</option>
+            <option value="google/gemini-4-argon">Gemini 4 Argon</option>
             <option value="google/gemini-3.5-flash">Gemini 3.5 Flash</option>
             <option value="deepseek/deepseek-v4-pro">DeepSeek V4 Pro</option>
             <option value="anthropic/claude-sonnet-4">Claude Sonnet 4</option>
             <option value="openai/gpt-4o">GPT-4o</option>
           </optgroup>
           <optgroup label="Fast &amp; Low Credit Cost">
-            <option value="google/gemini-2.5-flash">Gemini 2.5 Flash</option>
-            <option value="google/gemini-2.0-flash-001">Gemini 2.0 Flash</option>
+            <option value="google/gemini-3.5-flash-lite">Gemini 3.5 Flash-Lite</option>
+            <option value="google/gemini-3.1-flash-lite">Gemini 3.1 Flash-Lite</option>
             <option value="openai/gpt-4o-mini">GPT-4o Mini</option>
           </optgroup>
         </select>
@@ -1283,19 +1292,21 @@
             <option value="~openai/gpt-latest" selected>GPT (latest)</option>
             <option value="~anthropic/claude-sonnet-latest">Claude Sonnet (latest)</option>
             <option value="anthropic/claude-opus-4.8">Claude Opus 4.8</option>
-            <option value="google/gemini-3.5-flash">Gemini 3.5 Flash</option>
+            <option value="anthropic/claude-sonnet-4.6">Claude Sonnet 4.6</option>
+            <option value="openai/gpt-5.5">OpenAI: GPT-5.5</option>
+            <option value="google/gemini-3.8-flash">Google: Gemini 3.8 Flash</option>
+            <option value="google/gemini-4-argon">Google: Gemini 4 Argon</option>
+            <option value="google/gemini-3.5-flash">Google: Gemini 3.5 Flash</option>
             <option value="deepseek/deepseek-v4-pro">DeepSeek V4 Pro</option>
-            <option value="google/gemini-2.5-flash">Google: Gemini 2.5 Flash</option>
             <option value="anthropic/claude-sonnet-4">Anthropic: Claude Sonnet 4</option>
             <option value="openai/gpt-4o-mini">OpenAI: GPT-4o Mini</option>
           </optgroup>
           <optgroup label="Fast, Cheap &amp; Free Tier Models">
+            <option value="google/gemini-3.5-flash-lite">Gemini 3.5 Flash-Lite (ultra-fast, low cost)</option>
             <option value="deepseek/deepseek-v4-flash">DeepSeek V4 Flash (cheap, fast)</option>
-            <option value="google/gemini-2.5-flash-lite">Gemini 2.5 Flash-Lite (cheap, no reasoning overhead)</option>
-            <option value="meta-llama/llama-3.1-8b-instruct">Llama 3.1 8B Instruct (cheap)</option>
-            <option value="meta-llama/llama-3.1-8b-instruct:free">Llama 3.1 8B Instruct (free, rate-limited)</option>
             <option value="qwen/qwen2.5-vl-72b-instruct:free">Qwen 2.5 VL 72B (free)</option>
             <option value="meta-llama/llama-3.2-11b-vision-instruct:free">Llama 3.2 11B Vision (free)</option>
+            <option value="meta-llama/llama-3.1-8b-instruct:free">Llama 3.1 8B Instruct (free, rate-limited)</option>
           </optgroup>
         </select>
       </label>
@@ -2283,7 +2294,12 @@ function initPageSlider() {
   if (lsGet("pdfx_provider") && ["gemini", "puter", "openrouter"].includes(lsGet("pdfx_provider"))) {
     prov.value = lsGet("pdfx_provider");
   }
-  setSelectIfValid(mGem, lsGet("pdfx_model_gemini"));
+  const savedGemModel = lsGet("pdfx_model_gemini");
+  if (savedGemModel && /^gemini-(1\.|2\.)/.test(savedGemModel)) {
+    lsSet("pdfx_model_gemini", "gemini-3.8-flash");
+  } else {
+    setSelectIfValid(mGem, savedGemModel);
+  }
   setSelectIfValid(mPuter, lsGet("pdfx_model_puter"));
   setSelectIfValid(mOr, lsGet("pdfx_model_or"));
   setSelectIfValid(bSize, lsGet("pdfx_batch_size"));
@@ -2462,8 +2478,9 @@ async function testGeminiKey() {
   const btn = $("testGeminiKeyBtn");
   btn.disabled = true; btn.textContent = "Testing…";
   try {
-    const out = await callGemini('Return {"status":"ok"}', $("aiModelGemini").value, null, 30);
-    if (out) toast("Gemini API key verified! Ready for 1,500 free requests/day.", "success");
+    const activeModel = $("aiModelGemini").value || "gemini-3.8-flash";
+    const out = await callGemini('Return {"status":"ok"}', activeModel, null, 1024);
+    if (out) toast(`Gemini API key verified on ${activeModel}! Ready for free requests.`, "success");
   } catch (err) {
     toast("Key test failed: " + err.message, "error");
   } finally {
@@ -3160,7 +3177,7 @@ function callAI(prompt, imageUrlOrArray, maxTokens) {
   });
 }
 
-async function callGemini(prompt, model, imagesArr, maxTokens) {
+async function callGemini(prompt, model, imagesArr, maxTokens, _isFallback = false) {
   const apiKey = $("geminiKey").value.trim();
   if (!apiKey) {
     throw new Error("Please enter your free Google Gemini API key (get one free at aistudio.google.com/apikey)");
@@ -3174,17 +3191,22 @@ async function callGemini(prompt, model, imagesArr, maxTokens) {
       parts.push({ inline_data: { mime_type: mimeType, data: base64Data } });
     });
   }
-  const targetModel = model || "gemini-2.5-flash";
+  const targetModel = (!model || /^gemini-(1\.|2\.)/.test(model)) ? "gemini-3.8-flash" : model;
+  const isThinkingModel = /^gemini-(3|4)/.test(targetModel);
+  const generationConfig = {
+    responseMimeType: "application/json",
+    maxOutputTokens: Math.max(maxTokens || 2048, 2048)
+  };
+  if (isThinkingModel) {
+    generationConfig.thinkingConfig = { thinkingLevel: "low" };
+  }
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${targetModel}:generateContent?key=${encodeURIComponent(apiKey)}`;
   const resp = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       contents: [{ parts }],
-      generationConfig: {
-        responseMimeType: "application/json",
-        maxOutputTokens: maxTokens || 1200
-      }
+      generationConfig
     })
   });
   if (!resp.ok) {
@@ -3194,10 +3216,19 @@ async function callGemini(prompt, model, imagesArr, maxTokens) {
       const errObj = JSON.parse(errText);
       if (errObj.error?.message) msg += ": " + errObj.error.message;
     } catch {}
+    if (!_isFallback && targetModel !== "gemini-3.8-flash" && /not found|no longer available|not supported|404/i.test(msg)) {
+      console.warn(`Model ${targetModel} unavailable, auto-falling back to gemini-3.8-flash`);
+      $("aiModelGemini").value = "gemini-3.8-flash";
+      lsSet("pdfx_model_gemini", "gemini-3.8-flash");
+      return callGemini(prompt, "gemini-3.8-flash", imagesArr, maxTokens, true);
+    }
     throw new Error(msg);
   }
   const data = await resp.json();
-  const text = data.candidates?.[0]?.content?.parts?.map(p => p.text || "").join("") || "";
+  const candParts = data.candidates?.[0]?.content?.parts || [];
+  const text = candParts.filter(p => !p.thought).map(p => p.text || "").join("")
+    || candParts.map(p => p.text || "").join("")
+    || "";
   if (!text) throw new Error("Gemini returned an empty response");
   return text;
 }
