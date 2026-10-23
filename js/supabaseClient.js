@@ -19,7 +19,7 @@
   const SUPABASE_URL = 'https://igfooetzorzhhvpakgqa.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlnZm9vZXR6b3J6aGh2cGFrZ3FhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg5ODg2NTksImV4cCI6MjEwNDU2NDY1OX0.1XLeeRi4KFJptk73JKx_vs0FlO5EXM17KIyFSaKWLCA';
   const MATERIALS_BUCKET = 'materials';
-  const MAX_FLASH_UPLOAD_BYTES = 100 * 1024 * 1024; // 100 MB
+  const MAX_FLASH_UPLOAD_BYTES = 50 * 1024 * 1024; // 50 MB standard Supabase limit
 
   let clientInstance = null;
 
@@ -111,6 +111,56 @@
     };
   }
 
+  /**
+   * Single write path for materials metadata.
+   * Writes caption JSON and normalized columns with automatic backward-compatible fallback
+   * if the database schema does not have normalized columns (PGRST204 / 42703).
+   */
+  async function saveMaterialRow({ id, base, normalized, client } = {}) {
+    const sb = client || getSupabaseClient();
+    if (!sb) {
+      const err = { code: 'NO_CLIENT', message: 'Supabase client is not initialized.' };
+      console.error('saveMaterialRow error:', err);
+      return { data: null, error: err, usedFallback: false };
+    }
+
+    const norm = normalized || {};
+    const fullPayload = { ...base };
+    if (norm.module_code !== undefined) fullPayload.module_code = norm.module_code;
+    if (norm.subject_name !== undefined) fullPayload.subject_name = norm.subject_name;
+    if (norm.semester !== undefined) fullPayload.semester = norm.semester;
+    if (norm.card_count !== undefined) fullPayload.card_count = norm.card_count;
+
+    function isSchemaMismatch(err) {
+      if (!err) return false;
+      const code = String(err.code || '');
+      const msg = String(err.message || '');
+      return code === 'PGRST204' || code === '42703' || /column.*does not exist/i.test(msg) || /schema cache/i.test(msg);
+    }
+
+    let res;
+    let fallbackUsed = false;
+    if (id) {
+      res = await sb.from('materials').update(fullPayload).eq('id', id).select();
+      if (res.error && isSchemaMismatch(res.error)) {
+        fallbackUsed = true;
+        res = await sb.from('materials').update(base).eq('id', id).select();
+      }
+    } else {
+      res = await sb.from('materials').insert(fullPayload).select();
+      if (res.error && isSchemaMismatch(res.error)) {
+        fallbackUsed = true;
+        res = await sb.from('materials').insert(base).select();
+      }
+    }
+
+    const firstRow = (res.data && Array.isArray(res.data) && res.data.length > 0) ? res.data[0] : res.data;
+    if (res.error) {
+      console.error('saveMaterialRow error:', res.error);
+    }
+    return { data: firstRow, error: res.error, usedFallback: fallbackUsed };
+  }
+
   return {
     SUPABASE_URL,
     SUPABASE_ANON_KEY,
@@ -118,6 +168,7 @@
     MAX_FLASH_UPLOAD_BYTES,
     getSupabaseClient,
     extractHumanCaption,
-    parseMaterialMeta
+    parseMaterialMeta,
+    saveMaterialRow
   };
 });

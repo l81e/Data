@@ -3824,23 +3824,28 @@
       summaryModal.classList.add('open');
     }
 
-    document.getElementById('summaryModalRow').addEventListener('click', () => {
-      closeSettings();
-      openSummaryModal();
-    });
-    closeSummaryBtn.addEventListener('click', () => summaryModal.classList.remove('open'));
-    continueSessionBtn.addEventListener('click', () => summaryModal.classList.remove('open'));
+    const summaryModalRowEl = document.getElementById('summaryModalRow');
+    if (summaryModalRowEl) {
+      summaryModalRowEl.addEventListener('click', () => {
+        closeSettings();
+        openSummaryModal();
+      });
+    }
+    if (closeSummaryBtn) closeSummaryBtn.addEventListener('click', () => summaryModal.classList.remove('open'));
+    if (continueSessionBtn) continueSessionBtn.addEventListener('click', () => summaryModal.classList.remove('open'));
 
-    cramLapsedBtn.addEventListener('click', () => {
-      summaryModal.classList.remove('open');
-      const lapsed = deckCards.filter(c => (c.lapses || 0) > 0);
-      if (lapsed.length){
-        deckCards = lapsed;
-        currentIndex = 0;
-        sessionStats = { again: 0, hard: 0, good: 0, easy: 0, startTime: Date.now() };
-        renderCard();
-      }
-    });
+    if (cramLapsedBtn) {
+      cramLapsedBtn.addEventListener('click', () => {
+        summaryModal.classList.remove('open');
+        const lapsed = deckCards.filter(c => (c.lapses || 0) > 0);
+        if (lapsed.length){
+          deckCards = lapsed;
+          currentIndex = 0;
+          sessionStats = { again: 0, hard: 0, good: 0, easy: 0, startTime: Date.now() };
+          renderCard();
+        }
+      });
+    }
 
     /* =========================================================================
        14. KEYBOARD SHORTCUTS
@@ -3954,24 +3959,34 @@
     const compassCheckmark = document.getElementById('compassCheckmark');
 
     function closeSettings(){
-      settingsPanel.classList.remove('open');
-      document.getElementById('themeSwatchRow').classList.remove('open');
+      if (settingsPanel) settingsPanel.classList.remove('open');
+      const swatchRow = document.getElementById('themeSwatchRow');
+      if (swatchRow) swatchRow.classList.remove('open');
     }
-    settingsBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      settingsPanel.classList.toggle('open');
-    });
+    if (settingsBtn) {
+      settingsBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (settingsPanel) settingsPanel.classList.toggle('open');
+      });
+    }
     document.addEventListener('click', (e) => {
-      if (!settingsPanel.contains(e.target) && !settingsBtn.contains(e.target)) closeSettings();
+      if (settingsPanel && settingsBtn && !settingsPanel.contains(e.target) && !settingsBtn.contains(e.target)) closeSettings();
     });
 
-    document.getElementById('langToggleRow').addEventListener('click', () => {
-      setLang(currentLang === 'en' ? 'ar' : 'en');
-    });
-    document.getElementById('themeMenuRow').addEventListener('click', (e) => {
-      e.stopPropagation();
-      document.getElementById('themeSwatchRow').classList.toggle('open');
-    });
+    const langToggleRowEl = document.getElementById('langToggleRow');
+    if (langToggleRowEl) {
+      langToggleRowEl.addEventListener('click', () => {
+        setLang(currentLang === 'en' ? 'ar' : 'en');
+      });
+    }
+    const themeMenuRowEl = document.getElementById('themeMenuRow');
+    if (themeMenuRowEl) {
+      themeMenuRowEl.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const swatchRow = document.getElementById('themeSwatchRow');
+        if (swatchRow) swatchRow.classList.toggle('open');
+      });
+    }
 
     function setSwipeGesturesActive(active){
       showGestureCompass = !!active;
@@ -4079,17 +4094,20 @@
       });
     }
 
-    document.getElementById('downloadRow').addEventListener('click', () => {
-      closeSettings();
-      if (!deckFileBuffer) return;
-      const blob = new Blob([deckFileBuffer], { type: 'application/octet-stream' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = deckFileName;
-      a.click();
-      setTimeout(() => URL.revokeObjectURL(url), 2000);
-    });
+    const downloadRowEl = document.getElementById('downloadRow');
+    if (downloadRowEl) {
+      downloadRowEl.addEventListener('click', () => {
+        closeSettings();
+        if (!deckFileBuffer) return;
+        const blob = new Blob([deckFileBuffer], { type: 'application/octet-stream' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = deckFileName;
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(url), 2000);
+      });
+    }
 
     /* =========================================================================
        15B. STOP SIGN & SESSION BOOKMARK ENGINE
@@ -5643,13 +5661,16 @@
     }
 
     // Back link handler
-    document.getElementById('backLinkBtn').addEventListener('click', () => {
-      if (document.referrer && document.referrer.includes(window.location.hostname)){
-        window.history.back();
-      } else {
-        window.location.href = '/';
-      }
-    });
+    const backLinkBtnEl = document.getElementById('backLinkBtn');
+    if (backLinkBtnEl) {
+      backLinkBtnEl.addEventListener('click', () => {
+        if (document.referrer && document.referrer.includes(window.location.hostname)){
+          window.history.back();
+        } else {
+          window.location.href = '/';
+        }
+      });
+    }
 
     window.addEventListener('DOMContentLoaded', init);
   })();

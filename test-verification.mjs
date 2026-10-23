@@ -1585,15 +1585,17 @@ async function suite40(){
     assert(html.includes('data-theme') && html.includes('mb_theme'), `${fn} defines inline FOUC prevention script`);
   });
 
-  // 4. Schema Normalization & Hardened Security Policies
+  // 4. Schema Normalization & Production Anon Contract
   const schema = fs.readFileSync('schema.sql', 'utf-8');
   assert(schema.includes('module_code text'), 'schema.sql defines normalized module_code column');
   assert(schema.includes('subject_name text'), 'schema.sql defines normalized subject_name column');
-  assert(schema.includes('semester int DEFAULT 1'), 'schema.sql defines normalized semester column');
+  assert(schema.includes('semester int') && schema.includes('ALTER TABLE public.materials ALTER COLUMN semester DROP DEFAULT;'), 'schema.sql defines nullable semester column without default');
   assert(schema.includes('card_count int DEFAULT 0'), 'schema.sql defines normalized card_count column');
+  assert(schema.includes('uploaded_by text') && schema.includes('created_by text'), 'schema.sql defines text uploader columns');
+  assert(schema.includes('ON DELETE CASCADE'), 'schema.sql enforces ON DELETE CASCADE on foreign keys');
   assert(schema.includes('idx_materials_hierarchy'), 'schema.sql creates idx_materials_hierarchy index');
-  assert(schema.includes('is_admin_or_editor'), 'schema.sql defines is_admin_or_editor security function');
-  assert(schema.includes('Admin materials insert') && schema.includes('Admin materials update'), 'schema.sql restricts mutations to authenticated admin/editor roles');
+  assert(schema.includes('Anon materials insert') && schema.includes('Anon materials update'), 'schema.sql provides anon-compatible write policies');
+  assert(schema.includes("NOTIFY pgrst, 'reload schema'"), 'schema.sql triggers PostgREST schema cache reload');
 
   // 5. JavaScript Database Normalizer & Caption Fallback Logic
   const supabaseModule = await import('./js/supabaseClient.js');
@@ -1810,6 +1812,101 @@ async function suite42() {
   }
 }
 
+
+async function suite43() {
+  console.log('\n--- SUITE 43: Phase 2 & 3 Robustness, Fallback Writers, Size Gates & Year Coverage ---');
+
+  // 1. saveMaterialRow Fallback Unit Tests
+  const sbModule = await import('./js/supabaseClient.js');
+  const { saveMaterialRow, MAX_FLASH_UPLOAD_BYTES } = sbModule.default || sbModule;
+
+  assert(typeof saveMaterialRow === 'function', 'saveMaterialRow helper exported from js/supabaseClient.js');
+  assert(MAX_FLASH_UPLOAD_BYTES === 50 * 1024 * 1024, 'MAX_FLASH_UPLOAD_BYTES defined as exactly 50 MB (52,428,800 bytes)');
+
+  // Mock insert with PGRST204 failure on normalized columns, succeeding on fallback
+  let insertCalls = [];
+  const mockInsertClient = {
+    from: (table) => ({
+      insert: (payload) => ({
+        select: async () => {
+          insertCalls.push(payload);
+          if (payload.module_code) {
+            return { data: null, error: { code: 'PGRST204', message: "Could not find the 'module_code' column of 'materials'" } };
+          }
+          return { data: [{ id: 'mat-101', ...payload }], error: null };
+        }
+      })
+    })
+  };
+
+  const insertResult = await saveMaterialRow({
+    base: { lecture_id: 'lec-1', title: 'Test Deck', url: 'https://example.com/deck.apkg' },
+    normalized: { module_code: 'CVS', subject_name: 'Cardiology', semester: 1, card_count: 24 },
+    client: mockInsertClient
+  });
+
+  assert(insertCalls.length === 2, 'saveMaterialRow executed initial insert and fallback retry');
+  assert(insertCalls[0].module_code === 'CVS', 'Initial insert included normalized module_code');
+  assert(insertCalls[1].module_code === undefined, 'Fallback insert omitted normalized columns');
+  assert(insertResult.data && insertResult.data.id === 'mat-101', 'saveMaterialRow succeeded with fallback row data');
+  assert(insertResult.error === null, 'saveMaterialRow surfaced error: null on successful fallback');
+  assert(insertResult.usedFallback === true, 'saveMaterialRow reported usedFallback: true');
+
+  // Mock update with 42703 failure on normalized columns
+  let updateCalls = [];
+  const mockUpdateClient = {
+    from: (table) => ({
+      update: (payload) => ({
+        eq: (col, val) => ({
+          select: async () => {
+            updateCalls.push({ payload, col, val });
+            if (payload.module_code) {
+              return { data: null, error: { code: '42703', message: 'column materials.module_code does not exist' } };
+            }
+            return { data: [{ id: val, ...payload }], error: null };
+          }
+        })
+      })
+    })
+  };
+
+  const updateResult = await saveMaterialRow({
+    id: 'mat-202',
+    base: { title: 'Updated Deck' },
+    normalized: { module_code: 'RES', semester: 2 },
+    client: mockUpdateClient
+  });
+
+  assert(updateCalls.length === 2, 'saveMaterialRow executed initial update and fallback retry');
+  assert(updateCalls[0].payload.module_code === 'RES', 'Initial update included normalized module_code');
+  assert(updateCalls[1].payload.module_code === undefined, 'Fallback update omitted normalized columns');
+  assert(updateResult.data && updateResult.data.id === 'mat-202', 'saveMaterialRow update succeeded with fallback');
+
+  // 2. Year coverage across index.html
+  const indexHtml = fs.readFileSync('index.html', 'utf8');
+  const flashmakeHtml = fs.readFileSync('flashmake.html', 'utf8');
+
+  const expectedYears = ['first year', 'second year', 'third year', 'fourth year', 'fifth year'];
+  expectedYears.forEach(yr => {
+    assert(indexHtml.includes(`'${yr}'`), `index.html includes year enum '${yr}'`);
+    assert(indexHtml.includes(`data-year="${yr}"`), `index.html includes curriculum year pill for '${yr}'`);
+  });
+
+  assert(!indexHtml.includes("|| 'second year'"), "index.html purged 'second year' fallback bug");
+  assert(indexHtml.includes("currentYear || 'first year'"), "index.html consistently defaults to 'first year'");
+
+  // 3. Null-DOM Guards verification
+  assert(indexHtml.includes('if (!dayViewport || e.touches.length !== 1 || isAnimating) return;'), 'index.html guards touchstart against null dayViewport');
+  assert(indexHtml.includes('if (!dayViewport || !dragActive) return;'), 'index.html guards touchmove against null dayViewport');
+  assert(indexHtml.includes('if (dateBig) dateBig.classList.add'), 'index.html guards dateBig fade in animateToDate');
+  assert(indexHtml.includes('const zip = await JSZip.loadAsync(blob);'), 'index.html unpacks blob with JSZip.loadAsync in Deck Inspector');
+
+  // 4. Size limit validation
+  assert(indexHtml.includes('MAX_FLASH_UPLOAD_BYTES'), 'index.html imports MAX_FLASH_UPLOAD_BYTES');
+  assert(flashmakeHtml.includes('MAX_FLASH_UPLOAD_BYTES'), 'flashmake.html imports MAX_FLASH_UPLOAD_BYTES');
+  assert(flashmakeHtml.includes('blob.size > MAX_FLASH_UPLOAD_BYTES'), 'flashmake.html gates blob size before upload');
+}
+
 suite36();
 suite37();
 suite38();
@@ -1817,6 +1914,7 @@ suite39();
 await suite40();
 await suite41();
 await suite42();
+await suite43();
 
 console.log('\n==================================================');
 if (failures === 0) {

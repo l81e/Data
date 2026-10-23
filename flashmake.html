@@ -592,24 +592,30 @@
     renderStep();
   }
 
-  document.getElementById('langToggleBtn').addEventListener('click', () => {
-    setLang(currentLang === 'en' ? 'ar' : 'en');
-  });
+  const langToggleBtn = document.getElementById('langToggleBtn');
+  if (langToggleBtn) {
+    langToggleBtn.addEventListener('click', () => {
+      setLang(currentLang === 'en' ? 'ar' : 'en');
+    });
+  }
 
-  document.getElementById('backLinkBtn').addEventListener('click', () => {
-    if (document.referrer && document.referrer.indexOf(window.location.hostname) !== -1) {
-      window.history.back();
-    } else {
-      window.location.href = '/';
-    }
-  });
+  const backLinkBtn = document.getElementById('backLinkBtn');
+  if (backLinkBtn) {
+    backLinkBtn.addEventListener('click', () => {
+      if (document.referrer && document.referrer.indexOf(window.location.hostname) !== -1) {
+        window.history.back();
+      } else {
+        window.location.href = '/';
+      }
+    });
+  }
 
   /* ---------------- Supabase ---------------- */
-  const SUPABASE_URL = 'https://igfooetzorzhhvpakgqa.supabase.co';
-  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlnZm9vZXR6b3J6aGh2cGFrZ3FhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg5ODg2NTksImV4cCI6MjEwNDU2NDY1OX0.1XLeeRi4KFJptk73JKx_vs0FlO5EXM17KIyFSaKWLCA';
-  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-  const MATERIALS_BUCKET = 'materials';
-  const MAX_FLASH_UPLOAD_BYTES = 100 * 1024 * 1024;
+  const SUPABASE_URL = (typeof MBI_SUPABASE !== 'undefined' && MBI_SUPABASE.SUPABASE_URL) ? MBI_SUPABASE.SUPABASE_URL : 'https://igfooetzorzhhvpakgqa.supabase.co';
+  const SUPABASE_ANON_KEY = (typeof MBI_SUPABASE !== 'undefined' && MBI_SUPABASE.SUPABASE_ANON_KEY) ? MBI_SUPABASE.SUPABASE_ANON_KEY : 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlnZm9vZXR6b3J6aGh2cGFrZ3FhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg5ODg2NTksImV4cCI6MjEwNDU2NDY1OX0.1XLeeRi4KFJptk73JKx_vs0FlO5EXM17KIyFSaKWLCA';
+  const supabase = (typeof MBI_SUPABASE !== 'undefined' && typeof MBI_SUPABASE.getSupabaseClient === 'function') ? MBI_SUPABASE.getSupabaseClient() : window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const MATERIALS_BUCKET = (typeof MBI_SUPABASE !== 'undefined' && MBI_SUPABASE.MATERIALS_BUCKET) ? MBI_SUPABASE.MATERIALS_BUCKET : 'materials';
+  const MAX_FLASH_UPLOAD_BYTES = (typeof MBI_SUPABASE !== 'undefined' && MBI_SUPABASE.MAX_FLASH_UPLOAD_BYTES) ? MBI_SUPABASE.MAX_FLASH_UPLOAD_BYTES : (50 * 1024 * 1024);
 
   /* ---------------- state ---------------- */
   // decks: [{ id, name, color, cards:[{id, front, back, imageFile, imageDataUrl, imageName}] }]
@@ -1517,10 +1523,10 @@
   }
 
   async function handleUpload(decksWithCards){
-    const title = document.getElementById('uploadTitleInput').value.trim();
-    const lectureName = document.getElementById('uploadLectureInput').value.trim();
-    const dateVal = document.getElementById('uploadDateInput').value.trim();
-    const yearVal = document.getElementById('uploadYearSelect').value;
+    const title = document.getElementById('uploadTitleInput')?.value?.trim();
+    const lectureName = document.getElementById('uploadLectureInput')?.value?.trim();
+    const dateVal = document.getElementById('uploadDateInput')?.value?.trim();
+    const yearVal = document.getElementById('uploadYearSelect')?.value;
 
     if (!title || !lectureName || !/^\d{4}-\d{2}-\d{2}$/.test(dateVal)){
       setExportStatus(currentLang==='ar' ? 'كمّل الحقول فوق الأول (والتاريخ بصيغة سنة-شهر-يوم).' : 'Fill in the fields above first (date as YYYY-MM-DD).', 'err');
@@ -1528,18 +1534,31 @@
     }
 
     const btn = document.getElementById('uploadApkgBtn');
-    btn.disabled = true;
+    if (btn) btn.disabled = true;
     setExportStatus(currentLang==='ar' ? 'بيتبني الملف…' : 'Building the file…');
 
     try {
       const blob = await buildApkgBlob(decksWithCards);
+      const maxMb = Math.round(MAX_FLASH_UPLOAD_BYTES / (1024 * 1024));
+
+      // File size gate before upload
+      if (blob.size > MAX_FLASH_UPLOAD_BYTES){
+        const fileMb = (blob.size / (1024 * 1024)).toFixed(1);
+        const limitMsg = currentLang === 'ar'
+          ? `حجم الملف (${fileMb} ميجابايت) يتجاوز الحد الأقصى المسموح به (${maxMb} ميجابايت)`
+          : `File size (${fileMb} MB) exceeds maximum allowed limit (${maxMb} MB)`;
+        setExportStatus(limitMsg, 'err');
+        showToast(limitMsg);
+        if (btn) btn.disabled = false;
+        return;
+      }
+
       const fname = title.replace(/[^\w\-]+/g, '_') + '.apkg';
 
       setExportStatus(currentLang==='ar' ? 'بيترفع…' : 'Uploading…');
 
-      // find or create the lecture row
       let lectureId = null;
-      const { data: existingLectures } = await supabase
+      const { data: existingLectures, error: findErr } = await supabase
         .from('lectures')
         .select('id')
         .eq('date', dateVal)
@@ -1547,44 +1566,121 @@
         .eq('name', lectureName)
         .limit(1);
 
+      if (findErr) {
+        console.error('Error finding existing lecture:', findErr);
+        throw findErr;
+      }
+
       if (existingLectures && existingLectures.length > 0){
         lectureId = existingLectures[0].id;
       } else {
         const colors = ['#e05a4f','#e0a23a','#3ba55c','#3a8ee0','#7a5ce0','#c94fa0'];
         const { data: newLecture, error: lecErr } = await supabase
           .from('lectures')
-          .insert({ date: dateVal, name: lectureName, color: colors[Math.floor(Math.random()*colors.length)], year_of_view: yearVal })
+          .insert({
+            date: dateVal,
+            name: lectureName,
+            color: colors[Math.floor(Math.random()*colors.length)],
+            year_of_view: yearVal
+          })
           .select('id')
           .single();
-        if (lecErr) throw lecErr;
+        if (lecErr) {
+          console.error('Error creating lecture container:', lecErr);
+          throw lecErr;
+        }
         lectureId = newLecture.id;
       }
 
       const path = `${lectureId}/${uid()}-${Date.now()}.apkg`;
       const { error: upErr } = await supabase.storage.from(MATERIALS_BUCKET).upload(path, blob, { cacheControl: '3600', upsert: false });
-      if (upErr) throw upErr;
+      if (upErr) {
+        console.error('Storage upload error:', upErr);
+        const isTooLarge = upErr.statusCode === 413 || upErr.status === 413 || (upErr.message && /payload too large|exceeds|entity too large/i.test(upErr.message));
+        const upMsg = isTooLarge
+          ? (currentLang === 'ar' ? `حجم الملف يتجاوز الحد المسموح به للسيرفر (${maxMb} ميجابايت)` : `File exceeds the server upload limit (${maxMb} MB)`)
+          : (currentLang === 'ar' ? `فشل رفع الملف: [${upErr.code || 'ERR'}] ${upErr.message || ''}` : `Failed to upload file: [${upErr.code || 'ERR'}] ${upErr.message || ''}`);
+        setExportStatus(upMsg, 'err');
+        showToast(upMsg);
+        if (btn) btn.disabled = false;
+        return;
+      }
 
       const { data: pub } = supabase.storage.from(MATERIALS_BUCKET).getPublicUrl(path);
 
-      const { error: matErr } = await supabase
-        .from('materials')
-        .insert({
-          lecture_id: lectureId,
-          type: 'flashcards',
-          kind: 'upload',
-          title,
-          url: pub.publicUrl,
-          file_name: fname
+      // Total cards in deck
+      const totalCardCount = decksWithCards.reduce((acc, d) => acc + (d.cards ? d.cards.length : 0), 0);
+      let parsedMod = 'GENERAL';
+      let parsedSubj = lectureName || 'General';
+      if (lectureName.includes(':')) {
+        const parts = lectureName.split(':');
+        parsedMod = parts[0].trim().toUpperCase();
+        parsedSubj = parts.slice(1).join(':').trim() || parsedSubj;
+      } else if (lectureName.includes('—')) {
+        const parts = lectureName.split('—');
+        parsedMod = parts[0].trim().toUpperCase();
+        parsedSubj = parts.slice(1).join('—').trim() || parsedSubj;
+      } else if (lectureName.includes('-')) {
+        const parts = lectureName.split('-');
+        parsedMod = parts[0].trim().toUpperCase();
+        parsedSubj = parts.slice(1).join('-').trim() || parsedSubj;
+      }
+
+      const captionMeta = {
+        module: parsedMod,
+        subject: parsedSubj,
+        semester: 1,
+        lecture: title,
+        cardCount: totalCardCount
+      };
+
+      const basePayload = {
+        lecture_id: lectureId,
+        type: 'flashcards',
+        kind: 'upload',
+        title,
+        url: pub.publicUrl,
+        file_name: fname,
+        caption: JSON.stringify(captionMeta)
+      };
+
+      const normalizedPayload = {
+        module_code: parsedMod,
+        subject_name: parsedSubj,
+        semester: 1,
+        card_count: totalCardCount
+      };
+
+      const saveHelper = (typeof MBI_SUPABASE !== 'undefined' && typeof MBI_SUPABASE.saveMaterialRow === 'function')
+        ? MBI_SUPABASE.saveMaterialRow
+        : (typeof saveMaterialRow === 'function' ? saveMaterialRow : null);
+
+      let matErr = null;
+      if (saveHelper) {
+        const res = await saveHelper({
+          base: basePayload,
+          normalized: normalizedPayload,
+          client: supabase
         });
-      if (matErr) throw matErr;
+        matErr = res.error;
+      } else {
+        const res = await supabase.from('materials').insert({ ...basePayload, ...normalizedPayload });
+        matErr = res.error;
+      }
+      if (matErr) {
+        console.error('Material insert error:', matErr);
+        throw matErr;
+      }
 
       setExportStatus(currentLang==='ar' ? 'تم الرفع بنجاح' : 'Uploaded successfully', 'ok');
       showToast(currentLang==='ar' ? 'اتضاف للمحاضرة' : 'Added to the lecture');
     } catch (e){
-      console.error(e);
-      setExportStatus(currentLang==='ar' ? 'حصل خطأ في الرفع، جرب تاني' : 'Upload failed, please try again', 'err');
+      console.error('handleUpload failed:', e);
+      const errMsg = e.code ? `[${e.code}] ${e.message || ''}` : (e.message || '');
+      setExportStatus(currentLang==='ar' ? `حصل خطأ في الرفع: ${errMsg}` : `Upload failed: ${errMsg}`, 'err');
+      showToast(currentLang==='ar' ? `فشل الرفع: ${errMsg}` : `Upload failed: ${errMsg}`);
     } finally {
-      btn.disabled = false;
+      if (btn) btn.disabled = false;
     }
   }
 

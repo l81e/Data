@@ -3214,7 +3214,7 @@
             <label style="font-size:0.75rem; font-weight:700; color:var(--text-dim); display:block; margin-bottom:4px;" data-en="Year" data-ar="السنة">Year</label>
             <select id="adminNewModYearSelect" class="admin-select" style="width:100%;">
               <option value="first year">1st Year</option>
-              <option value="second year" selected>2nd Year</option>
+              <option value="second year">2nd Year</option>
               <option value="third year">3rd Year</option>
               <option value="fourth year">4th Year</option>
               <option value="fifth year">5th Year</option>
@@ -3545,13 +3545,14 @@
   let currentLang = 'en';
 
   /* ---------------- Supabase (data + storage) ---------------- */
-  const SUPABASE_URL = 'https://igfooetzorzhhvpakgqa.supabase.co';
-  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlnZm9vZXR6b3J6aGh2cGFrZ3FhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg5ODg2NTksImV4cCI6MjEwNDU2NDY1OX0.1XLeeRi4KFJptk73JKx_vs0FlO5EXM17KIyFSaKWLCA';
-  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const SUPABASE_URL = (typeof MBI_SUPABASE !== 'undefined' && MBI_SUPABASE.SUPABASE_URL) ? MBI_SUPABASE.SUPABASE_URL : 'https://igfooetzorzhhvpakgqa.supabase.co';
+  const SUPABASE_ANON_KEY = (typeof MBI_SUPABASE !== 'undefined' && MBI_SUPABASE.SUPABASE_ANON_KEY) ? MBI_SUPABASE.SUPABASE_ANON_KEY : 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlnZm9vZXR6b3J6aGh2cGFrZ3FhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg5ODg2NTksImV4cCI6MjEwNDU2NDY1OX0.1XLeeRi4KFJptk73JKx_vs0FlO5EXM17KIyFSaKWLCA';
+  const supabase = (typeof MBI_SUPABASE !== 'undefined' && typeof MBI_SUPABASE.getSupabaseClient === 'function') ? MBI_SUPABASE.getSupabaseClient() : window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-  const MATERIALS_BUCKET = 'materials';
+  const MATERIALS_BUCKET = (typeof MBI_SUPABASE !== 'undefined' && MBI_SUPABASE.MATERIALS_BUCKET) ? MBI_SUPABASE.MATERIALS_BUCKET : 'materials';
   const MAX_UPLOAD_BYTES = 20 * 1024 * 1024;
-  const MAX_FLASH_UPLOAD_BYTES = 100 * 1024 * 1024;
+  const MAX_FLASH_UPLOAD_BYTES = (typeof MBI_SUPABASE !== 'undefined' && MBI_SUPABASE.MAX_FLASH_UPLOAD_BYTES) ? MBI_SUPABASE.MAX_FLASH_UPLOAD_BYTES : (50 * 1024 * 1024);
+  const saveMaterialRow = (typeof MBI_SUPABASE !== 'undefined' && typeof MBI_SUPABASE.saveMaterialRow === 'function') ? MBI_SUPABASE.saveMaterialRow : null;
 
   /* ---------------- year gate ---------------- */
   const YEAR_LS_KEY = 'mb_year_of_view';
@@ -3879,18 +3880,30 @@
   }
   function closeNameModal(){ nameModalOverlay.classList.remove('open'); }
 
-  document.getElementById('authChip').addEventListener('click', openNameModal);
-  document.getElementById('nameCancelBtn').addEventListener('click', closeNameModal);
-  nameModalOverlay.addEventListener('click', (e) => { if (e.target === nameModalOverlay) closeNameModal(); });
-  document.getElementById('nameSaveBtn').addEventListener('click', () => {
-    setDisplayName(nameInput.value.trim());
-    closeNameModal();
-    renderAuthChip();
-    showToast(currentLang==='ar' ? 'تم الحفظ' : 'Saved');
-  });
-  nameInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') document.getElementById('nameSaveBtn').click();
-  });
+  const authChipBtn = document.getElementById('authChip');
+  if (authChipBtn) authChipBtn.addEventListener('click', openNameModal);
+  const nameCancelBtn = document.getElementById('nameCancelBtn');
+  if (nameCancelBtn) nameCancelBtn.addEventListener('click', closeNameModal);
+  if (nameModalOverlay) {
+    nameModalOverlay.addEventListener('click', (e) => { if (e.target === nameModalOverlay) closeNameModal(); });
+  }
+  const nameSaveBtn = document.getElementById('nameSaveBtn');
+  if (nameSaveBtn) {
+    nameSaveBtn.addEventListener('click', () => {
+      if (nameInput) setDisplayName(nameInput.value.trim());
+      closeNameModal();
+      renderAuthChip();
+      showToast(currentLang==='ar' ? 'تم الحفظ' : 'Saved');
+    });
+  }
+  if (nameInput) {
+    nameInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        const btn = document.getElementById('nameSaveBtn');
+        if (btn) btn.click();
+      }
+    });
+  }
 
   /* ================================================================
      MASTER ADMIN AUTHENTICATION & ACCESS CONTROL
@@ -4237,70 +4250,73 @@
     return htmlEl.getAttribute('dir') === 'rtl' ? -1 : 1;
   }
 
-  mainEl.addEventListener('touchstart', (e) => {
-    if (e.touches.length !== 1 || isAnimating) return;
-    dragStartX = e.touches[0].clientX;
-    dragStartY = e.touches[0].clientY;
-    dragActive = true;
-    dragLocked = null;
-    dragWidth = dayViewport.clientWidth || 1;
-  }, { passive: true });
-
-  mainEl.addEventListener('touchmove', (e) => {
-    if (!dragActive) return;
-    const dx = e.touches[0].clientX - dragStartX;
-    const dy = e.touches[0].clientY - dragStartY;
-
-    if (!dragLocked){
-      if (Math.abs(dx) < 6 && Math.abs(dy) < 6) return;
-      dragLocked = Math.abs(dx) > Math.abs(dy) * 1.2 ? 'h' : 'v';
-    }
-    if (dragLocked !== 'h') return;
-
-    e.preventDefault();
-
-    // Finger moving left -> reveal next day; finger moving right -> reveal prev day.
-    // This holds regardless of language direction (natural touch behavior).
-    const dir = dx < 0 ? 'next' : 'prev';
-    ensurePreviewCard(dir);
-
-    const sign = screenSign();
-    const currentCard = dayViewport.querySelector('.day-card.is-current');
-    if (currentCard) currentCard.style.transform = `translateX(${dx}px)`;
-    if (previewCard){
-      const dirSign = (dir === 'next') ? 1 : -1;
-      const basePos = sign * dirSign * dragWidth;
-      previewCard.style.transform = `translateX(${basePos + dx}px)`;
-    }
-  }, { passive: false });
-
-  mainEl.addEventListener('touchend', (e) => {
-    if (!dragActive) return;
-    dragActive = false;
-    if (dragLocked !== 'h'){
+  if (mainEl){
+    mainEl.addEventListener('touchstart', (e) => {
+      if (!dayViewport || e.touches.length !== 1 || isAnimating) return;
+      dragStartX = e.touches[0].clientX;
+      dragStartY = e.touches[0].clientY;
+      dragActive = true;
       dragLocked = null;
-      return;
-    }
-    const dx = e.changedTouches[0].clientX - dragStartX;
-    const SWIPE_THRESHOLD = Math.min(90, dragWidth * 0.18);
+      dragWidth = dayViewport.clientWidth || 1;
+    }, { passive: true });
 
-    const dir = dx < 0 ? 'next' : 'prev';
+    mainEl.addEventListener('touchmove', (e) => {
+      if (!dayViewport || !dragActive) return;
+      const dx = e.touches[0].clientX - dragStartX;
+      const dy = e.touches[0].clientY - dragStartY;
 
-    if (Math.abs(dx) >= SWIPE_THRESHOLD && previewCard){
-      commitSwipe(dir);
-    } else {
+      if (!dragLocked){
+        if (Math.abs(dx) < 6 && Math.abs(dy) < 6) return;
+        dragLocked = Math.abs(dx) > Math.abs(dy) * 1.2 ? 'h' : 'v';
+      }
+      if (dragLocked !== 'h') return;
+
+      e.preventDefault();
+
+      // Finger moving left -> reveal next day; finger moving right -> reveal prev day.
+      // This holds regardless of language direction (natural touch behavior).
+      const dir = dx < 0 ? 'next' : 'prev';
+      ensurePreviewCard(dir);
+
+      const sign = screenSign();
+      const currentCard = dayViewport.querySelector('.day-card.is-current');
+      if (currentCard) currentCard.style.transform = `translateX(${dx}px)`;
+      if (previewCard){
+        const dirSign = (dir === 'next') ? 1 : -1;
+        const basePos = sign * dirSign * dragWidth;
+        previewCard.style.transform = `translateX(${basePos + dx}px)`;
+      }
+    }, { passive: false });
+
+    mainEl.addEventListener('touchend', (e) => {
+      if (!dayViewport || !dragActive) return;
+      dragActive = false;
+      if (dragLocked !== 'h'){
+        dragLocked = null;
+        return;
+      }
+      const dx = e.changedTouches[0].clientX - dragStartX;
+      const SWIPE_THRESHOLD = Math.min(90, dragWidth * 0.18);
+
+      const dir = dx < 0 ? 'next' : 'prev';
+
+      if (Math.abs(dx) >= SWIPE_THRESHOLD && previewCard){
+        commitSwipe(dir);
+      } else {
+        cancelSwipe();
+      }
+      dragLocked = null;
+    }, { passive: true });
+
+    mainEl.addEventListener('touchcancel', () => {
+      dragActive = false;
+      dragLocked = null;
       cancelSwipe();
-    }
-    dragLocked = null;
-  }, { passive: true });
-
-  mainEl.addEventListener('touchcancel', () => {
-    dragActive = false;
-    dragLocked = null;
-    cancelSwipe();
-  }, { passive: true });
+    }, { passive: true });
+  }
 
   function ensurePreviewCard(dir){
+    if (!dayViewport) return;
     if (previewCard && previewDirection === dir) return;
     if (previewCard) previewCard.remove();
 
@@ -4330,6 +4346,7 @@
   }
 
   function cancelSwipe(){
+    if (!dayViewport) return;
     const currentCard = dayViewport.querySelector('.day-card.is-current');
     if (currentCard){
       currentCard.style.transition = 'transform .18s ease';
@@ -4351,6 +4368,7 @@
   }
 
   async function commitSwipe(dir){
+    if (!dayViewport) return;
     isAnimating = true;
     const currentCard = dayViewport.querySelector('.day-card.is-current');
     const incoming = previewCard;
@@ -4371,14 +4389,14 @@
       incoming.style.transform = `translateX(${finishOffset}px)`;
     }
 
-    dateBig.classList.add('is-fading');
+    if (dateBig) dateBig.classList.add('is-fading');
 
     await wait(170);
 
     viewDate = neighborDate(dir, viewDate);
     calMonthCursor = new Date(viewDate.getFullYear(), viewDate.getMonth(), 1);
     renderDate();
-    dateBig.classList.remove('is-fading');
+    if (dateBig) dateBig.classList.remove('is-fading');
     renderCalBtnDate();
     syncUrlToDate(viewDate, false);
 
@@ -4413,7 +4431,7 @@
 
   async function animateToDate(targetDate, direction, opts){
     opts = opts || {};
-    if (isAnimating) return;
+    if (!dayViewport || isAnimating) return;
     isAnimating = true;
 
     dragWidth = dayViewport.clientWidth || 1;
@@ -4441,7 +4459,7 @@
     incoming.getBoundingClientRect();
 
     const exitOffset = -sign * dirSign * dragWidth;
-    dateBig.classList.add('is-fading');
+    if (dateBig) dateBig.classList.add('is-fading');
     requestAnimationFrame(() => {
       if (currentCard){
         currentCard.style.transition = 'transform .22s ease';
@@ -4461,7 +4479,7 @@
     viewDate = targetDate;
     calMonthCursor = new Date(viewDate.getFullYear(), viewDate.getMonth(), 1);
     renderDate();
-    dateBig.classList.remove('is-fading');
+    if (dateBig) dateBig.classList.remove('is-fading');
     renderCalBtnDate();
     if (!opts.skipUrlSync) syncUrlToDate(viewDate, opts.replaceUrl);
 
@@ -5340,7 +5358,8 @@
   }
   function closeMaterialModal(){ materialModalOverlay.classList.remove('open'); editingMaterialId = null; }
 
-  document.getElementById('materialCancelBtn').addEventListener('click', closeMaterialModal);
+  const matCancelBtn = document.getElementById('materialCancelBtn');
+  if (matCancelBtn) matCancelBtn.addEventListener('click', closeMaterialModal);
   materialModalOverlay.addEventListener('click', (e) => { if(e.target === materialModalOverlay) closeMaterialModal(); });
 
   document.querySelectorAll('input[name="mtype"]').forEach(radio => {
@@ -5442,7 +5461,9 @@
       return;
     }
     if (file.size > MAX_FLASH_UPLOAD_BYTES){
-      showToast(currentLang==='ar' ? 'الملف كبير أوي (الحد الأقصى ١٠٠ ميجا)' : 'File is too large (100MB max)');
+      const maxMb = Math.round(MAX_FLASH_UPLOAD_BYTES / (1024 * 1024));
+      const fileMb = (file.size / (1024 * 1024)).toFixed(1);
+      showToast(currentLang==='ar' ? `الملف كبير جدًا (${fileMb} ميجابايت، الحد الأقصى ${maxMb} ميجابايت)` : `File is too large (${fileMb} MB, ${maxMb}MB max)`);
       flashFileInput.value = '';
       return;
     }
@@ -5511,27 +5532,56 @@
 
     materialSaveBtn.disabled = true;
 
+    let meta = {};
+    if (payload.caption && payload.caption.trim().startsWith('{')){
+      try { meta = JSON.parse(payload.caption.trim()); } catch(e){}
+    }
+    const basePayload = {
+      ...payload,
+      lecture_id: activeSubjectId,
+      uploaded_by: getDisplayName() || null,
+      uploaded_by_name: getDisplayName() || null
+    };
+    const normPayload = {
+      module_code: meta.module || null,
+      subject_name: meta.subject || null,
+      semester: meta.semester ? parseInt(meta.semester, 10) : null,
+      card_count: meta.cardCount ? parseInt(meta.cardCount, 10) : 0
+    };
+
     let savedRow, error;
-    if (editingMaterialId){
-      ({ data: savedRow, error } = await supabase
-        .from('materials')
-        .update(payload)
-        .eq('id', editingMaterialId)
-        .select('id, type, kind, title, url, file_name, caption, uploaded_by')
-        .single());
+    if (saveMaterialRow) {
+      const res = await saveMaterialRow({
+        id: editingMaterialId || undefined,
+        base: basePayload,
+        normalized: normPayload,
+        client: supabase
+      });
+      savedRow = res.data;
+      error = res.error;
     } else {
-      ({ data: savedRow, error } = await supabase
-        .from('materials')
-        .insert({ ...payload, lecture_id: activeSubjectId, uploaded_by: getDisplayName() || null })
-        .select('id, type, kind, title, url, file_name, caption, uploaded_by')
-        .single());
+      if (editingMaterialId){
+        ({ data: savedRow, error } = await supabase
+          .from('materials')
+          .update(payload)
+          .eq('id', editingMaterialId)
+          .select('id, type, kind, title, url, file_name, caption, uploaded_by')
+          .single());
+      } else {
+        ({ data: savedRow, error } = await supabase
+          .from('materials')
+          .insert({ ...payload, lecture_id: activeSubjectId, uploaded_by: getDisplayName() || null })
+          .select('id, type, kind, title, url, file_name, caption, uploaded_by')
+          .single());
+      }
     }
 
     materialSaveBtn.disabled = false;
 
     if (error){
-      console.error(error);
-      showToast(currentLang==='ar' ? 'حصل خطأ، جرب تاني' : 'Something went wrong, try again');
+      console.error('Day-view material save error:', error);
+      const errMsg = error.code ? `[${error.code}] ${error.message || ''}` : (error.message || '');
+      showToast(currentLang==='ar' ? `فشل الحفظ: ${errMsg}` : `Failed to save: ${errMsg}`);
       return;
     }
 
@@ -5612,12 +5662,19 @@
       t.classList.toggle('active', t.dataset.adminTab === tabKey);
     });
     document.querySelectorAll('.admin-pane').forEach(p => p.classList.remove('active'));
-    if (tabKey === 'add-subject') document.getElementById('adminPaneSubject').classList.add('active');
-    else if (tabKey === 'upload-material') document.getElementById('adminPaneUpload').classList.add('active');
-    else if (tabKey === 'manage-day') document.getElementById('adminPaneManage').classList.add('active');
-    else if (tabKey === 'quick-tools') document.getElementById('adminPaneTools').classList.add('active');
-    else if (tabKey === 'manage-modules'){
-      document.getElementById('adminPaneModules').classList.add('active');
+    const paneMap = {
+      'add-subject': 'adminPaneSubject',
+      'upload-material': 'adminPaneUpload',
+      'manage-day': 'adminPaneManage',
+      'quick-tools': 'adminPaneTools',
+      'manage-modules': 'adminPaneModules'
+    };
+    const targetPaneId = paneMap[tabKey];
+    if (targetPaneId) {
+      const paneEl = document.getElementById(targetPaneId);
+      if (paneEl) paneEl.classList.add('active');
+    }
+    if (tabKey === 'manage-modules'){
       renderAdminModulesList();
     }
   }
@@ -5683,7 +5740,9 @@
         return;
       }
       if (file.size > MAX_FLASH_UPLOAD_BYTES){
-        showToast(currentLang==='ar' ? 'الملف كبير جدًا (الحد الأقصى ١٠٠ ميجا)' : 'File exceeds 100MB limit');
+        const maxMb = Math.round(MAX_FLASH_UPLOAD_BYTES / (1024 * 1024));
+        const fileMb = (file.size / (1024 * 1024)).toFixed(1);
+        showToast(currentLang==='ar' ? `الملف كبير جدًا (${fileMb} ميجابايت، الحد الأقصى ${maxMb} ميجابايت)` : `File exceeds limit (${fileMb} MB, ${maxMb}MB max)`);
         return;
       }
     } else if (selectedAdminType === 'pdf' || selectedAdminType === 'q'){
@@ -5934,7 +5993,7 @@
     if (adminUploaderName) adminUploaderName.value = getDisplayName() || '';
 
     const adminUploadYearSelect = document.getElementById('adminUploadYearSelect');
-    if (adminUploadYearSelect) adminUploadYearSelect.value = currentYear || 'second year';
+    if (adminUploadYearSelect) adminUploadYearSelect.value = currentYear || 'first year';
     const adminUploadSemesterSelect = document.getElementById('adminUploadSemesterSelect');
     if (adminUploadSemesterSelect && activeCurriculumSemester !== 'all') {
       adminUploadSemesterSelect.value = String(activeCurriculumSemester);
@@ -5971,7 +6030,8 @@
   window.openAdminAuthModal = openAdminAuthModal;
   window.requireAdmin = requireAdmin;
 
-  document.getElementById('adminDashboardCloseBtn').addEventListener('click', closeAdminDashboard);
+  const adminDashClose = document.getElementById('adminDashboardCloseBtn');
+  if (adminDashClose) adminDashClose.addEventListener('click', closeAdminDashboard);
   adminDashboardOverlay.addEventListener('click', (e) => {
     if (e.target === adminDashboardOverlay) closeAdminDashboard();
   });
@@ -6140,14 +6200,31 @@
       };
       if (newSubjId) updates.lecture_id = newSubjId;
 
-      const { error } = await supabase.from('materials').update(updates).eq('id', matId);
+      let error = null;
+      if (saveMaterialRow){
+        const res = await saveMaterialRow({
+          id: matId,
+          base: updates,
+          normalized: {
+            module_code: modVal || null,
+            subject_name: subjVal || null,
+            semester: semVal || null
+          },
+          client: supabase
+        });
+        error = res.error;
+      } else {
+        const res = await supabase.from('materials').update(updates).eq('id', matId);
+        error = res.error;
+      }
 
       editMatSaveBtn.disabled = false;
       editMatSaveBtn.textContent = currentLang === 'ar' ? 'حفظ التعديلات' : 'Save Changes';
 
       if (error){
-        console.error(error);
-        showToast(currentLang === 'ar' ? 'فشل حفظ التعديلات' : 'Failed to save changes');
+        console.error('Error saving edited material:', error);
+        const errMsg = error.code ? `[${error.code}] ${error.message || ''}` : (error.message || '');
+        showToast(currentLang === 'ar' ? `فشل حفظ التعديلات: ${errMsg}` : `Failed to save changes: ${errMsg}`);
         return;
       }
 
@@ -6371,6 +6448,7 @@
       const res = await fetch(targetMat.url);
       if (!res.ok) throw new Error('Fetch failed with status ' + res.status);
       const blob = await res.blob();
+      const zip = await JSZip.loadAsync(blob);
       const anki21bFile = zip.file('collection.anki21b');
       const anki21File = zip.file('collection.anki21');
       const anki2File = zip.file('collection.anki2');
@@ -6726,17 +6804,63 @@
         const ext = 'apkg';
         const storagePath = `${m.lecture_id}/${uid()}-${Date.now()}.${ext}`;
 
+        const maxMb = Math.round(MAX_FLASH_UPLOAD_BYTES / (1024 * 1024));
+        if (newBlob.size > MAX_FLASH_UPLOAD_BYTES){
+          const fileMb = (newBlob.size / (1024 * 1024)).toFixed(1);
+          const limitMsg = currentLang === 'ar'
+            ? `حجم الملف (${fileMb} ميجابايت) يتجاوز الحد الأقصى المسموح به (${maxMb} ميجابايت)`
+            : `File size (${fileMb} MB) exceeds maximum allowed limit (${maxMb} MB)`;
+          showToast(limitMsg);
+          return;
+        }
+
         const { error: upErr } = await supabase.storage.from(MATERIALS_BUCKET).upload(storagePath, newBlob, {
           cacheControl: '3600',
           upsert: false
         });
-        if (upErr) throw upErr;
+        if (upErr) {
+          console.error('Inspector storage upload error:', upErr);
+          const isTooLarge = upErr.statusCode === 413 || upErr.status === 413 || (upErr.message && /payload too large|exceeds|entity too large/i.test(upErr.message));
+          const upMsg = isTooLarge
+            ? (currentLang === 'ar' ? `حجم الملف يتجاوز الحد المسموح به للسيرفر (${maxMb} ميجابايت)` : `File exceeds the server upload limit (${maxMb} MB)`)
+            : (currentLang === 'ar' ? `فشل رفع الملف: [${upErr.code || 'ERR'}] ${upErr.message || ''}` : `Failed to upload file: [${upErr.code || 'ERR'}] ${upErr.message || ''}`);
+          showToast(upMsg);
+          return;
+        }
 
         const { data: pub } = supabase.storage.from(MATERIALS_BUCKET).getPublicUrl(storagePath);
-        const { error: dbErr } = await supabase.from('materials').update({
-          url: pub.publicUrl
-        }).eq('id', m.id);
-        if (dbErr) throw dbErr;
+
+        let existingMeta = {};
+        try {
+          if (m.caption && m.caption.trim().startsWith('{')) existingMeta = JSON.parse(m.caption.trim());
+        } catch(e){}
+        existingMeta.cardCount = inspectorState.notes.length;
+
+        const baseUpdates = {
+          url: pub.publicUrl,
+          caption: JSON.stringify(existingMeta)
+        };
+        const normUpdates = {
+          card_count: inspectorState.notes.length
+        };
+
+        let dbErr = null;
+        if (saveMaterialRow){
+          const res = await saveMaterialRow({
+            id: m.id,
+            base: baseUpdates,
+            normalized: normUpdates,
+            client: supabase
+          });
+          dbErr = res.error;
+        } else {
+          const res = await supabase.from('materials').update({ ...baseUpdates, ...normUpdates }).eq('id', m.id);
+          dbErr = res.error;
+        }
+        if (dbErr) {
+          console.error('Inspector db update error:', dbErr);
+          throw dbErr;
+        }
 
         inspectorState.mat.url = pub.publicUrl;
         inspectorState.isDirty = false;
@@ -6746,7 +6870,8 @@
         showToast(currentLang === 'ar' ? 'تم حفظ وتحديث حزمة الكروت بنجاح!' : 'Deck successfully updated and published!');
       } catch(err){
         console.error('Save deck changes failed:', err);
-        showToast(currentLang === 'ar' ? 'فشل حفظ تعديلات الحزمة' : 'Failed to save deck changes');
+        const errMsg = err.code ? `[${err.code}] ${err.message || ''}` : (err.message || '');
+        showToast(currentLang === 'ar' ? `فشل حفظ تعديلات الحزمة: ${errMsg}` : `Failed to save deck changes: ${errMsg}`);
       } finally {
         inspectorSaveChangesBtn.disabled = false;
         inspectorSaveChangesBtn.innerHTML = `
@@ -6842,13 +6967,17 @@
       // Auto-create or find a lecture container for this module & subject in this academic year
       const containerName = `${modVal}: ${subjVal}`;
       const dateKey = fmtKey(viewDate);
-      const { data: existingLec } = await supabase
+      const { data: existingLec, error: findLecErr } = await supabase
         .from('lectures')
         .select('id')
         .eq('year_of_view', yearVal)
         .eq('name', containerName)
         .limit(1)
         .maybeSingle();
+
+      if (findLecErr) {
+        console.error('Error finding existing lecture container:', findLecErr);
+      }
 
       if (existingLec && existingLec.id){
         targetSubjectId = existingLec.id;
@@ -6860,11 +6989,20 @@
             color: '#3b82f6',
             date: dateKey,
             year_of_view: yearVal,
-            created_by_name: getDisplayName() || 'Admin'
+            created_by_name: getDisplayName() || 'Admin',
+            created_by: getDisplayName() || 'Admin'
           })
           .select('id')
           .single();
-        if (!cErr && createdLec) targetSubjectId = createdLec.id;
+        if (cErr) {
+          console.error('Error creating lecture container:', cErr);
+          const cMsg = cErr.code ? `[${cErr.code}] ${cErr.message || ''}` : (cErr.message || '');
+          showToast(currentLang === 'ar' ? `فشل إنشاء مادة المحاضرة: ${cMsg}` : `Failed to create subject container: ${cMsg}`);
+          adminPublishBtn.disabled = false;
+          adminPublishBtn.innerHTML = `<span>${currentLang==='ar'?'نشر المادة للطلاب':'Publish Material to Students'}</span>`;
+          return;
+        }
+        if (createdLec) targetSubjectId = createdLec.id;
       }
     }
 
@@ -6896,10 +7034,15 @@
       });
 
       if (upErr){
-        console.error(upErr);
+        console.error('Storage upload error:', upErr);
         adminPublishBtn.disabled = false;
         adminPublishBtn.innerHTML = `<span>${currentLang==='ar'?'نشر المادة للطلاب':'Publish Material to Students'}</span>`;
-        showToast(currentLang === 'ar' ? 'فشل رفع الملف إلى السيرفر' : 'Failed to upload file');
+        const maxMb = Math.round(MAX_FLASH_UPLOAD_BYTES / (1024 * 1024));
+        const isTooLarge = upErr.statusCode === 413 || upErr.status === 413 || (upErr.message && /payload too large|exceeds|entity too large/i.test(upErr.message));
+        const upMsg = isTooLarge
+          ? (currentLang === 'ar' ? `حجم الملف يتجاوز الحد المسموح به للسيرفر (${maxMb} ميجابايت)` : `File exceeds the server upload limit (${maxMb} MB)`)
+          : (currentLang === 'ar' ? `فشل رفع الملف: [${upErr.code || 'ERR'}] ${upErr.message || ''}` : `Failed to upload file: [${upErr.code || 'ERR'}] ${upErr.message || ''}`);
+        showToast(upMsg);
         return;
       }
 
@@ -6960,7 +7103,7 @@
       cardCount: detectedCardCount || undefined
     });
 
-    const { error: insertErr } = await supabase.from('materials').insert({
+    const basePayload = {
       lecture_id: targetSubjectId,
       type: selectedAdminType,
       kind,
@@ -6968,8 +7111,29 @@
       url: fileUrl,
       file_name: fileName,
       caption: structuredCaption,
-      uploaded_by: uploader
-    });
+      uploaded_by: uploader,
+      uploaded_by_name: uploader
+    };
+
+    const normPayload = {
+      module_code: modVal,
+      subject_name: subjVal,
+      semester: semVal,
+      card_count: detectedCardCount || 0
+    };
+
+    let insertErr = null;
+    if (saveMaterialRow){
+      const res = await saveMaterialRow({
+        base: basePayload,
+        normalized: normPayload,
+        client: supabase
+      });
+      insertErr = res.error;
+    } else {
+      const res = await supabase.from('materials').insert({ ...basePayload, ...normPayload });
+      insertErr = res.error;
+    }
 
     adminPublishBtn.disabled = false;
     adminPublishBtn.innerHTML = `
@@ -6978,8 +7142,9 @@
     `;
 
     if (insertErr){
-      console.error(insertErr);
-      showToast(currentLang === 'ar' ? 'حدث خطأ أثناء حفظ المادة' : 'Error saving material');
+      console.error('Publish material error:', insertErr);
+      const errMsg = insertErr.code ? `[${insertErr.code}] ${insertErr.message || ''}` : (insertErr.message || '');
+      showToast(currentLang === 'ar' ? `حدث خطأ أثناء حفظ المادة: ${errMsg}` : `Error saving material: ${errMsg}`);
       return;
     }
 
@@ -8289,20 +8454,82 @@
           meta.subject = newSubj;
           meta.semester = newSem;
 
-          const updatePayload = {
-            caption: JSON.stringify(meta),
-            academic_year: newYear,
-            year: newYear
+          let targetLecId = mat.lecture_id;
+          const containerName = `${newMod}: ${newSubj}`;
+          const dateKey = fmtKey(viewDate);
+
+          const { data: existingLec } = await supabase
+            .from('lectures')
+            .select('id')
+            .eq('year_of_view', newYear)
+            .eq('name', containerName)
+            .limit(1)
+            .maybeSingle();
+
+          if (existingLec && existingLec.id){
+            targetLecId = existingLec.id;
+          } else {
+            const { data: createdLec, error: cErr } = await supabase
+              .from('lectures')
+              .insert({
+                name: containerName,
+                color: '#3b82f6',
+                date: dateKey,
+                year_of_view: newYear,
+                created_by_name: getDisplayName() || 'Admin'
+              })
+              .select('id')
+              .single();
+            if (!cErr && createdLec) targetLecId = createdLec.id;
+          }
+
+          const basePayload = {
+            lecture_id: targetLecId,
+            caption: JSON.stringify(meta)
           };
 
-          const { error: upErr } = await supabase.from('materials').update(updatePayload).eq('id', deckMatId);
+          const normPayload = {
+            module_code: newMod,
+            subject_name: newSubj,
+            semester: newSem
+          };
+
+          let upErr = null;
+          if (saveMaterialRow){
+            const res = await saveMaterialRow({
+              id: deckMatId,
+              base: basePayload,
+              normalized: normPayload,
+              client: supabase
+            });
+            upErr = res.error;
+          } else {
+            const { error: normErr } = await supabase.from('materials').update({
+              ...basePayload,
+              ...normPayload
+            }).eq('id', deckMatId);
+
+            if (normErr){
+              const { error: simpleErr } = await supabase.from('materials').update(basePayload).eq('id', deckMatId);
+              upErr = simpleErr;
+            } else {
+              upErr = normErr;
+            }
+          }
+
           if (upErr){
             console.error('Failed to move deck in Supabase:', upErr);
-            showToast(currentLang === 'ar' ? 'فشل نقل الحزمة في السيرفر' : 'Failed to update deck on server');
+            const upMsg = upErr.code ? `[${upErr.code}] ${upErr.message || ''}` : (upErr.message || '');
+            showToast(currentLang === 'ar' ? `فشل نقل الحزمة في السيرفر: ${upMsg}` : `Failed to update deck on server: ${upMsg}`);
             return;
           }
         }
       }
+
+      // Clear curriculum caches for both source and target years
+      const oldYear = (currentMoveTargetDeck && (currentMoveTargetDeck.year || currentMoveTargetDeck.academic_year)) || currentYear;
+      if (oldYear && curriculumHierarchyData[oldYear]) delete curriculumHierarchyData[oldYear];
+      if (newYear && curriculumHierarchyData[newYear]) delete curriculumHierarchyData[newYear];
 
       closeMoveDeckModal();
       showToast(currentLang === 'ar' ? 'تم نقل الحزمة بنجاح' : 'Deck moved successfully');
