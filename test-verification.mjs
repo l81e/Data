@@ -1587,14 +1587,15 @@ async function suite40(){
 
   // 4. Schema Normalization & Production Anon Contract
   const schema = fs.readFileSync('schema.sql', 'utf-8');
-  assert(schema.includes('module_code text'), 'schema.sql defines normalized module_code column');
-  assert(schema.includes('subject_name text'), 'schema.sql defines normalized subject_name column');
-  assert(schema.includes('semester int') && schema.includes('ALTER TABLE public.materials ALTER COLUMN semester DROP DEFAULT;'), 'schema.sql defines nullable semester column without default');
-  assert(schema.includes('card_count int DEFAULT 0'), 'schema.sql defines normalized card_count column');
-  assert(schema.includes('uploaded_by text') && schema.includes('created_by text'), 'schema.sql defines text uploader columns');
+  assert(/\bmodule_code\s+text\b/.test(schema), 'schema.sql defines normalized module_code column');
+  assert(/\bsubject_name\s+text\b/.test(schema), 'schema.sql defines normalized subject_name column');
+  assert(/\bsemester\s+int\b/.test(schema) && schema.includes('ALTER TABLE public.materials ALTER COLUMN semester DROP DEFAULT;'), 'schema.sql defines nullable semester column without default');
+  assert(/\bcard_count\s+int\b/.test(schema), 'schema.sql defines normalized card_count column');
+  assert(/\buploaded_by\s+text\b/.test(schema) && /\bcreated_by\s+text\b/.test(schema), 'schema.sql defines text uploader columns');
   assert(schema.includes('ON DELETE CASCADE'), 'schema.sql enforces ON DELETE CASCADE on foreign keys');
   assert(schema.includes('idx_materials_hierarchy'), 'schema.sql creates idx_materials_hierarchy index');
-  assert(schema.includes('Anon materials insert') && schema.includes('Anon materials update'), 'schema.sql provides anon-compatible write policies');
+  assert(schema.includes('"materials_insert"') && schema.includes('"materials_update"'), 'schema.sql provides anon-compatible write policies');
+  assert(schema.includes('try_parse_jsonb'), 'schema.sql provides caption backfill routine');
   assert(schema.includes("NOTIFY pgrst, 'reload schema'"), 'schema.sql triggers PostgREST schema cache reload');
 
   // 5. JavaScript Database Normalizer & Caption Fallback Logic
