@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="robots" content="noindex,nofollow" />
+<meta name="theme-color" content="#c4601a" />
+<title>Vote Dashboard · MedicineBank Initiative</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&family=Merriweather:wght@700&display=swap" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+[hidden]{display:none!important}
+:root{--c1:#1a5fa8;--c2:#c4601a;--c3:#7d2040;--st:env(safe-area-inset-top,0px);--sb:env(safe-area-inset-bottom,0px)}
+body{--bg:#f7f5f4;--sf:#fff;--sf2:#f5f5f5;--tx:#0b0b0b;--tx2:#58585b;--tx3:#8e8e8e;--dv:#d9d9d9;--warn:#a34e14;font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);line-height:1.5;min-height:100vh;padding-bottom:calc(32px + var(--sb));-webkit-tap-highlight-color:transparent;transition:background .2s,color .2s}
+body.theme-dark{--bg:#0e0e0e;--sf:#161616;--sf2:#1c1c1c;--tx:#f7f5f4;--tx2:#b9b9bb;--dv:#2b2b2b;--warn:#f0a36b}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer;border:0;background:none}
+svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+img:not([src]){visibility:hidden}
+@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes pulse{50%{opacity:.25}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes sh{to{background-position:-200% 0}}
+
+/* LOGIN */
+.login{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:calc(24px + var(--st)) 20px 24px}
+.lcard{width:100%;max-width:400px;background:var(--sf);border:1px solid var(--dv);border-radius:4px;padding:28px 22px;animation:rise .5s cubic-bezier(.2,.8,.2,1)}
+.mark{width:46px;height:46px;border-radius:50%;background:var(--tx);color:var(--bg);display:grid;place-items:center;margin-bottom:16px}
+.mark svg{width:22px;height:22px}
+.tag{font-size:.66rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--tx3)}
+h1{font-size:1.4rem;line-height:1.3;margin:4px 0 8px}
+.dek{font-size:.85rem;color:var(--tx2);margin-bottom:20px}
+label{display:block;font-size:.7rem;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--tx3);margin-bottom:6px}
+input[type=password],input[type=text],input[type=search]{width:100%;padding:13px 14px;font-size:16px;border:1px solid var(--dv);border-radius:2px;background:var(--bg);outline:none;-webkit-appearance:none;transition:border-color .15s}
+input:focus{border-color:var(--tx)}
+.chk{display:flex;gap:8px;align-items:center;text-transform:none;letter-spacing:0;font-weight:400;font-size:.8rem;color:var(--tx2);margin:14px 0}
+details{margin-bottom:14px;font-size:.8rem;color:var(--tx2)}
+summary{cursor:pointer;padding:6px 0}
+details .f{margin-top:8px}
+.err{color:var(--warn);font-size:.82rem;margin-bottom:12px}
+.btn{width:100%;padding:14px;font-weight:700;font-size:.9rem;border-radius:2px;background:var(--tx);color:var(--bg);transition:opacity .15s,transform .1s}
+.btn:active{transform:scale(.98)}.btn:disabled{opacity:.4}
+.fine{font-size:.72rem;color:var(--tx3);margin-top:14px;line-height:1.6}
+
+/* TOP + TABS */
+.top{position:sticky;top:0;z-index:20;background:var(--c2);color:#fff;padding:calc(var(--st) + 10px) 8px 10px 16px;display:flex;justify-content:space-between;align-items:center;transition:background .3s}
+#app.closed .top{background:var(--c3)}
+.top b{font-size:.95rem}
+.cd{font-size:.72rem;font-weight:600;letter-spacing:.6px;font-variant-numeric:tabular-nums;display:flex;align-items:center;gap:6px}
+.dot{width:7px;height:7px;border-radius:50%;background:#fff;animation:pulse 1.6s infinite}
+#app.closed .dot{animation:none}
+.ic{display:flex}
+.ic button{width:44px;height:44px;display:grid;place-items:center;border-radius:50%;color:#fff}
+.ic button:active{background:rgba(255,255,255,.2)}
+.spin svg{animation:spin .8s linear infinite}
+.tabs{position:sticky;top:calc(var(--st) + 64px);z-index:15;display:flex;gap:4px;padding:8px 16px;background:var(--bg);border-bottom:1px solid var(--dv)}
+.tabs button{flex:1;padding:10px 4px;font-size:.8rem;font-weight:700;color:var(--tx3);border-radius:2px;transition:all .15s}
+.tabs button.on{background:var(--tx);color:var(--bg)}
+.tabs em{font-style:normal;background:var(--c2);color:#fff;border-radius:9px;font-size:.66rem;padding:1px 6px;margin-left:5px}
+.pane{max-width:760px;margin:0 auto;padding:20px 16px;animation:rise .35s ease}
+
+/* OVERVIEW */
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.st{background:var(--sf);border:1px solid var(--dv);border-radius:2px;padding:14px;min-height:78px}
+.st small{display:block;font-size:.64rem;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:var(--tx3)}
+.st b{font-size:1.5rem;font-weight:900;font-variant-numeric:tabular-nums;line-height:1.4}
+.st b.t{font-size:1.05rem;line-height:2}
+.sk{height:78px;border-radius:2px;background:linear-gradient(90deg,var(--sf) 25%,var(--sf2) 50%,var(--sf) 75%);background-size:200%;animation:sh 1.2s infinite}
+.card{background:var(--sf);border:1px solid var(--dv);border-radius:2px;padding:18px}
+.card h2{font-family:'Merriweather',serif;font-size:1.05rem}
+.sub{font-size:.78rem;color:var(--tx2);margin-bottom:18px}
+.dn{position:relative;width:150px;height:150px;margin:0 auto 22px}
+.dn svg{width:150px;height:150px;transform:rotate(-90deg)}
+.track,.seg{fill:none;stroke-width:14}
+.track{stroke:var(--dv)}
+.seg{transition:stroke-dasharray .9s cubic-bezier(.2,.8,.2,1)}
+.dc{position:absolute;inset:0;display:grid;place-content:center;text-align:center}
+.dc b{font-size:1.8rem;font-weight:900;line-height:1}
+.dc small{font-size:.64rem;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:var(--tx3)}
+.bar{margin-bottom:14px}
+.bh{display:flex;align-items:center;gap:8px;font-size:.85rem;margin-bottom:6px}
+.bn{flex:1;font-family:'Merriweather',serif;font-weight:700}
+.bh small{color:var(--tx3);width:36px;text-align:right}
+.bt{height:8px;background:var(--sf2);border-radius:4px;overflow:hidden}
+.bt i{display:block;height:100%;background:var(--cc);border-radius:4px;transition:width .9s cubic-bezier(.2,.8,.2,1)}
+.bd{font-size:.66rem;font-weight:700;color:#fff;background:var(--cc,#8e8e8e);padding:2px 9px;border-radius:2px;min-width:26px;text-align:center}
+.upd{font-size:.72rem;color:var(--tx3);text-align:center;margin-top:14px}
+
+/* VOTERS */
+.sr{position:relative;margin-bottom:12px}
+.sr svg{position:absolute;left:13px;top:50%;margin-top:-9px;color:var(--tx3)}
+.sr input{padding-left:40px}
+.chips{display:flex;gap:8px;overflow-x:auto;margin-bottom:12px;scrollbar-width:none}
+.chips button{flex:none;padding:8px 14px;font-size:.78rem;font-weight:600;border:1px solid var(--dv);border-radius:20px;color:var(--tx2);background:var(--sf);transition:all .15s}
+.chips button.on{background:var(--tx);color:var(--bg);border-color:var(--tx)}
+.gb{display:flex;justify-content:space-between;align-items:center;background:rgba(196,96,26,.12);border:1px solid var(--c2);padding:8px 12px;font-size:.8rem;margin-bottom:12px;border-radius:2px}
+.gb button{font-weight:700;text-decoration:underline}
+.cnt{font-size:.72rem;color:var(--tx3);margin-bottom:10px}
+.v{background:var(--sf);border:1px solid var(--dv);border-left:4px solid var(--cc);border-radius:2px;padding:14px;margin-bottom:10px;animation:rise .35s both}
+.vt{display:flex;justify-content:space-between;gap:10px}
+.vt b{display:block}
+.vt small{color:var(--tx3);font-size:.74rem}
+.vm{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+.vm button{display:flex;align-items:center;gap:7px;padding:9px 12px;min-height:42px;font-size:.78rem;font-weight:600;border:1px solid var(--dv);border-radius:2px;background:var(--bg);transition:transform .1s}
+.vm button:active{transform:scale(.97)}
+.vm .id{font-variant-numeric:tabular-nums;letter-spacing:.5px}
+.vm .pb{background:var(--tx);color:var(--bg);border-color:var(--tx);margin-left:auto}
+.fl{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.fl span{font-size:.66rem;font-weight:700;color:var(--warn);background:rgba(196,96,26,.12);border:1px solid var(--c2);padding:2px 8px;border-radius:2px}
+.more{width:100%;padding:13px;border:1px solid var(--dv);font-weight:700;font-size:.85rem;border-radius:2px;background:var(--sf)}
+.empty{text-align:center;color:var(--tx3);font-size:.85rem;padding:40px 0}
+
+/* FLAGS */
+.note{font-size:.8rem;color:var(--tx2);background:var(--sf2);border-left:3px solid var(--c2);padding:10px 12px;margin-bottom:14px}
+.g{background:var(--sf);border:1px solid var(--dv);border-radius:2px;padding:14px;margin-bottom:10px;animation:rise .35s both}
+.g>div{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.gk{font-size:.66rem;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:var(--warn)}
+.g p{font-size:.84rem;word-break:break-all}
+.g .gn{font-size:.76rem;color:var(--tx2);margin:4px 0 12px;word-break:normal}
+.g button{padding:9px 14px;font-size:.78rem;font-weight:700;border:1px solid var(--tx);border-radius:2px}
+
+/* SHEET */
+.ov{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,0);display:flex;align-items:flex-end;justify-content:center;transition:background .25s}
+.ov.open{background:rgba(0,0,0,.6)}
+.sh{width:100%;max-width:560px;max-height:92vh;background:var(--sf);border-radius:14px 14px 0 0;padding:10px 16px calc(16px + var(--sb));transform:translateY(100%);transition:transform .3s cubic-bezier(.2,.8,.2,1);display:flex;flex-direction:column}
+.open .sh{transform:none}
+.grab{width:36px;height:4px;background:var(--dv);border-radius:2px;margin:0 auto 12px}
+.shh{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.shh h3{font-family:'Merriweather',serif;font-size:1.05rem}
+.shh p{font-size:.82rem;color:var(--tx2);font-variant-numeric:tabular-nums}
+.shh button{width:40px;height:40px;display:grid;place-items:center;margin:-6px -8px 0 0}
+.pw{position:relative;display:flex;margin:14px 0 10px;background:#000;border-radius:2px;overflow:auto;min-height:200px;max-height:60vh}
+.pw img{max-width:100%;margin:auto;display:block}
+.pw img.zoom{max-width:none;width:220%}
+.sl{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none}
+.spn{width:26px;height:26px;border:3px solid #444;border-top-color:#fff;border-radius:50%;animation:spin .8s linear infinite}
+.se{color:var(--warn);font-size:.82rem}
+.hint{font-size:.72rem;color:var(--tx3)}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<script>document.body.classList.add(localStorage.getItem('mb_theme')||(matchMedia('(prefers-color-scheme:dark)').matches?'theme-dark':'theme-light'))</script>
+
+<main class="login" id="login">
+  <div class="lcard">
+    <div class="mark"><svg viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 4.5-3.2 8-8 9-4.8-1-8-4.5-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg></div>
+    <p class="tag">Organisers only</p>
+    <h1>Finals vote dashboard</h1>
+    <p class="dek">Paste your Supabase service key to see live results. It stays in this tab’s memory unless you choose to remember it.</p>
+    <label for="key">Service key</label>
+    <input id="key" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="eyJhbGciOi…" />
+    <label class="chk"><input type="checkbox" id="rem" /> Remember on this device</label>
+    <details>
+      <summary>Advanced</summary>
+      <div class="f"><label for="tbl">Votes table</label><input id="tbl" type="text" autocapitalize="off" /></div>
+      <div class="f"><label for="bkt">ID photo bucket</label><input id="bkt" type="text" autocapitalize="off" /></div>
+    </details>
+    <p class="err" id="lerr"></p>
+    <button class="btn" id="go" type="button">Open dashboard</button>
+    <p class="fine">Use this only on your own device. The service key bypasses all database security, so never share it or paste it into the voting page.</p>
+  </div>
+</main>
+
+<div id="app" hidden>
+  <header class="top">
+    <div><b>Finals vote</b><div class="cd"><i class="dot"></i><span id="cd"></span></div></div>
+    <div class="ic">
+      <button id="rf" aria-label="Refresh"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg></button>
+      <button id="th" aria-label="Toggle theme"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18z" style="fill:currentColor"/></svg></button>
+      <button id="out" aria-label="Sign out"><svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg></button>
+    </div>
+  </header>
+  <nav class="tabs" id="tabs">
+    <button class="on" data-t="overview">Overview</button>
+    <button data-t="voters">Voters</button>
+    <button data-t="flags">Flags<em id="fc" hidden></em></button>
+  </nav>
+
+  <section class="pane" id="overview">
+    <div class="stats" id="stats"><div class="sk"></div><div class="sk"></div><div class="sk"></div><div class="sk"></div></div>
+    <div class="card" id="tally"></div>
+    <p class="upd" id="upd"></p>
+  </section>
+
+  <section class="pane" id="voters" hidden>
+    <div class="sr"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg><input id="q" type="search" placeholder="Search name or ID" autocomplete="off" /></div>
+    <div class="chips" id="chips">
+      <button class="on" data-c="all">All</button><button data-c="1">Timetable 1</button><button data-c="2">Timetable 2</button><button data-c="3">Timetable 3</button><button data-c="flag">Flagged</button>
+    </div>
+    <div class="gb" id="gb" hidden></div>
+    <p class="cnt" id="cnt"></p>
+    <div id="vl"></div>
+    <button class="more" id="more" hidden>Show more</button>
+  </section>
+
+  <section class="pane" id="flags" hidden></section>
+</div>
+
+<div class="ov" id="ov" hidden>
+  <div class="sh">
+    <div class="grab"></div>
+    <div class="shh"><div><h3 id="sn"></h3><p id="si"></p></div><button id="sx" aria-label="Close"><svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div>
+    <div class="pw"><div class="sl" id="sl"><i class="spn"></i></div><img id="sim" alt="Student ID photo" /></div>
+    <p class="se" id="se"></p>
+    <p class="hint">Tap the photo to zoom. This link expires in two minutes.</p>
+  </div>
+</div>
+
+<script>
+const SB_URL='https://igfooetzorzhhvpakgqa.supabase.co';
+const DEADLINE=new Date('2026-11-06T00:00:00+02:00').getTime();
+const TT={1:{n:'Timetable 1',c:'#1a5fa8'},2:{n:'Timetable 2',c:'#c4601a'},3:{n:'Timetable 3',c:'#7d2040'}};
+const COLS={name:['name','full_name','voter_name'],uid:['uid','uni_id','university_id','student_id'],choice:['choice','timetable','vote'],photo:['photo','photo_path','id_photo'],device:['device','device_id'],ip:['ip','ip_address'],time:['created_at','voted_at','inserted_at']};
+const FL={uid:'Duplicate ID',dev:'Shared device',name:'Duplicate name',ip:'Shared IP'};
+const GK={uid:r=>r.uid.toLowerCase().replace(/[^a-z0-9]/g,''),dev:r=>r.dev,name:r=>r.name.toLowerCase().replace(/\s+/g,' ').trim(),ip:r=>r.ip};
+const ic=p=>'<svg viewBox="0 0 24 24">'+p+'</svg>';
+const EYE=ic('<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z"/><circle cx="12" cy="12" r="3"/>');
+const CARD=ic('<rect x="2" y="5" width="20" height="14" rx="2"/><circle cx="8" cy="12" r="2"/><path d="M13 10h5M13 14h4"/>');
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let sb,M={},rows=[],groups=[],tab='overview',F={c:'all',q:'',g:null},shown=40,lastSig='',T1,T2;
+
+const mask=s=>'•'.repeat(Math.max(s.length-3,3))+s.slice(-3);
+const fmt=t=>t?new Date(t).toLocaleString([],{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'—';
+function ago(t){if(!t)return'—';const s=(Date.now()-t)/1e3;if(s<60)return'just now';if(s<3600)return Math.floor(s/60)+' min ago';if(s<86400)return Math.floor(s/3600)+' h ago';return Math.floor(s/86400)+' d ago'}
+function role(k){try{return JSON.parse(atob(k.split('.')[1].replace(/-/g,'+').replace(/_/g,'/'))).role}catch(e){return null}}
+function up(el){const to=+el.dataset.n,t0=performance.now();(function f(t){const p=Math.min((t-t0)/700,1);el.textContent=Math.round(to*(1-Math.pow(1-p,3)));if(p<1)requestAnimationFrame(f)})(t0)}
+
+/* DATA */
+async function load(){
+  const t=$('tbl').value.trim()||'votes';let all=[],from=0;
+  for(;;){const{data,error}=await sb.from(t).select('*').range(from,from+999);if(error)throw error;all=all.concat(data);if(data.length<1000)break;from+=1000}
+  if(all.length)for(const k in COLS)M[k]=COLS[k].find(c=>c in all[0])||null;
+  rows=all.map(r=>({name:String(r[M.name]??''),uid:String(r[M.uid]??''),c:(String(r[M.choice]??'').match(/\d/)||[''])[0],photo:r[M.photo]||'',dev:String(r[M.device]??''),ip:String(r[M.ip]??''),t:M.time?new Date(r[M.time]).getTime()||0:0}));
+  rows.sort((a,b)=>b.t-a.t);
+  flag();render();
+}
+function flag(){
+  groups=[];rows.forEach(r=>r.f=[]);
+  for(const k in GK){const m={};rows.forEach((r,i)=>{const v=GK[k](r);if(v)(m[v]=m[v]||[]).push(i)});
+    for(const v in m)if(m[v].length>1){groups.push({k,v,ids:m[v]});m[v].forEach(i=>rows[i].f.push(k))}}
+  const o=Object.keys(FL);groups.sort((a,b)=>o.indexOf(a.k)-o.indexOf(b.k)||b.ids.length-a.ids.length);
+}
+function errText(x){
+  const m=(x&&(x.message||x.msg))||'';
+  if(/schema cache|does not exist|PGRST205/.test(m+(x.code||'')))return'Table “'+($('tbl').value.trim()||'votes')+'” wasn’t found. Check the table name under Advanced.';
+  if(/invalid api key|jwt|401|unauthor/i.test(m))return'The key was rejected. Use the legacy service_role key (starts with eyJ); newer sb_secret_ keys are blocked in browsers.';
+  return'Couldn’t load votes: '+(m||'check your connection.');
+}
+
+/* RENDER */
+function render(){renderOverview();renderFlags();if(tab==='voters')renderList();$('upd').textContent='Updated '+new Date().toLocaleTimeString()}
+function renderOverview(){
+  const n=rows.length,cnt={1:0,2:0,3:0};rows.forEach(r=>{if(r.c in cnt)cnt[r.c]++});
+  const mx=Math.max(...Object.values(cnt)),lead=Object.keys(cnt).filter(k=>cnt[k]===mx);
+  const fl=rows.filter(r=>r.f.length).length,sig=JSON.stringify([cnt,fl]),anim=sig!==lastSig;lastSig=sig;
+  const C=2*Math.PI*42;let acc=0;
+  $('stats').innerHTML=[['Total votes',n],['Leading',n?(lead.length>1?'Tie':'Timetable '+lead[0]):'—'],['Flagged',fl],['Last vote',n?ago(rows[0].t):'—']]
+    .map(s=>typeof s[1]==='number'?`<div class="st"><small>${s[0]}</small><b data-n="${s[1]}">${s[1]}</b></div>`:`<div class="st"><small>${s[0]}</small><b class="t">${s[1]}</b></div>`).join('');
+  const segs=Object.keys(cnt).map(k=>{const l=n?cnt[k]/n*C:0,s=`<circle class="seg" cx="60" cy="60" r="42" stroke="${TT[k].c}" data-l="${l}" style="stroke-dasharray:${anim?0:l} ${anim?C:C-l};stroke-dashoffset:${-acc}"/>`;acc+=l;return s}).join('');
+  const bars=Object.keys(cnt).map(k=>{const p=n?cnt[k]/n*100:0;return`<div class="bar" style="--cc:${TT[k].c}"><div class="bh"><span class="bd">${k}</span><span class="bn">${TT[k].n}</span><b>${cnt[k]}</b><small>${p.toFixed(0)}%</small></div><div class="bt"><i data-w="${p}" style="width:${anim?0:p}%"></i></div></div>`}).join('');
+  $('tally').innerHTML=`<h2>Votes by timetable</h2><p class="sub">Live count, refreshes every 15 seconds.</p><div class="dn"><svg viewBox="0 0 120 120"><circle class="track" cx="60" cy="60" r="42"/>${segs}</svg><div class="dc"><b data-n="${n}">${n}</b><small>votes</small></div></div>${bars}`;
+  if(anim){document.querySelectorAll('[data-n]').forEach(up);
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{document.querySelectorAll('.seg').forEach(s=>s.style.strokeDasharray=s.dataset.l+' '+(C-s.dataset.l));document.querySelectorAll('.bt i').forEach(i=>i.style.width=i.dataset.w+'%')}))}
+}
+function renderList(){
+  const q=F.q.toLowerCase(),g=F.g;
+  const L=rows.map((r,i)=>({r,i})).filter(({r})=>(F.c==='all'||(F.c==='flag'?r.f.length:r.c===F.c))&&(!g||GK[g.k](r)===g.v)&&(!q||r.name.toLowerCase().includes(q)||r.uid.toLowerCase().includes(q)));
+  $('gb').hidden=!g;if(g)$('gb').innerHTML=`<span>${FL[g.k]}</span><button id="gx">Clear</button>`;
+  $('cnt').textContent=L.length+' of '+rows.length+' votes';
+  $('vl').innerHTML=L.slice(0,shown).map(({r,i},j)=>`<article class="v" style="--cc:${TT[r.c]?TT[r.c].c:'#8e8e8e'};animation-delay:${Math.min(j,10)*25}ms"><div class="vt"><div><b>${esc(r.name)||'Unnamed'}</b><small>${fmt(r.t)} · ${ago(r.t)}</small></div><span class="bd">${r.c||'?'}</span></div><div class="vm"><button class="id" data-rv="${i}">${EYE}<span>${esc(mask(r.uid))}</span></button><button class="pb" data-ph="${i}">${CARD}View ID photo</button></div>${r.f.length?`<div class="fl">${r.f.map(k=>`<span>${FL[k]}</span>`).join('')}</div>`:''}</article>`).join('')||'<p class="empty">No matching votes.</p>';
+  $('more').hidden=L.length<=shown;
+}
+function renderFlags(){
+  $('fc').textContent=groups.length;$('fc').hidden=!groups.length;
+  $('flags').innerHTML='<p class="note">Shared IPs are common on campus Wi‑Fi and mobile networks. Treat them as a prompt to check the ID photo, not as proof.</p>'+
+    (groups.map((g,i)=>`<div class="g" style="animation-delay:${Math.min(i,10)*25}ms"><div><span class="gk">${FL[g.k]}</span><b>${g.ids.length} votes</b></div><p>${esc(g.k==='uid'?mask(g.v):g.k==='dev'?g.v.slice(0,8)+'…':g.v)}</p><p class="gn">${g.ids.map(j=>esc(rows[j].name||'Unnamed')).join(' · ')}</p><button data-g="${i}">Review votes</button></div>`).join('')||'<p class="empty">No duplicates detected.</p>');
+}
+function setTab(t){
+  tab=t;shown=40;
+  document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));
+  ['overview','voters','flags'].forEach(p=>{$(p).hidden=p!==t});
+  if(t==='voters')renderList();window.scrollTo({top:0});
+}
+
+/* PHOTO SHEET */
+async function openPhoto(i){
+  const r=rows[i],im=$('sim');
+  $('sn').textContent=r.name||'Unnamed';$('si').textContent='ID '+r.uid;$('se').textContent='';
+  im.removeAttribute('src');im.className='';$('sl').hidden=false;$('ov').hidden=false;
+  requestAnimationFrame(()=>$('ov').classList.add('open'));
+  try{
+    let u=r.photo;if(!u)throw 0;
+    if(!/^https?:/.test(u)){const{data,error}=await sb.storage.from($('bkt').value.trim()||'vote-ids').createSignedUrl(u,120);if(error)throw error;u=data.signedUrl}
+    im.src=u;
+  }catch(e){$('sl').hidden=true;$('se').textContent='Couldn’t load this photo. It may have been removed.'}
+}
+function closeSheet(){$('ov').classList.remove('open');setTimeout(()=>{$('ov').hidden=true;$('sim').removeAttribute('src')},250)}
+$('sim').onload=()=>{$('sl').hidden=true};
+$('sim').onclick=()=>$('sim').classList.toggle('zoom');
+$('sx').onclick=closeSheet;
+$('ov').onclick=e=>{if(e.target===$('ov'))closeSheet()};
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('ov').hidden)closeSheet()});
+
+/* EVENTS */
+$('tabs').onclick=e=>{const b=e.target.closest('button');if(b)setTab(b.dataset.t)};
+$('chips').onclick=e=>{const b=e.target.closest('button');if(!b)return;F.c=b.dataset.c;shown=40;document.querySelectorAll('#chips button').forEach(x=>x.classList.toggle('on',x===b));renderList()};
+$('q').oninput=e=>{F.q=e.target.value.trim();shown=40;renderList()};
+$('more').onclick=()=>{shown+=40;renderList()};
+$('gb').onclick=e=>{if(e.target.id==='gx'){F.g=null;renderList()}};
+$('flags').onclick=e=>{const b=e.target.closest('button');if(!b)return;const g=groups[+b.dataset.g];F.g={k:g.k,v:g.v};F.c='all';document.querySelectorAll('#chips button').forEach(x=>x.classList.toggle('on',x.dataset.c==='all'));setTab('voters')};
+$('vl').onclick=e=>{
+  const b=e.target.closest('button');if(!b)return;
+  if(b.dataset.rv!==undefined){
+    const s=b.querySelector('span'),r=rows[b.dataset.rv];
+    if(s.dataset.on){s.textContent=mask(r.uid);delete s.dataset.on}
+    else{s.textContent=r.uid;s.dataset.on=1;setTimeout(()=>{s.textContent=mask(r.uid);delete s.dataset.on},8000)}
+  }else if(b.dataset.ph!==undefined)openPhoto(+b.dataset.ph);
+};
+$('th').onclick=()=>{const d=document.body.classList.toggle('theme-dark');document.body.classList.toggle('theme-light',!d);localStorage.setItem('mb_theme',d?'theme-dark':'theme-light')};
+$('rf').onclick=refresh;
+$('out').onclick=()=>{clearInterval(T1);clearInterval(T2);localStorage.removeItem('mbd_key');sb=null;rows=[];lastSig='';$('key').value='';$('rem').checked=false;$('app').hidden=true;$('login').hidden=false;setTab('overview')};
+
+/* SESSION */
+function tick(){
+  const l=DEADLINE-Date.now(),c=$('cd');
+  if(l<=0){c.textContent='Voting closed';$('app').classList.add('closed');return}
+  const p=n=>String(n).padStart(2,'0');
+  c.textContent='Closes in '+p(Math.floor(l/36e5))+':'+p(Math.floor(l%36e5/6e4))+':'+p(Math.floor(l%6e4/1e3));
+}
+async function refresh(){const b=$('rf');b.classList.add('spin');try{await load()}catch(e){$('upd').textContent='Couldn’t refresh. Retrying…'}b.classList.remove('spin')}
+function enter(){
+  clearInterval(T1);clearInterval(T2);
+  $('login').hidden=true;$('app').hidden=false;tick();
+  T1=setInterval(tick,1000);T2=setInterval(()=>{if(!document.hidden)refresh()},15000);
+}
+async function connect(){
+  const k=$('key').value.trim(),e=$('lerr'),b=$('go');e.textContent='';
+  if(!k){e.textContent='Paste your service key first.';return}
+  if(role(k)==='anon'){e.textContent='That’s the public anon key, which can’t read votes. Paste the service_role key instead.';return}
+  b.disabled=true;b.textContent='Connecting…';
+  try{
+    sb=supabase.createClient(SB_URL,k,{auth:{persistSession:false,autoRefreshToken:false}});
+    await load();
+    localStorage.setItem('mbd_tbl',$('tbl').value.trim()||'votes');
+    localStorage.setItem('mbd_bkt',$('bkt').value.trim()||'vote-ids');
+    if($('rem').checked)localStorage.setItem('mbd_key',k);else localStorage.removeItem('mbd_key');
+    enter();
+  }catch(x){e.textContent=errText(x);sb=null}
+  b.disabled=false;b.textContent='Open dashboard';
+}
+$('go').onclick=connect;
+$('key').addEventListener('keydown',e=>{if(e.key==='Enter')connect()});
+$('tbl').value=localStorage.getItem('mbd_tbl')||'votes';
+$('bkt').value=localStorage.getItem('mbd_bkt')||'vote-ids';
+const saved=localStorage.getItem('mbd_key');
+if(saved){$('key').value=saved;$('rem').checked=true;connect()}
+</script>
+</body>
+</html>
