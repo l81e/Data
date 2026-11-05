@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>Finals Timetable Vote · MedicineBank Initiative</title>
+
+  <meta name="theme-color" content="#0b0b0b" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&family=Merriweather:wght@300;700&display=swap" rel="stylesheet" />
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --black: #0b0b0b;
+      --carbon-90: #1a1a1a;
+      --carbon-80: #2b2b2b;
+      --carbon-60: #58585b;
+      --carbon-40: #8e8e8e;
+      --carbon-30: #b9b9bb;
+      --carbon-20: #d9d9d9;
+      --carbon-05: #f5f5f5;
+      --white: #f7f5f4;
+      --blue: #1a5fa8;
+      --champ: #b8973a;
+      --burg: #7d2040;
+      --orange: #c4601a;
+      --orange-dark: #a34e14;
+      --green: #2e7d4f;
+      --safe-top: env(safe-area-inset-top, 0px);
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    html { background: var(--black); }
+
+    body {
+      --page-bg: var(--white);
+      --surface-bg: #ffffff;
+      --surface-alt-bg: var(--carbon-05);
+      --text-primary: var(--black);
+      --text-secondary: var(--carbon-60);
+      --text-tertiary: var(--carbon-40);
+      --divider: var(--carbon-20);
+      font-family: 'Inter', sans-serif; background: var(--page-bg); color: var(--text-primary); line-height: 1.6;
+      touch-action: manipulation;
+      min-height: 100vh;
+      padding-bottom: calc(24px + var(--safe-bottom));
+      transition: background .2s ease, color .2s ease;
+    }
+    body.theme-dark {
+      --page-bg: #0e0e0e;
+      --surface-bg: #161616;
+      --surface-alt-bg: #1c1c1c;
+      --text-primary: var(--white);
+      --text-secondary: #b9b9bb;
+      --text-tertiary: #8e8e8e;
+      --divider: #2b2b2b;
+    }
+    a { color: inherit; text-decoration: none; }
+    button { font-family: inherit; }
+    input { font-family: inherit; }
+
+    /* COUNTDOWN BAR */
+    .countdown {
+      position: sticky; top: 0; z-index: 1000;
+      background: var(--orange); color: #fff;
+      padding: calc(var(--safe-top) + 10px) 20px 10px;
+      display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap;
+      text-align: center;
+    }
+    .countdown.closed { background: var(--burg); }
+    .cd-text { font-size: .74rem; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; }
+    .cd-time { font-size: 1.05rem; font-weight: 900; font-variant-numeric: tabular-nums; letter-spacing: 1px; }
+
+    /* HERO */
+    .hero {
+      padding: 36px 40px 32px;
+      border-bottom: 1px solid var(--divider);
+      max-width: 760px; margin: 0 auto;
+    }
+    .label-tag { font-size: .68rem; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--text-tertiary); margin-bottom: 6px; }
+    .hero-title { font-weight: 700; font-size: 1.7rem; line-height: 1.3; margin-bottom: 8px; }
+    .hero-dek { font-size: .95rem; color: var(--text-secondary); }
+
+    /* SECTIONS */
+    section.block { padding: 40px 40px; max-width: 760px; margin: 0 auto; }
+    .section-title { font-size: 1.2rem; font-weight: 700; margin-bottom: 4px; }
+    .section-sub { font-size: .82rem; color: var(--text-secondary); margin-bottom: 20px; }
+    .step-num {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 22px; height: 22px; border-radius: 50%; background: var(--black); color: var(--white);
+      font-size: .72rem; font-weight: 700; margin-right: 8px; vertical-align: middle;
+    }
+    body.theme-dark .step-num { background: var(--white); color: var(--black); }
+
+    /* TIMETABLE CARDS */
+    .tt-grid { display: flex; flex-direction: column; gap: 16px; }
+    .tt-card {
+      background: var(--surface-bg); border: 2px solid var(--divider); border-radius: 2px;
+      cursor: pointer; transition: border-color .15s, background .15s; overflow: hidden;
+    }
+    .tt-card:hover { background: var(--surface-alt-bg); }
+    .tt-card.selected { border-color: var(--tt-color); }
+    .tt-head { padding: 16px 18px 12px; display: flex; align-items: center; gap: 12px; }
+    .tt-badge {
+      font-size: .66rem; font-weight: 700; letter-spacing: 1.6px; text-transform: uppercase;
+      color: #fff; padding: 3px 9px; border-radius: 2px; background: var(--tt-color);
+    }
+    .tt-name { font-family: 'Merriweather','Inter',serif; font-weight: 700; font-size: 1.05rem; flex: 1; }
+    .tt-check {
+      width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--divider); flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center; color: transparent; transition: all .15s;
+    }
+    .tt-card.selected .tt-check { background: var(--tt-color); border-color: var(--tt-color); color: #fff; }
+    .tt-table { width: 100%; border-collapse: collapse; font-size: .84rem; }
+    .tt-table th {
+      text-align: left; padding: 8px 18px; font-size: .64rem; letter-spacing: 1.4px; text-transform: uppercase;
+      color: var(--text-tertiary); border-top: 1px solid var(--divider); background: var(--surface-alt-bg);
+    }
+    .tt-table td { padding: 9px 18px; border-top: 1px solid var(--divider); color: var(--text-primary); }
+    .tt-table td:first-child { font-weight: 600; white-space: nowrap; width: 90px; }
+
+    /* FORM */
+    .field { margin-bottom: 16px; }
+    .field label { display: block; font-size: .72rem; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; color: var(--text-tertiary); margin-bottom: 6px; }
+    .field input {
+      width: 100%; padding: 13px 14px; font-size: .92rem; border: 1px solid var(--divider);
+      border-radius: 2px; background: var(--surface-bg); color: var(--text-primary); outline: none;
+    }
+    .field input:focus { border-color: var(--text-primary); }
+
+    /* CAMERA / UPLOAD */
+    .cam-box {
+      background: var(--black); border-radius: 2px; overflow: hidden; position: relative;
+      aspect-ratio: 4 / 3; display: flex; align-items: center; justify-content: center;
+    }
+    .cam-box video { width: 100%; height: 100%; object-fit: cover; display: none; }
+    .cam-box img { width: 100%; height: 100%; object-fit: contain; display: none; }
+    .cam-placeholder { color: var(--carbon-40); font-size: .82rem; text-align: center; padding: 20px; }
+    .cam-frame {
+      position: absolute; inset: 14% 10%; border: 2px dashed rgba(255,255,255,.55); border-radius: 6px; pointer-events: none; display: none;
+    }
+    .cam-actions { display: flex; gap: 10px; margin-top: 12px; }
+
+    .btn {
+      flex: 1; padding: 14px 18px; font-size: .88rem; font-weight: 700; border-radius: 2px; cursor: pointer;
+      border: 1px solid var(--text-primary); background: var(--text-primary); color: var(--page-bg);
+      transition: opacity .15s;
+    }
+    .btn:hover { opacity: .88; }
+    .btn.secondary { background: transparent; color: var(--text-primary); }
+    .btn:disabled { opacity: .4; cursor: not-allowed; }
+    .btn.full { width: 100%; flex: none; }
+
+    .consent { font-size: .74rem; color: var(--text-tertiary); line-height: 1.6; margin: 18px 0; }
+    .consent label { display: flex; gap: 10px; align-items: flex-start; cursor: pointer; }
+    .consent input { margin-top: 3px; }
+
+    .msg { padding: 12px 14px; font-size: .82rem; border-radius: 2px; margin-bottom: 16px; display: none; }
+    .msg.error { display: block; background: rgba(196,96,26,.12); color: var(--orange-dark); border: 1px solid var(--orange); }
+    body.theme-dark .msg.error { color: #f0a36b; }
+
+    /* DONE / CLOSED */
+    .done { text-align: center; padding: 80px 20px; }
+    .done-icon {
+      width: 64px; height: 64px; border-radius: 50%; background: var(--green); color: #fff;
+      display: flex; align-items: center; justify-content: center; margin: 0 auto 18px;
+    }
+    .done-icon.closed { background: var(--burg); }
+    .done h2 { font-family: 'Merriweather','Inter',serif; font-size: 1.3rem; margin-bottom: 8px; }
+    .done p { font-size: .88rem; color: var(--text-secondary); }
+
+    @media (max-width: 640px) {
+      .hero { padding: 28px 20px 26px; }
+      .hero-title { font-size: 1.35rem; }
+      section.block { padding: 32px 20px; }
+    }
+  </style>
+</head>
+<body>
+<script>
+  (function () {
+    var s = localStorage.getItem('mb_theme');
+    document.body.classList.add(s === 'theme-dark' ? 'theme-dark' : 'theme-light');
+  })();
+</script>
+
+<div class="countdown" id="countdown">
+  <span class="cd-text" id="cdText">Voting ends tonight at 12:00 AM</span>
+  <span class="cd-time" id="cdTime">--:--:--</span>
+</div>
+
+<div id="votePage">
+  <div class="hero">
+    <p class="label-tag">Student Vote · Finals</p>
+    <h1 class="hero-title">Choose your finals timetable</h1>
+    <p class="hero-dek">Review the three timetables, pick one, and verify your identity. One vote per student.</p>
+  </div>
+
+  <section class="block">
+    <h2 class="section-title"><span class="step-num">1</span>Pick a timetable</h2>
+    <p class="section-sub">Tap a card to select it.</p>
+    <div class="tt-grid" id="ttGrid"></div>
+  </section>
+
+  <section class="block" style="padding-top:0;">
+    <h2 class="section-title"><span class="step-num">2</span>Your details</h2>
+    <p class="section-sub">Exactly as on your university ID.</p>
+    <div class="field"><label for="fullName">Full name</label><input id="fullName" type="text" autocomplete="name" /></div>
+    <div class="field"><label for="uniId">University ID number</label><input id="uniId" type="text" inputmode="numeric" autocomplete="off" /></div>
+  </section>
+
+  <section class="block" style="padding-top:0;">
+    <h2 class="section-title"><span class="step-num">3</span>Photo of your university ID</h2>
+    <p class="section-sub">Take a photo or upload an image. The ID text must be readable.</p>
+    <div class="cam-box" id="camBox">
+      <div class="cam-placeholder" id="camPlaceholder">No photo yet</div>
+      <video id="camVideo" autoplay playsinline muted></video>
+      <img id="camPreview" alt="ID photo preview" />
+      <div class="cam-frame" id="camFrame"></div>
+    </div>
+    <div class="cam-actions">
+      <button class="btn secondary" id="openCamBtn" type="button">Open camera</button>
+      <button class="btn" id="captureBtn" type="button" style="display:none;">Capture</button>
+      <button class="btn secondary" id="retakeBtn" type="button" style="display:none;">Retake</button>
+      <button class="btn secondary" id="uploadBtn" type="button">Upload image</button>
+    </div>
+    <input type="file" id="fileInput" accept="image/*" style="display:none;" />
+    <canvas id="camCanvas" style="display:none;"></canvas>
+  </section>
+
+  <section class="block" style="padding-top:0;">
+    <div class="msg" id="errMsg"></div>
+    <div class="consent">
+      <label>
+        <input type="checkbox" id="consentChk" />
+        <span>I confirm this is my own ID and I am voting once. I agree that my name, ID number, ID photo and IP address are recorded to verify my vote and prevent duplicate voting.</span>
+      </label>
+    </div>
+    <button class="btn full" id="submitBtn" type="button">Submit my vote</button>
+  </section>
+</div>
+
+<div id="donePage" style="display:none;">
+  <div class="done">
+    <div class="done-icon" id="doneIcon">
+      <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+    </div>
+    <h2 id="doneTitle">Your vote is in</h2>
+    <p id="doneText">Thank you for taking part.</p>
+  </div>
+</div>
+
+<script>
+  /* ══ CONFIG ══ */
+  const SUPABASE_URL = 'https://igfooetzorzhhvpakgqa.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlnZm9vZXR6b3J6aGh2cGFrZ3FhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg5ODg2NTksImV4cCI6MjEwNDU2NDY1OX0.1XLeeRi4KFJptk73JKx_vs0FlO5EXM17KIyFSaKWLCA';
+  const BUCKET = 'vote-ids';
+
+  // Voting ends at 12:00 AM (midnight) tonight, Cairo time (UTC+2)
+  const DEADLINE = new Date('2026-11-06T00:00:00+02:00').getTime();
+  const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
+
+  const TIMETABLES = [
+    {
+      key: '1', name: 'Timetable 1', color: '#1a5fa8',
+      rows: [
+        ['19/12', 'Final Renal'],
+        ['22/12', 'OSPE Renal'],
+        ['28/12', 'Final RESP'],
+        ['31/12', 'OSPE RESP'],
+        ['3/1',   'Final ECE + Elective'],
+        ['5/1',   'OSPE ECE'],
+        ['13/1',  'Final CVS'],
+        ['17/1',  'OSPE CVS'],
+      ],
+    },
+    {
+      key: '2', name: 'Timetable 2', color: '#c4601a',
+      rows: [
+        ['19/12', 'Elective'],
+        ['22/12', 'Final CVS'],
+        ['26/12', 'OSPE CVS'],
+        ['31/12', 'Final Renal'],
+        ['3/1',   'OSPE Renal'],
+        ['10/1',  'Final Resp'],
+        ['13/1',  'OSPE Resp'],
+        ['17/1',  'ECE Final & OSPE'],
+      ],
+    },
+    {
+      key: '3', name: 'Timetable 3', color: '#7d2040',
+      rows: [
+        ['22/12', 'Final CVS'],
+        ['26/12', 'OSPE CVS'],
+        ['31/12', 'Final Renal'],
+        ['3/1',   'OSPE Renal'],
+        ['5/1',   'Elective'],
+        ['10/1',  'Final Resp'],
+        ['13/1',  'OSPE Resp'],
+        ['17/1',  'ECE Final & OSPE'],
+      ],
+    },
+  ];
+
+  /* ══ HELPERS ══ */
+  const $ = (id) => document.getElementById(id);
+  function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+  let sb = null;
+  function client() {
+    if (!sb && window.supabase) sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    return sb;
+  }
+
+  function deviceId() {
+    let id = localStorage.getItem('mb_vote_device');
+    if (!id) {
+      id = (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2));
+      localStorage.setItem('mb_vote_device', id);
+    }
+    return id;
+  }
+
+  function showError(t) { const e = $('errMsg'); e.textContent = t; e.className = 'msg error'; e.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+  function clearError() { $('errMsg').className = 'msg'; }
+
+  function showDone(text) {
+    $('votePage').style.display = 'none';
+    $('donePage').style.display = 'block';
+    if (text) $('doneText').textContent = text;
+    stopCamera();
+    window.scrollTo({ top: 0 });
+  }
+
+  /* ══ COUNTDOWN ══ */
+  let votingClosed = false;
+  function pad(n) { return String(n).padStart(2, '0'); }
+
+  function closeVoting() {
+    if (votingClosed) return;
+    votingClosed = true;
+    $('countdown').classList.add('closed');
+    $('cdText').textContent = 'Voting has ended';
+    $('cdTime').textContent = '';
+    if (localStorage.getItem('mb_voted') !== '1') {
+      $('doneIcon').classList.add('closed');
+      $('doneIcon').innerHTML = '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+      $('doneTitle').textContent = 'Voting has ended';
+      showDone('The voting window closed at 12:00 AM. Thank you for your interest.');
+    }
+  }
+
+  function tick() {
+    const left = DEADLINE - Date.now();
+    if (left <= 0) { closeVoting(); return; }
+    const h = Math.floor(left / 3600000);
+    const m = Math.floor((left % 3600000) / 60000);
+    const s = Math.floor((left % 60000) / 1000);
+    $('cdTime').textContent = pad(h) + ':' + pad(m) + ':' + pad(s);
+  }
+
+  /* ══ TIMETABLES ══ */
+  let selected = null;
+  function renderTimetables() {
+    $('ttGrid').innerHTML = TIMETABLES.map(t => (
+      '<div class="tt-card" data-key="' + t.key + '" style="--tt-color:' + t.color + ';">' +
+        '<div class="tt-head">' +
+          '<span class="tt-badge">' + escHtml(t.key) + '</span>' +
+          '<span class="tt-name">' + escHtml(t.name) + '</span>' +
+          '<span class="tt-check"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4"><polyline points="20 6 9 17 4 12"/></svg></span>' +
+        '</div>' +
+        '<table class="tt-table"><thead><tr><th>Date</th><th>Exam</th></tr></thead><tbody>' +
+          t.rows.map(r => '<tr><td>' + escHtml(r[0]) + '</td><td>' + escHtml(r[1]) + '</td></tr>').join('') +
+        '</tbody></table>' +
+      '</div>'
+    )).join('');
+    document.querySelectorAll('.tt-card').forEach(card => {
+      card.addEventListener('click', () => {
+        selected = card.dataset.key;
+        document.querySelectorAll('.tt-card').forEach(c => c.classList.toggle('selected', c === card));
+      });
+    });
+  }
+
+  /* ══ CAMERA + UPLOAD ══ */
+  let stream = null, photoBlob = null, photoType = 'image/jpeg';
+
+  function showPreview(blob) {
+    photoBlob = blob;
+    photoType = blob.type || 'image/jpeg';
+    const img = $('camPreview');
+    img.src = URL.createObjectURL(blob);
+    img.style.display = 'block';
+    $('camPlaceholder').style.display = 'none';
+    $('camVideo').style.display = 'none';
+    $('camFrame').style.display = 'none';
+    $('captureBtn').style.display = 'none';
+    $('openCamBtn').style.display = 'none';
+    $('retakeBtn').style.display = 'block';
+    $('uploadBtn').textContent = 'Upload a different image';
+  }
+
+  async function openCamera() {
+    clearError();
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      showError('Camera is not available here. You can upload an image instead.');
+      return;
+    }
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 960 } },
+        audio: false
+      });
+      const v = $('camVideo');
+      v.srcObject = stream;
+      v.style.display = 'block';
+      $('camPlaceholder').style.display = 'none';
+      $('camPreview').style.display = 'none';
+      $('camFrame').style.display = 'block';
+      $('openCamBtn').style.display = 'none';
+      $('captureBtn').style.display = 'block';
+      $('retakeBtn').style.display = 'none';
+    } catch (err) {
+      showError('Could not open the camera. Allow camera access, or upload an image instead.');
+    }
+  }
+
+  function stopCamera() {
+    if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+    $('camVideo').style.display = 'none';
+    $('camFrame').style.display = 'none';
+  }
+
+  function capture() {
+    const v = $('camVideo'), c = $('camCanvas');
+    if (!v.videoWidth) return;
+    c.width = v.videoWidth; c.height = v.videoHeight;
+    c.getContext('2d').drawImage(v, 0, 0, c.width, c.height);
+    c.toBlob((blob) => {
+      stopCamera();
+      showPreview(blob);
+    }, 'image/jpeg', 0.85);
+  }
+
+  function retake() {
+    photoBlob = null;
+    $('camPreview').style.display = 'none';
+    $('uploadBtn').textContent = 'Upload image';
+    openCamera();
+  }
+
+  function onFileChosen() {
+    clearError();
+    const f = $('fileInput').files[0];
+    $('fileInput').value = '';
+    if (!f) return;
+    if (!f.type.startsWith('image/')) return showError('Please choose an image file.');
+    if (f.size > MAX_UPLOAD_BYTES) return showError('Image is too large (10 MB max).');
+    stopCamera();
+    showPreview(f);
+  }
+
+  $('openCamBtn').addEventListener('click', openCamera);
+  $('captureBtn').addEventListener('click', capture);
+  $('retakeBtn').addEventListener('click', retake);
+  $('uploadBtn').addEventListener('click', () => $('fileInput').click());
+  $('fileInput').addEventListener('change', onFileChosen);
+
+  /* ══ SUBMIT ══ */
+  let submitting = false;
+  $('submitBtn').addEventListener('click', async () => {
+    if (submitting) return;
+    clearError();
+
+    if (Date.now() >= DEADLINE) { closeVoting(); return; }
+
+    const name = $('fullName').value.trim();
+    const uid = $('uniId').value.trim();
+
+    if (!selected) return showError('Please pick a timetable.');
+    if (name.split(/\s+/).length < 2) return showError('Please enter your full name.');
+    if (!/^[A-Za-z0-9\-\/]{4,20}$/.test(uid)) return showError('Please enter a valid university ID number.');
+    if (!photoBlob) return showError('Please take or upload a photo of your university ID.');
+    if (!$('consentChk').checked) return showError('Please tick the confirmation box.');
+
+    const sbc = client();
+    if (!sbc) return showError('Unable to connect. Check your connection and reload.');
+
+    submitting = true;
+    const btn = $('submitBtn');
+    btn.disabled = true; btn.textContent = 'Submitting…';
+
+    try {
+      const normUid = uid.toLowerCase();
+
+      // 1) Already voted? (ID check)
+      const { data: already, error: e1 } = await sbc.rpc('has_voted', { p_uid: normUid });
+      if (e1) throw e1;
+      if (already) {
+        localStorage.setItem('mb_voted', '1');
+        return showDone('This university ID has already voted. Only one vote is allowed.');
+      }
+
+      // 2) Upload ID photo
+      const ext = photoType === 'image/png' ? 'png' : photoType === 'image/webp' ? 'webp' : 'jpg';
+      const path = normUid.replace(/[^a-z0-9]/g, '') + '_' + Date.now() + '.' + ext;
+      const { error: e2 } = await sbc.storage.from(BUCKET).upload(path, photoBlob, { contentType: photoType, upsert: false });
+      if (e2) throw e2;
+
+      // 3) Cast vote (IP recorded server-side; duplicates rejected by the database)
+      const { data: res, error: e3 } = await sbc.rpc('cast_vote', {
+        p_name: name, p_uid: normUid, p_choice: selected, p_photo: path, p_device: deviceId()
+      });
+      if (e3) throw e3;
+
+      if (res && res.ok) {
+        localStorage.setItem('mb_voted', '1');
+        showDone('Thank you, ' + name.split(/\s+/)[0] + '. Your vote was recorded.');
+      } else if (res && res.error === 'already_voted') {
+        localStorage.setItem('mb_voted', '1');
+        showDone('A vote has already been recorded from this ID or device.');
+      } else {
+        showError('Could not record your vote. Please try again.');
+      }
+    } catch (err) {
+      console.error(err);
+      showError('Something went wrong. Please check your connection and try again.');
+    } finally {
+      submitting = false;
+      btn.disabled = false; btn.textContent = 'Submit my vote';
+    }
+  });
+
+  /* ══ INIT ══ */
+  document.addEventListener('DOMContentLoaded', () => {
+    renderTimetables();
+    tick();
+    setInterval(tick, 1000);
+    if (localStorage.getItem('mb_voted') === '1') {
+      showDone('You have already voted from this device. Thank you!');
+    }
+  });
+</script>
+</body>
+</html>
