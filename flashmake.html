@@ -1,472 +1,1988 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" dir="ltr">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <title>Finals Timetable Vote · MedicineBank Initiative</title>
-
-  <meta name="theme-color" content="#0b0b0b" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&family=Merriweather:wght@300;700&display=swap" rel="stylesheet" />
-
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-    :root {
-      --black: #0b0b0b;
-      --carbon-90: #1a1a1a;
-      --carbon-80: #2b2b2b;
-      --carbon-60: #58585b;
-      --carbon-40: #8e8e8e;
-      --carbon-30: #b9b9bb;
-      --carbon-20: #d9d9d9;
-      --carbon-05: #f5f5f5;
-      --white: #f7f5f4;
-      --blue: #1a5fa8;
-      --champ: #b8973a;
-      --burg: #7d2040;
-      --orange: #c4601a;
-      --orange-dark: #a34e14;
-      --green: #2e7d4f;
-      --safe-top: env(safe-area-inset-top, 0px);
-      --safe-bottom: env(safe-area-inset-bottom, 0px);
-    }
-
-    html { background: var(--black); }
-
-    body {
-      --page-bg: var(--white);
-      --surface-bg: #ffffff;
-      --surface-alt-bg: var(--carbon-05);
-      --text-primary: var(--black);
-      --text-secondary: var(--carbon-60);
-      --text-tertiary: var(--carbon-40);
-      --divider: var(--carbon-20);
-      font-family: 'Inter', sans-serif; background: var(--page-bg); color: var(--text-primary); line-height: 1.6;
-      touch-action: manipulation;
-      min-height: 100vh;
-      padding-bottom: calc(24px + var(--safe-bottom));
-      transition: background .2s ease, color .2s ease;
-    }
-    body.theme-dark {
-      --page-bg: #0e0e0e;
-      --surface-bg: #161616;
-      --surface-alt-bg: #1c1c1c;
-      --text-primary: var(--white);
-      --text-secondary: #b9b9bb;
-      --text-tertiary: #8e8e8e;
-      --divider: #2b2b2b;
-    }
-    a { color: inherit; text-decoration: none; }
-    button { font-family: inherit; }
-    input { font-family: inherit; }
-
-    /* HERO */
-    .hero {
-      padding: calc(var(--safe-top) + 36px) 40px 32px;
-      border-bottom: 1px solid var(--divider);
-      max-width: 760px; margin: 0 auto;
-    }
-    .label-tag { font-size: .68rem; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--text-tertiary); margin-bottom: 6px; }
-    .hero-title { font-weight: 700; font-size: 1.7rem; line-height: 1.3; margin-bottom: 8px; }
-    .hero-dek { font-size: .95rem; color: var(--text-secondary); }
-
-    /* SECTIONS */
-    section.block { padding: 40px 40px; max-width: 760px; margin: 0 auto; }
-    .section-title { font-size: 1.2rem; font-weight: 700; margin-bottom: 4px; }
-    .section-sub { font-size: .82rem; color: var(--text-secondary); margin-bottom: 20px; }
-    .step-num {
-      display: inline-flex; align-items: center; justify-content: center;
-      width: 22px; height: 22px; border-radius: 50%; background: var(--black); color: var(--white);
-      font-size: .72rem; font-weight: 700; margin-right: 8px; vertical-align: middle;
-    }
-    body.theme-dark .step-num { background: var(--white); color: var(--black); }
-
-    /* TIMETABLE CARDS */
-    .tt-grid { display: flex; flex-direction: column; gap: 16px; }
-    .tt-card {
-      background: var(--surface-bg); border: 2px solid var(--divider); border-radius: 2px;
-      cursor: pointer; transition: border-color .15s, background .15s; overflow: hidden;
-    }
-    .tt-card:hover { background: var(--surface-alt-bg); }
-    .tt-card.selected { border-color: var(--tt-color); }
-    .tt-head { padding: 16px 18px 12px; display: flex; align-items: center; gap: 12px; }
-    .tt-badge {
-      font-size: .66rem; font-weight: 700; letter-spacing: 1.6px; text-transform: uppercase;
-      color: #fff; padding: 3px 9px; border-radius: 2px; background: var(--tt-color);
-    }
-    .tt-name { font-family: 'Merriweather','Inter',serif; font-weight: 700; font-size: 1.05rem; flex: 1; }
-    .tt-check {
-      width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--divider); flex-shrink: 0;
-      display: flex; align-items: center; justify-content: center; color: transparent; transition: all .15s;
-    }
-    .tt-card.selected .tt-check { background: var(--tt-color); border-color: var(--tt-color); color: #fff; }
-    .tt-table { width: 100%; border-collapse: collapse; font-size: .84rem; }
-    .tt-table th {
-      text-align: left; padding: 8px 18px; font-size: .64rem; letter-spacing: 1.4px; text-transform: uppercase;
-      color: var(--text-tertiary); border-top: 1px solid var(--divider); background: var(--surface-alt-bg);
-    }
-    .tt-table td { padding: 9px 18px; border-top: 1px solid var(--divider); color: var(--text-primary); }
-    .tt-table td:first-child { font-weight: 600; white-space: nowrap; width: 90px; }
-
-    /* FORM */
-    .field { margin-bottom: 16px; }
-    .field label { display: block; font-size: .72rem; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; color: var(--text-tertiary); margin-bottom: 6px; }
-    .field input {
-      width: 100%; padding: 13px 14px; font-size: .92rem; border: 1px solid var(--divider);
-      border-radius: 2px; background: var(--surface-bg); color: var(--text-primary); outline: none;
-    }
-    .field input:focus { border-color: var(--text-primary); }
-
-    /* CAMERA */
-    .cam-box {
-      background: var(--black); border-radius: 2px; overflow: hidden; position: relative;
-      aspect-ratio: 4 / 3; display: flex; align-items: center; justify-content: center;
-    }
-    .cam-box video, .cam-box img { width: 100%; height: 100%; object-fit: cover; display: none; }
-    .cam-placeholder { color: var(--carbon-40); font-size: .82rem; text-align: center; padding: 20px; }
-    .cam-frame {
-      position: absolute; inset: 14% 10%; border: 2px dashed rgba(255,255,255,.55); border-radius: 6px; pointer-events: none; display: none;
-    }
-    .cam-actions { display: flex; gap: 10px; margin-top: 12px; }
-
-    .btn {
-      flex: 1; padding: 14px 18px; font-size: .88rem; font-weight: 700; border-radius: 2px; cursor: pointer;
-      border: 1px solid var(--text-primary); background: var(--text-primary); color: var(--page-bg);
-      transition: opacity .15s;
-    }
-    .btn:hover { opacity: .88; }
-    .btn.secondary { background: transparent; color: var(--text-primary); }
-    .btn:disabled { opacity: .4; cursor: not-allowed; }
-    .btn.full { width: 100%; flex: none; }
-
-    .consent { font-size: .74rem; color: var(--text-tertiary); line-height: 1.6; margin: 18px 0; }
-    .consent label { display: flex; gap: 10px; align-items: flex-start; cursor: pointer; }
-    .consent input { margin-top: 3px; }
-
-    .msg { padding: 12px 14px; font-size: .82rem; border-radius: 2px; margin-bottom: 16px; display: none; }
-    .msg.error { display: block; background: rgba(196,96,26,.12); color: var(--orange-dark); border: 1px solid var(--orange); }
-    body.theme-dark .msg.error { color: #f0a36b; }
-
-    /* DONE */
-    .done { text-align: center; padding: calc(var(--safe-top) + 80px) 20px 80px; }
-    .done-icon {
-      width: 64px; height: 64px; border-radius: 50%; background: var(--green); color: #fff;
-      display: flex; align-items: center; justify-content: center; margin: 0 auto 18px;
-    }
-    .done h2 { font-family: 'Merriweather','Inter',serif; font-size: 1.3rem; margin-bottom: 8px; }
-    .done p { font-size: .88rem; color: var(--text-secondary); }
-
-    @media (max-width: 640px) {
-      .hero { padding: calc(var(--safe-top) + 28px) 20px 26px; }
-      .hero-title { font-size: 1.35rem; }
-      section.block { padding: 32px 20px; }
-    }
-  </style>
-</head>
-<body>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<title>Create Flashcards — MedicineBank</title>
+<link rel="icon" type="image/png" href="favicon.png" />
+<link rel="icon" type="image/x-icon" href="favicon.ico" />
+<link rel="apple-touch-icon" href="favicon.png" />
+<link rel="manifest" href="manifest.json" />
 <script>
-  (function () {
-    var s = localStorage.getItem('mb_theme');
-    document.body.classList.add(s === 'theme-dark' ? 'theme-dark' : 'theme-light');
+  (function(){
+    try {
+      var t = localStorage.getItem('mb_theme');
+      if (t && t !== 'dark') document.documentElement.setAttribute('data-theme', t);
+      var l = localStorage.getItem('mb_lang');
+      if (l === 'ar') {
+        document.documentElement.setAttribute('lang', 'ar');
+        document.documentElement.setAttribute('dir', 'rtl');
+      }
+    } catch(e){}
   })();
 </script>
+<link rel="stylesheet" href="css/theme.css" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" />
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.2/jszip.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sql.js@1.10.3/dist/sql-wasm.js"></script>
+<script src="js/supabaseClient.js"></script>
+<script src="js/i18n.js"></script>
+<script src="js/vault.js"></script>
+<script src="js/ankiParser.js"></script>
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 
-<div id="votePage">
-  <div class="hero">
-    <p class="label-tag">Student Vote · Finals</p>
-    <h1 class="hero-title">Choose your finals timetable</h1>
-    <p class="hero-dek">Review the three timetables, pick one, and verify your identity. One vote per student.</p>
+  :root{
+    --bg:            #0b0b0b;
+    --panel:         #161616;
+    --panel-hi:      #1e1e1e;
+    --line:          #2b2b2b;
+    --line-soft:     #232323;
+
+    --text:          #f2f2f2;
+    --text-dim:      #a8a8a8;
+    --text-faint:    #6b6b6b;
+
+    --accent:        #e8e8e8;
+    --accent-dark:   #ffffff;
+    --accent-glow:   rgba(255,255,255,0.08);
+    --err:           #c7c7c7;
+
+    --today-green:   #3ba55c;
+    --today-green-hi:#46bd68;
+  }
+
+  html,body{height:100%;}
+  body{
+    font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    background:var(--bg);
+    color:var(--text);
+    line-height:1.6;
+    position:relative;
+    min-height:100vh;
+    overflow-x:hidden;
+  }
+  html[dir="rtl"] body{font-family:'Cairo',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;}
+
+  a{color:inherit;text-decoration:none;}
+  ul{list-style:none;}
+  button{font-family:inherit;}
+
+  /* ---------- HEADER (matches parent) ---------- */
+  .site-header{
+    position:relative; z-index:30;
+    padding:20px 40px 4px;
+    display:flex; align-items:flex-start; justify-content:space-between;
+  }
+  .header-left{display:flex; flex-direction:column; align-items:flex-start; gap:2px;}
+  .logo-wrap{display:flex; align-items:center; gap:10px; margin-bottom:14px;}
+  .logo-img{height:28px; width:auto; display:block;}
+  .logo-fallback{
+    display:flex; align-items:center; justify-content:center;
+    width:28px; height:28px; border-radius:6px;
+    border:1px solid var(--line-soft);
+    font-weight:800; font-size:0.72rem; letter-spacing:0.2px; color:var(--text);
+  }
+
+  .back-link{
+    display:flex; align-items:center; gap:7px;
+    border:1px solid var(--line-soft); border-radius:20px;
+    padding:8px 16px 8px 14px; cursor:pointer;
+    background:transparent; color:var(--text-dim);
+    font-size:0.78rem; font-weight:700;
+    transition:border-color .15s, color .15s;
+  }
+  html[dir="rtl"] .back-link{padding:8px 14px 8px 16px; flex-direction:row-reverse;}
+  .back-link:hover{border-color:var(--text-dim); color:var(--text);}
+  .back-link svg{width:14px; height:14px; flex-shrink:0;}
+  html[dir="rtl"] .back-link svg{transform:scaleX(-1);}
+
+  .header-right{display:flex; align-items:center; gap:8px;}
+  html[dir="rtl"] .header-right{flex-direction:row-reverse;}
+
+  .lang-btn{
+    width:34px; height:34px; border-radius:50%;
+    background:transparent; border:1px solid var(--line-soft);
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer; color:var(--text-faint);
+    transition:border-color .15s, color .15s;
+    flex-shrink:0;
+  }
+  .lang-btn:hover{border-color:var(--text-faint); color:var(--text-dim);}
+  .lang-btn svg{width:16px; height:16px;}
+
+  /* ---------- HERO ---------- */
+  .page-hero{
+    position:relative; z-index:2;
+    padding:6px 40px 22px;
+    text-align:left;
+  }
+  html[dir="rtl"] .page-hero{text-align:right;}
+  .page-title{
+    font-weight:700;
+    font-size:clamp(1.5rem, 5.5vw, 2.1rem);
+    letter-spacing:-0.02em;
+    line-height:1.15;
+  }
+  html[dir="rtl"] .page-title{font-family:'Cairo',sans-serif;}
+  .page-sub{font-size:0.8rem; color:var(--text-faint); margin-top:6px; max-width:480px; line-height:1.6;}
+
+  /* ---------- MAIN ---------- */
+  main{
+    position:relative; z-index:2; max-width:720px; margin:0 auto; padding:0 24px 120px;
+  }
+
+  /* ---------- STEP TABS ---------- */
+  .step-tabs{
+    display:flex; gap:8px; margin-bottom:20px;
+    border-bottom:1px solid var(--line-soft);
+  }
+  .step-tab{
+    flex:1; text-align:center; padding:12px 6px 14px;
+    font-size:0.8rem; font-weight:700; color:var(--text-faint);
+    background:none; border:none; cursor:pointer;
+    position:relative;
+    display:flex; align-items:center; justify-content:center; gap:7px;
+  }
+  .step-tab .step-num{
+    width:19px; height:19px; border-radius:50%;
+    border:1.5px solid var(--line-soft);
+    display:flex; align-items:center; justify-content:center;
+    font-size:0.66rem; font-weight:800; flex-shrink:0;
+    color:var(--text-faint);
+  }
+  .step-tab.active{color:var(--text);}
+  .step-tab.active .step-num{border-color:var(--text); color:var(--text);}
+  .step-tab.done .step-num{background:var(--text); border-color:var(--text); color:var(--bg);}
+  .step-tab.active::after{
+    content:''; position:absolute; left:0; right:0; bottom:-1px; height:2px;
+    background:var(--text);
+  }
+  .step-tab:disabled{cursor:not-allowed; opacity:0.5;}
+
+  /* ---------- CARD / SECTION ---------- */
+  .panel{
+    background:var(--panel);
+    border:1px solid var(--line-soft);
+    border-radius:10px;
+    padding:18px;
+    margin-bottom:16px;
+  }
+  .panel-title{font-size:0.95rem; font-weight:700; margin-bottom:4px;}
+  .panel-sub{font-size:0.78rem; color:var(--text-faint); margin-bottom:16px; line-height:1.6;}
+
+  .mfield{margin-bottom:16px;}
+  .mfield:last-child{margin-bottom:0;}
+  .mfield label{display:block; font-size:0.76rem; font-weight:700; color:var(--text-dim); margin-bottom:7px;}
+  .mfield input[type="text"], .mfield input[type="url"], .mfield select, .mfield textarea{
+    width:100%; font-family:inherit; font-size:16px;
+    padding:10px 12px; background:var(--panel-hi);
+    border:1.5px solid var(--line-soft); border-radius:6px; color:var(--text);
+  }
+  .mfield textarea{resize:vertical; min-height:64px; line-height:1.5;}
+  .mfield input::placeholder, .mfield textarea::placeholder{color:var(--text-faint);}
+  .mfield input:focus, .mfield select:focus, .mfield textarea:focus{outline:none; border-color:var(--text-dim); box-shadow:0 0 0 3px var(--accent-glow);}
+  .mfield-hint{font-size:0.71rem; color:var(--text-faint); margin-top:5px;}
+  .mfield-err{font-size:0.71rem; color:var(--err); margin-top:5px; display:none;}
+  .mfield-err.show{display:block;}
+  .mfield.invalid input, .mfield.invalid textarea{border-color:var(--text);}
+
+  .type-grid{display:grid; grid-template-columns:1fr 1fr; gap:8px;}
+  .type-opt{
+    display:flex; align-items:center; gap:8px;
+    border:1.5px solid var(--line-soft); border-radius:8px;
+    padding:10px 11px; cursor:pointer; font-size:0.8rem; font-weight:600; color:var(--text-dim);
+  }
+  .type-opt input{position:absolute; opacity:0; width:0; height:0;}
+  .type-opt.checked{border-color:var(--text); background:var(--accent-glow); color:var(--text);}
+  .type-opt svg{width:14px; height:14px; flex-shrink:0;}
+
+  .color-swatches{display:flex; gap:8px; flex-wrap:wrap;}
+  .swatch-btn{width:30px; height:30px; border-radius:50%; cursor:pointer; border:2px solid transparent;}
+  .swatch-btn.selected{border-color:#fff;}
+
+  /* ---------- DECK LIST (step 1) ---------- */
+  .deck-list{display:flex; flex-direction:column; gap:8px; margin-bottom:16px;}
+  .deck-row{
+    background:var(--panel);
+    border:1px solid var(--line-soft);
+    border-radius:10px;
+    padding:13px 14px;
+    display:flex; align-items:center; gap:12px;
+    cursor:pointer;
+    transition:border-color .15s;
+  }
+  .deck-row:hover{border-color:var(--text-faint);}
+  .deck-row.active-deck{border-color:var(--text);}
+  .deck-row-dot{width:10px; height:10px; border-radius:50%; flex-shrink:0; background:var(--subj-color, var(--text-dim));}
+  .deck-row-body{flex:1; min-width:0;}
+  .deck-row-name{font-size:0.9rem; font-weight:700; word-break:break-word;}
+  .deck-row-count{font-size:0.71rem; color:var(--text-faint); margin-top:2px;}
+  .deck-row-del{
+    flex-shrink:0; width:26px; height:26px; border-radius:6px;
+    border:none; background:none; color:var(--text-faint); cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+    opacity:0.5; transition:opacity .15s, color .15s;
+  }
+  .deck-row-del:hover{opacity:1; color:var(--text);}
+  .deck-row-del svg{width:13px; height:13px;}
+
+  .add-deck-btn, .add-card-btn{
+    width:100%;
+    background:transparent;
+    border:1.5px dashed var(--line-soft);
+    border-radius:10px;
+    color:var(--text-faint);
+    font-size:0.85rem; font-weight:600;
+    padding:14px; cursor:pointer;
+    display:flex; align-items:center; justify-content:center; gap:8px;
+    transition:border-color .15s, color .15s;
+  }
+  .add-deck-btn:hover, .add-card-btn:hover{border-color:var(--text-dim); color:var(--text);}
+  .add-deck-btn svg, .add-card-btn svg{width:15px; height:15px;}
+
+  .step-empty{text-align:center; padding:46px 20px 50px; color:var(--text-faint);}
+  .step-empty .big-icon{font-size:2rem; margin-bottom:14px; opacity:0.5;}
+  .step-empty h3{font-size:1rem; font-weight:700; color:var(--text-dim); margin-bottom:6px;}
+  .step-empty p{font-size:0.83rem; max-width:340px; margin:0 auto; line-height:1.7;}
+
+  /* ---------- CARD EDITOR (step 2) ---------- */
+  .active-deck-banner{
+    display:flex; align-items:center; gap:9px;
+    padding:10px 14px; margin-bottom:16px;
+    border:1px solid var(--line-soft); border-radius:8px;
+    background:var(--panel-hi);
+  }
+  .active-deck-banner-dot{width:9px; height:9px; border-radius:50%; flex-shrink:0; background:var(--subj-color, var(--text-dim));}
+  .active-deck-banner-name{font-size:0.83rem; font-weight:700; flex:1; min-width:0; word-break:break-word;}
+  .active-deck-banner-count{font-size:0.71rem; color:var(--text-faint); flex-shrink:0;}
+  .switch-deck-btn{
+    flex-shrink:0; font-size:0.71rem; font-weight:700; color:var(--text-dim);
+    background:none; border:1px solid var(--line-soft); border-radius:14px;
+    padding:5px 10px; cursor:pointer;
+  }
+  .switch-deck-btn:hover{border-color:var(--text-dim); color:var(--text);}
+
+  .card-list{display:flex; flex-direction:column; gap:8px; margin-bottom:16px;}
+  .card-row{
+    background:var(--panel);
+    border:1px solid var(--line-soft);
+    border-radius:10px;
+    padding:12px 14px;
+    display:flex; align-items:flex-start; gap:11px;
+    cursor:pointer;
+    transition:border-color .15s;
+  }
+  .card-row:hover{border-color:var(--text-faint);}
+  .card-row-num{
+    flex-shrink:0; width:24px; height:24px; border-radius:50%;
+    background:var(--panel-hi); border:1px solid var(--line-soft);
+    display:flex; align-items:center; justify-content:center;
+    font-size:0.68rem; font-weight:800; color:var(--text-faint);
+    margin-top:1px;
+  }
+  .card-row-body{flex:1; min-width:0;}
+  .card-row-front{font-size:0.84rem; font-weight:600; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .card-row-back{font-size:0.76rem; color:var(--text-faint); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:3px;}
+  .card-row-img-badge{
+    display:inline-flex; align-items:center; gap:4px;
+    font-size:0.66rem; color:var(--text-faint); margin-top:5px;
+  }
+  .card-row-img-badge svg{width:11px; height:11px;}
+  .card-row-del{
+    flex-shrink:0; width:24px; height:24px; border-radius:6px;
+    border:none; background:none; color:var(--text-faint); cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+    opacity:0.5; transition:opacity .15s, color .15s;
+  }
+  .card-row-del:hover{opacity:1; color:var(--text);}
+  .card-row-del svg{width:12px; height:12px;}
+
+  .image-drop{
+    border:1.5px dashed var(--line-soft); border-radius:8px;
+    padding:16px 14px; text-align:center; cursor:pointer;
+    color:var(--text-faint); font-size:0.8rem;
+    transition:border-color .15s;
+  }
+  .image-drop:hover{border-color:var(--text-dim);}
+  .image-drop svg{width:16px; height:16px; margin-bottom:6px; opacity:0.6;}
+
+  .image-preview-wrap{
+    position:relative; display:inline-block; margin-top:10px;
+    border-radius:8px; overflow:hidden; border:1px solid var(--line-soft);
+    max-width:100%;
+  }
+  .image-preview-wrap img{display:block; max-width:100%; max-height:180px;}
+  .image-remove-btn{
+    position:absolute; top:6px; right:6px;
+    width:24px; height:24px; border-radius:50%;
+    background:rgba(0,0,0,0.65); border:none; color:#fff; cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+  }
+  html[dir="rtl"] .image-remove-btn{right:auto; left:6px;}
+  .image-remove-btn svg{width:12px; height:12px;}
+
+  .save-card-row{display:flex; gap:10px; margin-top:16px;}
+  .save-card-btn{
+    flex:1; padding:12px; border-radius:7px; font-size:0.85rem; font-weight:700;
+    cursor:pointer; border:1.5px solid var(--text); background:var(--text); color:var(--bg);
+  }
+  .save-card-btn:hover{background:var(--text-dim); border-color:var(--text-dim);}
+  .save-card-btn:disabled{background:var(--panel-hi); color:var(--text-faint); cursor:not-allowed; border-color:var(--line-soft);}
+  .cancel-edit-btn{
+    padding:12px 16px; border-radius:7px; font-size:0.85rem; font-weight:700;
+    cursor:pointer; border:1.5px solid var(--line-soft); background:transparent; color:var(--text-dim);
+  }
+  .cancel-edit-btn:hover{border-color:var(--text-dim); color:var(--text);}
+
+  /* ---------- EXPORT (step 3) ---------- */
+  .export-summary{
+    display:flex; flex-direction:column; gap:10px; margin-bottom:18px;
+  }
+  .export-deck-row{
+    display:flex; align-items:center; gap:10px;
+    padding:12px 14px;
+    border:1px solid var(--line-soft); border-radius:8px;
+    background:var(--panel-hi);
+  }
+  .export-deck-dot{width:9px; height:9px; border-radius:50%; flex-shrink:0; background:var(--subj-color, var(--text-dim));}
+  .export-deck-name{font-size:0.85rem; font-weight:700; flex:1; min-width:0; word-break:break-word;}
+  .export-deck-count{font-size:0.75rem; color:var(--text-faint); flex-shrink:0;}
+
+  .export-btn{
+    width:100%; padding:14px; border-radius:9px; font-size:0.9rem; font-weight:700;
+    cursor:pointer; border:1.5px solid var(--text); background:var(--text); color:var(--bg);
+    display:flex; align-items:center; justify-content:center; gap:9px;
+  }
+  .export-btn:hover{background:var(--text-dim); border-color:var(--text-dim);}
+  .export-btn:disabled{background:var(--panel-hi); color:var(--text-faint); cursor:not-allowed; border-color:var(--line-soft);}
+  .export-btn svg{width:16px; height:16px;}
+
+  .upload-toggle-row{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:13px 14px; margin-top:12px;
+    border:1px solid var(--line-soft); border-radius:8px;
+    background:var(--panel-hi);
+  }
+  .upload-toggle-label{font-size:0.82rem; font-weight:600; color:var(--text-dim);}
+  .upload-toggle-hint{font-size:0.71rem; color:var(--text-faint); margin-top:3px;}
+  .switch{
+    position:relative; width:42px; height:24px; flex-shrink:0; margin-left:12px;
+  }
+  html[dir="rtl"] .switch{margin-left:0; margin-right:12px;}
+  .switch input{opacity:0; width:0; height:0; position:absolute;}
+  .switch-track{
+    position:absolute; inset:0; border-radius:14px;
+    background:var(--line-soft); border:1px solid var(--line-soft);
+    transition:background .15s;
+    cursor:pointer;
+  }
+  .switch-track::after{
+    content:''; position:absolute; top:2px; left:2px;
+    width:18px; height:18px; border-radius:50%; background:var(--text-faint);
+    transition:transform .15s, background .15s;
+  }
+  html[dir="rtl"] .switch-track::after{left:auto; right:2px;}
+  .switch input:checked + .switch-track{background:var(--today-green); border-color:var(--today-green);}
+  .switch input:checked + .switch-track::after{transform:translateX(18px); background:#0b0b0b;}
+  html[dir="rtl"] .switch input:checked + .switch-track::after{transform:translateX(-18px);}
+
+  .export-upload-fields{
+    display:none;
+    margin-top:14px;
+  }
+  .export-upload-fields.open{display:block;}
+
+  .export-status{
+    margin-top:14px; font-size:0.78rem; color:var(--text-faint);
+    text-align:center; line-height:1.7;
+  }
+  .export-status.err{color:var(--err);}
+  .export-status.ok{color:var(--today-green-hi);}
+
+  /* ---------- MODAL (new deck) ---------- */
+  .modal-overlay{
+    position:fixed; inset:0; z-index:50;
+    background:rgba(0,0,0,0.72);
+    display:none; align-items:center; justify-content:center;
+    padding:20px;
+  }
+  .modal-overlay.open{display:flex;}
+  .modal-sheet{
+    background:var(--panel-hi);
+    border:1px solid var(--line-soft);
+    border-radius:14px;
+    width:100%; max-width:440px;
+    max-height:88vh; overflow-y:auto;
+    padding:22px 22px 26px;
+  }
+  .modal-title{font-size:1.02rem; font-weight:700; margin-bottom:18px;}
+  .modal-btn-row{display:flex; gap:10px; margin-top:20px;}
+  .modal-btn{
+    flex:1; padding:12px; border-radius:7px; font-size:0.85rem; font-weight:700;
+    cursor:pointer; border:1.5px solid var(--line-soft); background:transparent; color:var(--text-dim);
+  }
+  .modal-btn.primary{background:var(--text); border-color:var(--text); color:var(--bg);}
+  .modal-btn.primary:hover{background:var(--text-dim);}
+  .modal-btn.danger{color:var(--err);}
+
+  .toast{
+    position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(20px);
+    background:var(--panel-hi); border:1px solid var(--line-soft); color:var(--text);
+    padding:11px 20px; border-radius:30px; font-size:0.82rem; font-weight:600;
+    opacity:0; pointer-events:none; transition:opacity .2s, transform .2s;
+    z-index:60; white-space:nowrap; max-width:88vw; overflow:hidden; text-overflow:ellipsis;
+  }
+  .toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+
+  .footer-nav{
+    display:flex; gap:10px; margin-top:20px;
+  }
+  .footer-nav-btn{
+    flex:1; padding:13px; border-radius:8px; font-size:0.84rem; font-weight:700;
+    cursor:pointer; border:1.5px solid var(--line-soft); background:transparent; color:var(--text-dim);
+    display:flex; align-items:center; justify-content:center; gap:7px;
+  }
+  .footer-nav-btn:hover{border-color:var(--text-dim); color:var(--text);}
+  .footer-nav-btn.primary{background:var(--text); border-color:var(--text); color:var(--bg);}
+  .footer-nav-btn.primary:hover{background:var(--text-dim);}
+  .footer-nav-btn:disabled{opacity:0.4; cursor:not-allowed;}
+  .footer-nav-btn svg{width:14px; height:14px;}
+  html[dir="rtl"] .footer-nav-btn.next svg{transform:scaleX(-1);}
+  html[dir="rtl"] .footer-nav-btn.back svg{transform:scaleX(-1);}
+
+  @media (max-width:560px){
+    .site-header{padding:16px 18px 4px;}
+    .page-hero{padding:6px 18px 18px;}
+    main{padding:0 14px 110px;}
+  }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="header-left">
+    <div class="logo-wrap">
+      <img src="IMG_3083.png" alt="MedicineBank" class="logo-img" onerror="this.style.display='none'; document.getElementById('logoFallback').style.display='flex';" />
+      <div class="logo-fallback" id="logoFallback" style="display:none;">MB</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <button type="button" class="back-link" id="backLinkBtn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+      <span data-en="Back" data-ar="رجوع">Back</span>
+    </button>
+    <button type="button" class="lang-btn" id="langToggleBtn" aria-label="Language">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 010 20 15 15 0 010-20z"/></svg>
+    </button>
+  </div>
+</header>
+
+<section class="page-hero">
+  <div class="page-title" data-en="Create flashcards" data-ar="إنشاء بطاقات تعليمية">Create flashcards</div>
+  <div class="page-sub" data-en="Build one or more decks, add cards with optional images, then export a ready-to-upload .apkg file." data-ar="اعمل مجموعة أو أكتر، ضيف البطاقات مع صور لو حبيت، وبعدين صدّر ملف .apkg جاهز للرفع.">Build one or more decks, add cards with optional images, then export a ready-to-upload .apkg file.</div>
+</section>
+
+<main id="mainEl">
+
+  <div class="step-tabs">
+    <button type="button" class="step-tab active" id="tabDecks" data-step="decks">
+      <span class="step-num">1</span>
+      <span data-en="Decks" data-ar="المجموعات">Decks</span>
+    </button>
+    <button type="button" class="step-tab" id="tabCards" data-step="cards" disabled>
+      <span class="step-num">2</span>
+      <span data-en="Cards" data-ar="البطاقات">Cards</span>
+    </button>
+    <button type="button" class="step-tab" id="tabExport" data-step="export" disabled>
+      <span class="step-num">3</span>
+      <span data-en="Export" data-ar="تصدير">Export</span>
+    </button>
   </div>
 
-  <section class="block">
-    <h2 class="section-title"><span class="step-num">1</span>Pick a timetable</h2>
-    <p class="section-sub">Tap a card to select it.</p>
-    <div class="tt-grid" id="ttGrid"></div>
-  </section>
+  <div id="stepBody"></div>
 
-  <section class="block" style="padding-top:0;">
-    <h2 class="section-title"><span class="step-num">2</span>Your details</h2>
-    <p class="section-sub">Exactly as on your university ID.</p>
-    <div class="field"><label for="fullName">Full name</label><input id="fullName" type="text" autocomplete="name" /></div>
-    <div class="field"><label for="uniId">University ID number</label><input id="uniId" type="text" inputmode="numeric" autocomplete="off" /></div>
-  </section>
+</main>
 
-  <section class="block" style="padding-top:0;">
-    <h2 class="section-title"><span class="step-num">3</span>Photo of your university ID</h2>
-    <p class="section-sub">Hold your ID inside the frame so the text is readable.</p>
-    <div class="cam-box" id="camBox">
-      <div class="cam-placeholder" id="camPlaceholder">Camera is off</div>
-      <video id="camVideo" autoplay playsinline muted></video>
-      <img id="camPreview" alt="ID photo preview" />
-      <div class="cam-frame" id="camFrame"></div>
+<!-- NEW / EDIT DECK MODAL -->
+<div class="modal-overlay" id="deckModalOverlay">
+  <div class="modal-sheet">
+    <div class="modal-title" id="deckModalTitle" data-en="New deck" data-ar="مجموعة جديدة">New deck</div>
+    <div class="mfield" id="deckNameField">
+      <label data-en="Deck name" data-ar="اسم المجموعة">Deck name</label>
+      <input type="text" id="deckNameInput" data-ph-en="e.g. Cardiology — Arrhythmias" data-ph-ar="مثال: قلبية — اضطرابات نظم" placeholder="e.g. Cardiology — Arrhythmias" maxlength="120" />
+      <div class="mfield-err" data-en="Please enter a deck name." data-ar="من فضلك اكتب اسم المجموعة.">Please enter a deck name.</div>
     </div>
-    <div class="cam-actions">
-      <button class="btn secondary" id="openCamBtn" type="button">Open camera</button>
-      <button class="btn" id="captureBtn" type="button" style="display:none;">Capture</button>
-      <button class="btn secondary" id="retakeBtn" type="button" style="display:none;">Retake</button>
+    <div class="mfield">
+      <label data-en="Color" data-ar="اللون">Color</label>
+      <div class="color-swatches" id="deckColorSwatches"></div>
+      <input type="hidden" id="deckColorInput" value="#7aaee8" />
     </div>
-    <canvas id="camCanvas" style="display:none;"></canvas>
-  </section>
-
-  <section class="block" style="padding-top:0;">
-    <div class="msg" id="errMsg"></div>
-    <div class="consent">
-      <label>
-        <input type="checkbox" id="consentChk" />
-        <span>I confirm this is my own ID and I am voting once. I agree that my name, ID number, ID photo and IP address are recorded to verify my vote and prevent duplicate voting.</span>
-      </label>
+    <div class="modal-btn-row">
+      <button class="modal-btn" id="deckCancelBtn" data-en="Cancel" data-ar="إلغاء">Cancel</button>
+      <button class="modal-btn primary" id="deckSaveBtn" data-en="Save" data-ar="حفظ">Save</button>
     </div>
-    <button class="btn full" id="submitBtn" type="button">Submit my vote</button>
-  </section>
-</div>
-
-<div id="donePage" style="display:none;">
-  <div class="done">
-    <div class="done-icon">
-      <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
-    </div>
-    <h2>Your vote is in</h2>
-    <p id="doneText">Thank you for taking part.</p>
   </div>
 </div>
+
+<!-- DELETE CONFIRM MODAL -->
+<div class="modal-overlay" id="confirmModalOverlay">
+  <div class="modal-sheet">
+    <div class="modal-title" id="confirmModalTitle">—</div>
+    <div class="modal-btn-row">
+      <button class="modal-btn" id="confirmCancelBtn" data-en="Cancel" data-ar="إلغاء">Cancel</button>
+      <button class="modal-btn danger" id="confirmOkBtn" data-en="Delete" data-ar="حذف">Delete</button>
+    </div>
+  </div>
+<!-- BULK IMPORT MODAL -->
+<div class="modal-overlay" id="bulkModalOverlay">
+  <div class="modal-sheet" style="max-width:540px;">
+    <div class="modal-title" data-en="Bulk Import Cards" data-ar="استيراد بطاقات متعددة">Bulk Import Cards</div>
+    <p style="font-size:0.75rem; color:var(--text-faint); margin-bottom:12px;" data-en="Paste cards (one per line). Separate question and answer with a TAB or semicolon (;)." data-ar="الصق البطاقات (واحدة في كل سطر). افصل بين السؤال والإجابة بـ TAB أو فاصلة منقوطة (;).">
+      Paste cards (one per line). Separate question and answer with a TAB or semicolon (;).
+    </p>
+    <div class="mfield">
+      <textarea id="bulkImportTextarea" rows="8" placeholder="What is MAP?	MAP = DP + 1/3(SP - DP)&#10;Wolff-Parkinson-White;Delta wave with short PR interval" style="font-family:'JetBrains Mono',monospace; font-size:0.8rem; width:100%; border-radius:10px; background:var(--bg); border:1px solid var(--line); color:var(--text); padding:10px;"></textarea>
+    </div>
+    <div class="modal-btn-row">
+      <button class="modal-btn" id="bulkCancelBtn" data-en="Cancel" data-ar="إلغاء">Cancel</button>
+      <button class="modal-btn primary" id="bulkSaveBtn" data-en="Import Cards" data-ar="استيراد البطاقات">Import Cards</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
 
 <script>
-  /* ══ CONFIG ══ */
-  const SUPABASE_URL = 'https://igfooetzorzhhvpakgqa.supabase.co';
-  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlnZm9vZXR6b3J6aGh2cGFrZ3FhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg5ODg2NTksImV4cCI6MjEwNDU2NDY1OX0.1XLeeRi4KFJptk73JKx_vs0FlO5EXM17KIyFSaKWLCA';
-  const BUCKET = 'vote-ids';
+(function(){
+  const htmlEl = document.documentElement;
+  let currentLang = 'en';
 
-  const TIMETABLES = [
-    {
-      key: '1', name: 'Timetable 1', color: '#1a5fa8',
-      rows: [
-        ['19/12', 'Final Renal'],
-        ['22/12', 'OSPE Renal'],
-        ['28/12', 'Final RESP'],
-        ['31/12', 'OSPE RESP'],
-        ['3/1',   'Final ECE + Elective'],
-        ['5/1',   'OSPE ECE'],
-        ['13/1',  'Final CVS'],
-        ['17/1',  'OSPE CVS'],
-      ],
-    },
-    {
-      key: '2', name: 'Timetable 2', color: '#c4601a',
-      rows: [
-        ['19/12', 'Elective'],
-        ['22/12', 'Final CVS'],
-        ['26/12', 'OSPE CVS'],
-        ['31/12', 'Final Renal'],
-        ['3/1',   'OSPE Renal'],
-        ['10/1',  'Final Resp'],
-        ['13/1',  'OSPE Resp'],
-        ['17/1',  'ECE Final & OSPE'],
-      ],
-    },
-    {
-      key: '3', name: 'Timetable 3', color: '#7d2040',
-      rows: [
-        ['22/12', 'Final CVS'],
-        ['26/12', 'OSPE CVS'],
-        ['31/12', 'Final Renal'],
-        ['3/1',   'OSPE Renal'],
-        ['5/1',   'Elective'],
-        ['10/1',  'Final Resp'],
-        ['13/1',  'OSPE Resp'],
-        ['17/1',  'ECE Final & OSPE'],
-      ],
-    },
-  ];
+  const LANG_LS_KEY = 'mb_lang';
+  function getStoredLang(){
+    try {
+      const v = localStorage.getItem(LANG_LS_KEY);
+      return (v === 'en' || v === 'ar') ? v : null;
+    } catch (e) { return null; }
+  }
+  function setStoredLang(v){ try { localStorage.setItem(LANG_LS_KEY, v); } catch (e) {} }
 
-  /* ══ HELPERS ══ */
-  const $ = (id) => document.getElementById(id);
-  function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-
-  let sb = null;
-  function client() {
-    if (!sb && window.supabase) sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    return sb;
+  function applyStaticText(lang){
+    document.querySelectorAll('[data-en]').forEach(el => {
+      const t = lang === 'ar' ? el.dataset.ar : el.dataset.en;
+      if (t != null) el.textContent = t;
+    });
+    document.querySelectorAll('[data-ph-en]').forEach(el => {
+      const ph = lang === 'ar' ? el.dataset.phAr : el.dataset.phEn;
+      if (ph != null) el.setAttribute('placeholder', ph);
+    });
   }
 
-  function deviceId() {
-    let id = localStorage.getItem('mb_vote_device');
-    if (!id) {
-      id = (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2));
-      localStorage.setItem('mb_vote_device', id);
+  function setLang(lang, skipPersist){
+    currentLang = lang;
+    if (!skipPersist) setStoredLang(lang);
+    htmlEl.setAttribute('lang', lang);
+    htmlEl.setAttribute('dir', lang === 'ar' ? 'rtl' : 'ltr');
+    applyStaticText(lang);
+    renderStep();
+  }
+
+  const langToggleBtn = document.getElementById('langToggleBtn');
+  if (langToggleBtn) {
+    langToggleBtn.addEventListener('click', () => {
+      setLang(currentLang === 'en' ? 'ar' : 'en');
+    });
+  }
+
+  const backLinkBtn = document.getElementById('backLinkBtn');
+  if (backLinkBtn) {
+    backLinkBtn.addEventListener('click', () => {
+      if (document.referrer && document.referrer.indexOf(window.location.hostname) !== -1) {
+        window.history.back();
+      } else {
+        window.location.href = '/';
+      }
+    });
+  }
+
+  /* ---------------- Supabase ---------------- */
+  const SUPABASE_URL = (typeof MBI_SUPABASE !== 'undefined' && MBI_SUPABASE.SUPABASE_URL) ? MBI_SUPABASE.SUPABASE_URL : 'https://igfooetzorzhhvpakgqa.supabase.co';
+  const SUPABASE_ANON_KEY = (typeof MBI_SUPABASE !== 'undefined' && MBI_SUPABASE.SUPABASE_ANON_KEY) ? MBI_SUPABASE.SUPABASE_ANON_KEY : 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlnZm9vZXR6b3J6aGh2cGFrZ3FhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg5ODg2NTksImV4cCI6MjEwNDU2NDY1OX0.1XLeeRi4KFJptk73JKx_vs0FlO5EXM17KIyFSaKWLCA';
+  const supabase = (typeof MBI_SUPABASE !== 'undefined' && typeof MBI_SUPABASE.getSupabaseClient === 'function') ? MBI_SUPABASE.getSupabaseClient() : window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const MATERIALS_BUCKET = (typeof MBI_SUPABASE !== 'undefined' && MBI_SUPABASE.MATERIALS_BUCKET) ? MBI_SUPABASE.MATERIALS_BUCKET : 'materials';
+  const MAX_FLASH_UPLOAD_BYTES = (typeof MBI_SUPABASE !== 'undefined' && MBI_SUPABASE.MAX_FLASH_UPLOAD_BYTES) ? MBI_SUPABASE.MAX_FLASH_UPLOAD_BYTES : (50 * 1024 * 1024);
+
+  /* ---------------- state ---------------- */
+  // decks: [{ id, name, color, cards:[{id, front, back, imageFile, imageDataUrl, imageName}] }]
+  let decks = [];
+  let activeDeckId = null;
+  let currentStep = 'decks'; // decks | cards | export
+  let editingCardId = null;
+
+  const DECK_COLORS = ['#e05a4f','#e0a23a','#3ba55c','#3a8ee0','#7a5ce0','#c94fa0'];
+
+  function uid(){ return Math.random().toString(36).slice(2,10); }
+
+  function escapeHtml(str){
+    const div = document.createElement('div');
+    div.textContent = str == null ? '' : str;
+    return div.innerHTML;
+  }
+
+  function showToast(msg){
+    const toast = document.getElementById('toast');
+    toast.textContent = msg;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2200);
+  }
+
+  function activeDeck(){
+    return decks.find(d => d.id === activeDeckId) || null;
+  }
+
+  function totalCards(){
+    return decks.reduce((sum, d) => sum + d.cards.length, 0);
+  }
+
+  /* ---------------- step tabs ---------------- */
+  const tabDecks = document.getElementById('tabDecks');
+  const tabCards = document.getElementById('tabCards');
+  const tabExport = document.getElementById('tabExport');
+
+  function updateTabsState(){
+    const hasDecks = decks.length > 0;
+    const hasActiveDeckWithCards = decks.some(d => d.cards.length > 0);
+
+    tabCards.disabled = !hasDecks;
+    tabExport.disabled = !hasActiveDeckWithCards;
+
+    [tabDecks, tabCards, tabExport].forEach(t => t.classList.remove('active', 'done'));
+    if (currentStep === 'decks') tabDecks.classList.add('active');
+    if (currentStep === 'cards') tabCards.classList.add('active');
+    if (currentStep === 'export') tabExport.classList.add('active');
+
+    if (hasDecks) tabDecks.classList.add('done');
+    if (hasActiveDeckWithCards && currentStep !== 'cards') tabCards.classList.add('done');
+  }
+
+  function goStep(step){
+    if (step === 'cards' && decks.length === 0) return;
+    if (step === 'export' && !decks.some(d => d.cards.length > 0)) return;
+    currentStep = step;
+    renderStep();
+  }
+
+  tabDecks.addEventListener('click', () => goStep('decks'));
+  tabCards.addEventListener('click', () => goStep('cards'));
+  tabExport.addEventListener('click', () => goStep('export'));
+
+  /* ================================================================
+     STEP 1 — DECKS
+     ================================================================ */
+  function renderDecksStep(){
+    const container = document.getElementById('stepBody');
+
+    if (decks.length === 0){
+      container.innerHTML = `
+        <div class="step-empty">
+          <div class="big-icon">🗂️</div>
+          <h3>${currentLang==='ar'?'لسه مفيش مجموعات':'No decks yet'}</h3>
+          <p>${currentLang==='ar'?'اعمل أول مجموعة بطاقات عشان تبدأ تضيف عليها.':'Create your first deck to start adding cards to it.'}</p>
+        </div>
+        <button type="button" class="add-deck-btn" id="addDeckBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+          <span>${currentLang==='ar'?'مجموعة جديدة':'New deck'}</span>
+        </button>
+      `;
+    } else {
+      let html = '<div class="deck-list">';
+      decks.forEach(d => {
+        const countLabel = currentLang === 'ar'
+          ? `${d.cards.length} ${d.cards.length===1 ? 'بطاقة' : 'بطاقات'}`
+          : `${d.cards.length} card${d.cards.length===1?'':'s'}`;
+        html += `
+          <div class="deck-row" data-deck-id="${d.id}" style="--subj-color:${escapeHtml(d.color)}">
+            <span class="deck-row-dot"></span>
+            <div class="deck-row-body">
+              <div class="deck-row-name">${escapeHtml(d.name)}</div>
+              <div class="deck-row-count">${countLabel}</div>
+            </div>
+            <button type="button" class="deck-row-del" data-del-deck="${d.id}" aria-label="Delete deck">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            </button>
+          </div>
+        `;
+      });
+      html += '</div>';
+      html += `
+        <button type="button" class="add-deck-btn" id="addDeckBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+          <span>${currentLang==='ar'?'مجموعة جديدة':'New deck'}</span>
+        </button>
+      `;
+      container.innerHTML = html;
+
+      container.querySelectorAll('.deck-row').forEach(row => {
+        row.addEventListener('click', (e) => {
+          if (e.target.closest('.deck-row-del')) return;
+          activeDeckId = row.dataset.deckId;
+          goStep('cards');
+        });
+      });
+      container.querySelectorAll('[data-del-deck]').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const deckId = btn.dataset.delDeck;
+          const deck = decks.find(d => d.id === deckId);
+          if (!deck) return;
+          confirmAction(
+            currentLang==='ar' ? `تحذف مجموعة "${deck.name}"؟` : `Delete deck "${deck.name}"?`,
+            () => {
+              decks = decks.filter(d => d.id !== deckId);
+              if (activeDeckId === deckId) activeDeckId = null;
+              updateTabsState();
+              renderStep();
+              showToast(currentLang==='ar' ? 'اتمسحت' : 'Deleted');
+            }
+          );
+        });
+      });
     }
-    return id;
+
+    document.getElementById('addDeckBtn').addEventListener('click', () => openDeckModal());
+    updateTabsState();
   }
 
-  function showError(t) { const e = $('errMsg'); e.textContent = t; e.className = 'msg error'; e.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
-  function clearError() { $('errMsg').className = 'msg'; }
+  /* ---------------- deck modal ---------------- */
+  const deckModalOverlay = document.getElementById('deckModalOverlay');
+  const deckModalTitle = document.getElementById('deckModalTitle');
+  const deckNameField = document.getElementById('deckNameField');
+  const deckNameInput = document.getElementById('deckNameInput');
+  const deckColorInput = document.getElementById('deckColorInput');
+  const deckColorSwatches = document.getElementById('deckColorSwatches');
+  let editingDeckId = null;
 
-  function showDone(text) {
-    $('votePage').style.display = 'none';
-    $('donePage').style.display = 'block';
-    if (text) $('doneText').textContent = text;
-    stopCamera();
-    window.scrollTo({ top: 0 });
-  }
-
-  /* ══ TIMETABLES ══ */
-  let selected = null;
-  function renderTimetables() {
-    $('ttGrid').innerHTML = TIMETABLES.map(t => (
-      '<div class="tt-card" data-key="' + t.key + '" style="--tt-color:' + t.color + ';">' +
-        '<div class="tt-head">' +
-          '<span class="tt-badge">' + escHtml(t.key) + '</span>' +
-          '<span class="tt-name">' + escHtml(t.name) + '</span>' +
-          '<span class="tt-check"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4"><polyline points="20 6 9 17 4 12"/></svg></span>' +
-        '</div>' +
-        '<table class="tt-table"><thead><tr><th>Date</th><th>Exam</th></tr></thead><tbody>' +
-          t.rows.map(r => '<tr><td>' + escHtml(r[0]) + '</td><td>' + escHtml(r[1]) + '</td></tr>').join('') +
-        '</tbody></table>' +
-      '</div>'
-    )).join('');
-    document.querySelectorAll('.tt-card').forEach(card => {
-      card.addEventListener('click', () => {
-        selected = card.dataset.key;
-        document.querySelectorAll('.tt-card').forEach(c => c.classList.toggle('selected', c === card));
+  function renderDeckColorSwatches(selected){
+    deckColorSwatches.innerHTML = DECK_COLORS.map(c => `
+      <button type="button" class="swatch-btn ${c===selected?'selected':''}" style="background:${c};" data-pick="${c}"></button>
+    `).join('');
+    deckColorSwatches.querySelectorAll('[data-pick]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        deckColorInput.value = btn.dataset.pick;
+        deckColorSwatches.querySelectorAll('.swatch-btn').forEach(b => {
+          b.classList.toggle('selected', b === btn);
+        });
       });
     });
   }
 
-  /* ══ CAMERA ══ */
-  let stream = null, photoBlob = null;
+  function openDeckModal(){
+    editingDeckId = null;
+    deckModalTitle.textContent = currentLang==='ar' ? 'مجموعة جديدة' : 'New deck';
+    deckNameInput.value = '';
+    const randomColor = DECK_COLORS[Math.floor(Math.random()*DECK_COLORS.length)];
+    deckColorInput.value = randomColor;
+    renderDeckColorSwatches(randomColor);
+    deckNameField.classList.remove('invalid');
+    deckModalOverlay.classList.add('open');
+    setTimeout(() => deckNameInput.focus(), 50);
+  }
+  function closeDeckModal(){ deckModalOverlay.classList.remove('open'); }
 
-  async function openCamera() {
-    clearError();
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      showError('Camera is not available. Open this page over HTTPS in a modern browser.');
+  document.getElementById('deckCancelBtn').addEventListener('click', closeDeckModal);
+  deckModalOverlay.addEventListener('click', (e) => { if (e.target === deckModalOverlay) closeDeckModal(); });
+
+  document.getElementById('deckSaveBtn').addEventListener('click', () => {
+    const name = deckNameInput.value.trim();
+    if (!name){ deckNameField.classList.add('invalid'); return; }
+    deckNameField.classList.remove('invalid');
+
+    if (editingDeckId){
+      const d = decks.find(x => x.id === editingDeckId);
+      if (d){ d.name = name; d.color = deckColorInput.value; }
+    } else {
+      const newDeck = { id: uid(), name, color: deckColorInput.value, cards: [] };
+      decks.push(newDeck);
+      activeDeckId = newDeck.id;
+    }
+    closeDeckModal();
+    updateTabsState();
+    renderStep();
+    showToast(currentLang==='ar' ? 'تم الحفظ' : 'Saved');
+  });
+
+  deckNameInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') document.getElementById('deckSaveBtn').click();
+  });
+
+  /* ---------------- confirm modal (generic) ---------------- */
+  const confirmModalOverlay = document.getElementById('confirmModalOverlay');
+  const confirmModalTitle = document.getElementById('confirmModalTitle');
+  let confirmCallback = null;
+
+  function confirmAction(message, onConfirm){
+    confirmModalTitle.textContent = message;
+    confirmCallback = onConfirm;
+    confirmModalOverlay.classList.add('open');
+  }
+  function closeConfirmModal(){ confirmModalOverlay.classList.remove('open'); confirmCallback = null; }
+  document.getElementById('confirmCancelBtn').addEventListener('click', closeConfirmModal);
+  confirmModalOverlay.addEventListener('click', (e) => { if (e.target === confirmModalOverlay) closeConfirmModal(); });
+  document.getElementById('confirmOkBtn').addEventListener('click', () => {
+    const cb = confirmCallback;
+    closeConfirmModal();
+    if (cb) cb();
+  });
+
+  /* ================================================================
+     STEP 2 — CARDS
+     ================================================================ */
+  let pendingImage = null; // { file, dataUrl, name }
+
+  function renderCardsStep(){
+    const container = document.getElementById('stepBody');
+    const deck = activeDeck();
+
+    if (!deck){
+      // no active deck chosen — show deck picker
+      let html = `<div class="mfield"><label>${currentLang==='ar'?'اختار مجموعة':'Choose a deck'}</label></div>`;
+      html += '<div class="deck-list">';
+      decks.forEach(d => {
+        const countLabel = currentLang === 'ar'
+          ? `${d.cards.length} ${d.cards.length===1 ? 'بطاقة' : 'بطاقات'}`
+          : `${d.cards.length} card${d.cards.length===1?'':'s'}`;
+        html += `
+          <div class="deck-row" data-deck-id="${d.id}" style="--subj-color:${escapeHtml(d.color)}">
+            <span class="deck-row-dot"></span>
+            <div class="deck-row-body">
+              <div class="deck-row-name">${escapeHtml(d.name)}</div>
+              <div class="deck-row-count">${countLabel}</div>
+            </div>
+          </div>
+        `;
+      });
+      html += '</div>';
+      container.innerHTML = html;
+      container.querySelectorAll('.deck-row').forEach(row => {
+        row.addEventListener('click', () => {
+          activeDeckId = row.dataset.deckId;
+          renderStep();
+        });
+      });
       return;
     }
-    try {
-      stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 960 } },
-        audio: false
+
+    const countLabel = currentLang === 'ar'
+      ? `${deck.cards.length} ${deck.cards.length===1 ? 'بطاقة' : 'بطاقات'}`
+      : `${deck.cards.length} card${deck.cards.length===1?'':'s'}`;
+
+    let html = `
+      <div class="active-deck-banner" style="--subj-color:${escapeHtml(deck.color)}">
+        <span class="active-deck-banner-dot"></span>
+        <span class="active-deck-banner-name">${escapeHtml(deck.name)}</span>
+        <span class="active-deck-banner-count">${countLabel}</span>
+        ${decks.length > 1 ? `<button type="button" class="switch-deck-btn" id="switchDeckBtn">${currentLang==='ar'?'تغيير':'Switch'}</button>` : ''}
+      </div>
+    `;
+
+    if (deck.cards.length === 0){
+      html += `
+        <div class="step-empty" style="padding:30px 20px 34px;">
+          <div class="big-icon">🃏</div>
+          <h3>${currentLang==='ar'?'لسه مفيش بطاقات':'No cards yet'}</h3>
+          <p>${currentLang==='ar'?'ضيف أول بطاقة للمجموعة دي.':'Add your first card to this deck.'}</p>
+        </div>
+      `;
+    } else {
+      html += '<div class="card-list">';
+      deck.cards.forEach((c, i) => {
+        const hasImg = !!c.imageDataUrl;
+        html += `
+          <div class="card-row" data-card-id="${c.id}">
+            <div class="card-row-num">${i+1}</div>
+            <div class="card-row-body">
+              <div class="card-row-front">${escapeHtml(plainTextPreview(c.front)) || (currentLang==='ar'?'(بدون سؤال)':'(no question)')}</div>
+              <div class="card-row-back">${escapeHtml(plainTextPreview(c.back)) || (currentLang==='ar'?'(بدون إجابة)':'(no answer)')}</div>
+              ${hasImg ? `<div class="card-row-img-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg><span>${currentLang==='ar'?'فيها صورة':'Has image'}</span></div>` : ''}
+            </div>
+            <button type="button" class="card-row-del" data-del-card="${c.id}" aria-label="Delete card">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            </button>
+          </div>
+        `;
       });
-      const v = $('camVideo');
-      v.srcObject = stream;
-      v.style.display = 'block';
-      $('camPlaceholder').style.display = 'none';
-      $('camPreview').style.display = 'none';
-      $('camFrame').style.display = 'block';
-      $('openCamBtn').style.display = 'none';
-      $('captureBtn').style.display = 'block';
-      $('retakeBtn').style.display = 'none';
-    } catch (err) {
-      showError('Could not open the camera. Please allow camera access and try again.');
+      html += '</div>';
     }
-  }
 
-  function stopCamera() {
-    if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
-    $('camVideo').style.display = 'none';
-    $('camFrame').style.display = 'none';
-  }
+    html += `
+      <div style="display:flex; gap:10px; margin-top:8px;">
+        <button type="button" class="add-card-btn" id="addCardBtn" style="flex:1;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+          <span>${currentLang==='ar'?'بطاقة جديدة':'New card'}</span>
+        </button>
+        <button type="button" class="add-card-btn" id="bulkImportBtn" style="flex:1; background:var(--panel-hi); border:1px solid var(--line);">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h7"/></svg>
+          <span>${currentLang==='ar'?'استيراد متعدد (TSV/CSV)':'Bulk Import (TSV/CSV)'}</span>
+        </button>
+      </div>
+    `;
 
-  function capture() {
-    const v = $('camVideo'), c = $('camCanvas');
-    if (!v.videoWidth) return;
-    c.width = v.videoWidth; c.height = v.videoHeight;
-    c.getContext('2d').drawImage(v, 0, 0, c.width, c.height);
-    c.toBlob((blob) => {
-      photoBlob = blob;
-      const img = $('camPreview');
-      img.src = URL.createObjectURL(blob);
-      img.style.display = 'block';
-      stopCamera();
-      $('captureBtn').style.display = 'none';
-      $('retakeBtn').style.display = 'block';
-    }, 'image/jpeg', 0.85);
-  }
+    html += `<div id="cardEditorSlot"></div>`;
 
-  function retake() {
-    photoBlob = null;
-    $('camPreview').style.display = 'none';
-    openCamera();
-  }
+    html += `
+      <div class="footer-nav">
+        <button type="button" class="footer-nav-btn back" id="footerBackBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+          <span>${currentLang==='ar'?'المجموعات':'Decks'}</span>
+        </button>
+        <button type="button" class="footer-nav-btn primary next" id="footerNextBtn" ${deck.cards.length === 0 ? 'disabled' : ''}>
+          <span>${currentLang==='ar'?'تصدير':'Export'}</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+        </button>
+      </div>
+    `;
 
-  $('openCamBtn').addEventListener('click', openCamera);
-  $('captureBtn').addEventListener('click', capture);
-  $('retakeBtn').addEventListener('click', retake);
+    container.innerHTML = html;
 
-  /* ══ SUBMIT ══ */
-  let submitting = false;
-  $('submitBtn').addEventListener('click', async () => {
-    if (submitting) return;
-    clearError();
+    const switchBtn = document.getElementById('switchDeckBtn');
+    if (switchBtn) switchBtn.addEventListener('click', () => { activeDeckId = null; renderStep(); });
 
-    const name = $('fullName').value.trim();
-    const uid = $('uniId').value.trim();
-
-    if (!selected) return showError('Please pick a timetable.');
-    if (name.split(/\s+/).length < 2) return showError('Please enter your full name.');
-    if (!/^[A-Za-z0-9\-\/]{4,20}$/.test(uid)) return showError('Please enter a valid university ID number.');
-    if (!photoBlob) return showError('Please take a photo of your university ID.');
-    if (!$('consentChk').checked) return showError('Please tick the confirmation box.');
-
-    const sbc = client();
-    if (!sbc) return showError('Unable to connect. Check your connection and reload.');
-
-    submitting = true;
-    const btn = $('submitBtn');
-    btn.disabled = true; btn.textContent = 'Submitting…';
-
-    try {
-      const normUid = uid.toLowerCase();
-
-      // 1) Already voted? (ID check)
-      const { data: already, error: e1 } = await sbc.rpc('has_voted', { p_uid: normUid });
-      if (e1) throw e1;
-      if (already) {
-        localStorage.setItem('mb_voted', '1');
-        return showDone('This university ID has already voted. Only one vote is allowed.');
-      }
-
-      // 2) Upload ID photo
-      const path = normUid.replace(/[^a-z0-9]/g, '') + '_' + Date.now() + '.jpg';
-      const { error: e2 } = await sbc.storage.from(BUCKET).upload(path, photoBlob, { contentType: 'image/jpeg', upsert: false });
-      if (e2) throw e2;
-
-      // 3) Cast vote (IP recorded server-side; duplicates rejected by the database)
-      const { data: res, error: e3 } = await sbc.rpc('cast_vote', {
-        p_name: name, p_uid: normUid, p_choice: selected, p_photo: path, p_device: deviceId()
+    container.querySelectorAll('.card-row').forEach(row => {
+      row.addEventListener('click', (e) => {
+        if (e.target.closest('.card-row-del')) return;
+        openCardEditor(row.dataset.cardId);
       });
-      if (e3) throw e3;
+    });
+    container.querySelectorAll('[data-del-card]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const cardId = btn.dataset.delCard;
+        confirmAction(
+          currentLang==='ar' ? 'تحذف البطاقة دي؟' : 'Delete this card?',
+          () => {
+            deck.cards = deck.cards.filter(c => c.id !== cardId);
+            updateTabsState();
+            renderStep();
+            showToast(currentLang==='ar' ? 'اتمسحت' : 'Deleted');
+          }
+        );
+      });
+    });
 
-      if (res && res.ok) {
-        localStorage.setItem('mb_voted', '1');
-        showDone('Thank you, ' + name.split(/\s+/)[0] + '. Your vote was recorded.');
-      } else if (res && res.error === 'already_voted') {
-        localStorage.setItem('mb_voted', '1');
-        showDone('A vote has already been recorded from this ID or device.');
+    document.getElementById('addCardBtn').addEventListener('click', () => openCardEditor(null));
+    const bulkBtn = document.getElementById('bulkImportBtn');
+    if (bulkBtn) bulkBtn.addEventListener('click', () => openBulkModal(deck));
+
+    document.getElementById('footerBackBtn').addEventListener('click', () => { activeDeckId = null; goStep('decks'); });
+    document.getElementById('footerNextBtn').addEventListener('click', () => goStep('export'));
+  }
+
+  const bulkModalOverlay = document.getElementById('bulkModalOverlay');
+  const bulkImportTextarea = document.getElementById('bulkImportTextarea');
+  let bulkTargetDeck = null;
+
+  function openBulkModal(deck){
+    bulkTargetDeck = deck;
+    bulkImportTextarea.value = '';
+    bulkModalOverlay.classList.add('open');
+    setTimeout(() => bulkImportTextarea.focus(), 50);
+  }
+  function closeBulkModal(){
+    bulkModalOverlay.classList.remove('open');
+  }
+  document.getElementById('bulkCancelBtn').addEventListener('click', closeBulkModal);
+  bulkModalOverlay.addEventListener('click', (e) => { if (e.target === bulkModalOverlay) closeBulkModal(); });
+
+  document.getElementById('bulkSaveBtn').addEventListener('click', () => {
+    if (!bulkTargetDeck) return;
+    const text = bulkImportTextarea.value.trim();
+    if (!text){
+      showToast(currentLang==='ar' ? 'من فضلك الصق البطاقات' : 'Please paste cards');
+      return;
+    }
+    const lines = text.split('\n');
+    let count = 0;
+    for (const raw of lines){
+      const line = raw.trim();
+      if (!line) continue;
+      let q = '', a = '';
+      if (line.startsWith('|') && line.endsWith('|')){
+        const parts = line.split('|').map(s => s.trim()).filter(Boolean);
+        if (parts.length >= 2 && !parts[0].includes('---')){
+          q = parts[0];
+          a = parts.slice(1).join(' - ');
+        }
+      } else if (line.includes('\t')){
+        const parts = line.split('\t');
+        q = parts[0].trim();
+        a = parts.slice(1).join('\t').trim();
+      } else if (line.includes(';')){
+        const parts = line.split(';');
+        q = parts[0].trim();
+        a = parts.slice(1).join(';').trim();
+      } else if (line.includes(' - ')){
+        const parts = line.split(' - ');
+        q = parts[0].trim();
+        a = parts.slice(1).join(' - ').trim();
+      } else if (line.includes(',')){
+        const parts = line.split(',');
+        q = parts[0].trim();
+        a = parts.slice(1).join(',').trim();
       } else {
-        showError('Could not record your vote. Please try again.');
+        q = line;
+        a = 'Review';
       }
-    } catch (err) {
-      console.error(err);
-      showError('Something went wrong. Please check your connection and try again.');
-    } finally {
-      submitting = false;
-      btn.disabled = false; btn.textContent = 'Submit my vote';
+      if (q){
+        bulkTargetDeck.cards.push({
+          id: uid(),
+          front: q,
+          back: a,
+          imageFile: null,
+          imageDataUrl: null,
+          imageName: null
+        });
+        count++;
+      }
     }
+    closeBulkModal();
+    updateTabsState();
+    renderStep();
+    showToast(currentLang==='ar' ? `تم استيراد ${count} بطاقة` : `Imported ${count} cards`);
   });
 
-  /* ══ INIT ══ */
-  document.addEventListener('DOMContentLoaded', () => {
-    renderTimetables();
-    if (localStorage.getItem('mb_voted') === '1') {
-      showDone('You have already voted from this device. Thank you!');
+  function plainTextPreview(html){
+    const div = document.createElement('div');
+    div.innerHTML = html || '';
+    const text = (div.textContent || '').replace(/\s+/g, ' ').trim();
+    return text;
+  }
+
+  function openCardEditor(cardId){
+    editingCardId = cardId;
+    pendingImage = null;
+
+    const deck = activeDeck();
+    if (!deck) return;
+    const existing = cardId ? deck.cards.find(c => c.id === cardId) : null;
+
+    if (existing && existing.imageDataUrl){
+      pendingImage = { file: existing.imageFile || null, dataUrl: existing.imageDataUrl, name: existing.imageName || 'image.jpg' };
     }
+
+    const slot = document.getElementById('cardEditorSlot');
+    slot.innerHTML = `
+      <div class="panel" id="cardEditorPanel">
+        <div class="panel-title">${existing ? (currentLang==='ar'?'تعديل البطاقة':'Edit card') : (currentLang==='ar'?'بطاقة جديدة':'New card')}</div>
+        <div class="mfield">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+            <label style="margin-bottom:0;">${currentLang==='ar'?'السؤال (وش البطاقة)':'Question (front)'}</label>
+            <div style="display:flex; gap:6px;">
+              <button type="button" class="tool-chip" id="frontAddCloze" style="font-size:0.7rem; padding:2px 7px; border-radius:6px; background:var(--panel-hi); border:1px solid var(--line); color:var(--accent); cursor:pointer;">+ Cloze</button>
+              <button type="button" class="tool-chip" id="frontAddMath" style="font-size:0.7rem; padding:2px 7px; border-radius:6px; background:var(--panel-hi); border:1px solid var(--line); color:var(--text); cursor:pointer;">+ Math $</button>
+              <button type="button" class="tool-chip" id="frontAddBold" style="font-size:0.7rem; padding:2px 7px; border-radius:6px; background:var(--panel-hi); border:1px solid var(--line); color:var(--text); cursor:pointer;">+ Bold</button>
+            </div>
+          </div>
+          <textarea id="cardFrontInput" placeholder="${currentLang==='ar'?'اكتب السؤال هنا… (يدعم KaTeX مثل $MAP$)':'Type the question here… (supports KaTeX $formula$)'}">${escapeHtml(existing ? existing.front : '')}</textarea>
+          <div class="mfield-err" id="frontErr">${currentLang==='ar'?'من فضلك اكتب السؤال.':'Please enter a question.'}</div>
+        </div>
+
+        <div class="mfield">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+            <label style="margin-bottom:0;">${currentLang==='ar'?'الإجابة (ضهر البطاقة)':'Answer (back)'}</label>
+            <div style="display:flex; gap:6px;">
+              <button type="button" class="tool-chip" id="backAddMath" style="font-size:0.7rem; padding:2px 7px; border-radius:6px; background:var(--panel-hi); border:1px solid var(--line); color:var(--text); cursor:pointer;">+ Math $</button>
+              <button type="button" class="tool-chip" id="backAddDisplayMath" style="font-size:0.7rem; padding:2px 7px; border-radius:6px; background:var(--panel-hi); border:1px solid var(--line); color:var(--text); cursor:pointer;">+ Block $$</button>
+              <button type="button" class="tool-chip" id="backAddBold" style="font-size:0.7rem; padding:2px 7px; border-radius:6px; background:var(--panel-hi); border:1px solid var(--line); color:var(--text); cursor:pointer;">+ Bold</button>
+            </div>
+          </div>
+          <textarea id="cardBackInput" placeholder="${currentLang==='ar'?'اكتب الإجابة هنا…':'Type the answer here…'}">${escapeHtml(existing ? existing.back : '')}</textarea>
+          <div class="mfield-err" id="backErr">${currentLang==='ar'?'من فضلك اكتب الإجابة.':'Please enter an answer.'}</div>
+        </div>
+
+        <div class="mfield">
+          <label style="font-size:0.75rem; color:var(--text-faint);">${currentLang==='ar'?'معاينة حية للصيغ والمعادلات (KaTeX)':'Live Math & Formula Preview'}</label>
+          <div id="cardLivePreview" style="padding:10px 14px; border-radius:10px; background:var(--bg); border:1px solid var(--line-soft); min-height:46px; font-size:0.92rem; line-height:1.6; color:var(--text);"></div>
+        </div>
+
+        <div class="mfield">
+          <label>${currentLang==='ar'?'صورة (اختياري)':'Image (optional)'}</label>
+          <div id="imagePreviewArea"></div>
+          <div class="image-drop" id="imageDrop" style="${pendingImage ? 'display:none;' : ''}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="display:block;margin:0 auto 6px;"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+            <span>${currentLang==='ar'?'اضغط لإضافة صورة':'Tap to add an image'}</span>
+          </div>
+          <input type="file" id="cardImageInput" accept="image/*" style="display:none;" />
+        </div>
+        <div class="mfield" style="margin-top:10px;">
+          <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.86rem; color:var(--text); font-weight:600;">
+            <input type="checkbox" id="cardIsDualInput" ${existing && existing.isDual ? 'checked' : ''} style="width:16px; height:16px; accent-color:var(--accent); cursor:pointer;" />
+            <span>${currentLang==='ar'?'إنشاء بطاقة مزدوجة معكوسة (Card 1 وش لضهر & Card 2 ضهر لوش)':'Generate Dual/Reversed Sibling Card (Card 1: Forward & Card 2: Reversed)'}</span>
+          </label>
+        </div>
+        <div class="save-card-row">
+          <button type="button" class="cancel-edit-btn" id="cancelCardBtn">${currentLang==='ar'?'إلغاء':'Cancel'}</button>
+          <button type="button" class="save-card-btn" id="saveCardBtn">${currentLang==='ar'?'حفظ البطاقة':'Save card'}</button>
+        </div>
+      </div>
+    `;
+
+    renderImagePreview();
+
+    const imageDrop = document.getElementById('imageDrop');
+    const cardImageInput = document.getElementById('cardImageInput');
+    imageDrop.addEventListener('click', () => cardImageInput.click());
+    cardImageInput.addEventListener('change', () => {
+      const file = cardImageInput.files[0];
+      if (!file) return;
+      if (!file.type.startsWith('image/')){
+        showToast(currentLang==='ar' ? 'من فضلك اختار صورة' : 'Please choose an image file');
+        return;
+      }
+      if (file.size > 8 * 1024 * 1024){
+        showToast(currentLang==='ar' ? 'الصورة كبيرة أوي (الحد ٨ ميجا)' : 'Image is too large (8MB max)');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => {
+        pendingImage = { file, dataUrl: reader.result, name: file.name };
+        renderImagePreview();
+      };
+      reader.readAsDataURL(file);
+    });
+
+    const frontInput = document.getElementById('cardFrontInput');
+    const backInput = document.getElementById('cardBackInput');
+    const livePreview = document.getElementById('cardLivePreview');
+
+    function wrapSelection(textarea, prefix, suffix, placeholder){
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      const text = textarea.value;
+      const selected = text.substring(start, end) || placeholder;
+      textarea.value = text.substring(0, start) + prefix + selected + suffix + text.substring(end);
+      textarea.focus();
+      textarea.setSelectionRange(start + prefix.length, start + prefix.length + selected.length);
+      updateLivePreview();
+    }
+
+    function renderMathPreview(str){
+      if (!str) return '';
+      let res = str.replace(/{{c\d+::(.*?)(?:::.*?)?}}/g, '<span style="color:var(--accent); font-weight:700; background:rgba(6,182,212,0.15); padding:1px 5px; border-radius:4px;">[$1]</span>');
+      res = res.replace(/\$\$([\s\S]*?)\$\$/g, (m, f) => {
+        try { if (window.katex) return window.katex.renderToString(f, { displayMode: true, throwOnError: false }); } catch(e){}
+        return m;
+      });
+      res = res.replace(/\$([^\$\n\r]+?)\$/g, (m, f) => {
+        try { if (window.katex) return window.katex.renderToString(f, { displayMode: false, throwOnError: false }); } catch(e){}
+        return m;
+      });
+      return res;
+    }
+
+    function updateLivePreview(){
+      if (!livePreview) return;
+      const f = frontInput.value.trim();
+      const b = backInput.value.trim();
+      if (!f && !b){
+        livePreview.innerHTML = '<span style="color:var(--text-faint); font-style:italic;">Type above to preview KaTeX formulas and clozes…</span>';
+        return;
+      }
+      livePreview.innerHTML = `
+        <div style="margin-bottom:6px;"><strong style="font-size:0.75rem; text-transform:uppercase; color:var(--text-dim); display:block;">Question:</strong> ${renderMathPreview(f) || '<span style="color:var(--text-faint);">(empty)</span>'}</div>
+        <div><strong style="font-size:0.75rem; text-transform:uppercase; color:#10b981; display:block;">Answer:</strong> ${renderMathPreview(b) || '<span style="color:var(--text-faint);">(empty)</span>'}</div>
+      `;
+    }
+
+    frontInput.addEventListener('input', updateLivePreview);
+    backInput.addEventListener('input', updateLivePreview);
+    updateLivePreview();
+
+    document.getElementById('frontAddCloze').addEventListener('click', () => wrapSelection(frontInput, '{{c1::', '}}', 'key term'));
+    document.getElementById('frontAddMath').addEventListener('click', () => wrapSelection(frontInput, '$', '$', 'formula'));
+    document.getElementById('frontAddBold').addEventListener('click', () => wrapSelection(frontInput, '<b>', '</b>', 'text'));
+
+    document.getElementById('backAddMath').addEventListener('click', () => wrapSelection(backInput, '$', '$', 'formula'));
+    document.getElementById('backAddDisplayMath').addEventListener('click', () => wrapSelection(backInput, '$$\n', '\n$$', 'formula'));
+    document.getElementById('backAddBold').addEventListener('click', () => wrapSelection(backInput, '<b>', '</b>', 'text'));
+
+    document.getElementById('cancelCardBtn').addEventListener('click', () => {
+      editingCardId = null;
+      pendingImage = null;
+      slot.innerHTML = '';
+    });
+
+    document.getElementById('saveCardBtn').addEventListener('click', () => saveCardFromEditor(deck));
+
+    document.getElementById('cardEditorPanel').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  function renderImagePreview(){
+    const area = document.getElementById('imagePreviewArea');
+    const drop = document.getElementById('imageDrop');
+    if (!area) return;
+    if (pendingImage && pendingImage.dataUrl){
+      area.innerHTML = `
+        <div class="image-preview-wrap">
+          <img src="${pendingImage.dataUrl}" alt="" />
+          <button type="button" class="image-remove-btn" id="removeImageBtn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+          </button>
+        </div>
+      `;
+      if (drop) drop.style.display = 'none';
+      document.getElementById('removeImageBtn').addEventListener('click', () => {
+        pendingImage = null;
+        renderImagePreview();
+        if (drop) drop.style.display = '';
+      });
+    } else {
+      area.innerHTML = '';
+      if (drop) drop.style.display = '';
+    }
+  }
+
+  function saveCardFromEditor(deck){
+    const front = document.getElementById('cardFrontInput').value.trim();
+    const back = document.getElementById('cardBackInput').value.trim();
+    let ok = true;
+
+    document.getElementById('frontErr').classList.remove('show');
+    document.getElementById('backErr').classList.remove('show');
+
+    if (!front){ document.getElementById('frontErr').classList.add('show'); ok = false; }
+    if (!back){ document.getElementById('backErr').classList.add('show'); ok = false; }
+    if (!ok) return;
+
+    const isDual = !!(isDualEl && isDualEl.checked);
+    const sharedNoteId = uid();
+    const cardData = {
+      front,
+      back,
+      isDual,
+      imageFile: pendingImage ? pendingImage.file : null,
+      imageDataUrl: pendingImage ? pendingImage.dataUrl : null,
+      imageName: pendingImage ? pendingImage.name : null
+    };
+
+    if (editingCardId){
+      const idx = deck.cards.findIndex(c => c.id === editingCardId);
+      if (idx !== -1) deck.cards[idx] = { id: editingCardId, noteId: deck.cards[idx].noteId || sharedNoteId, ord: 0, ...cardData };
+    } else {
+      if (isDual) {
+        deck.cards.push({
+          id: uid(),
+          noteId: sharedNoteId,
+          ord: 0,
+          ...cardData
+        });
+        deck.cards.push({
+          id: uid(),
+          noteId: sharedNoteId,
+          ord: 1,
+          front: back,
+          back: front,
+          isDual: true,
+          imageFile: cardData.imageFile,
+          imageDataUrl: cardData.imageDataUrl,
+          imageName: cardData.imageName
+        });
+      } else {
+        deck.cards.push({ id: uid(), noteId: sharedNoteId, ord: 0, ...cardData });
+      }
+    }
+
+    editingCardId = null;
+    pendingImage = null;
+    updateTabsState();
+    renderStep();
+    showToast(currentLang==='ar' ? 'اتحفظت البطاقة' : 'Card saved');
+  }
+
+  /* ================================================================
+     STEP 3 — EXPORT
+     ================================================================ */
+  function renderExportStep(){
+    const container = document.getElementById('stepBody');
+    const decksWithCards = decks.filter(d => d.cards.length > 0);
+
+    if (decksWithCards.length === 0){
+      container.innerHTML = `
+        <div class="step-empty">
+          <div class="big-icon">📦</div>
+          <h3>${currentLang==='ar'?'مفيش حاجة تتصدر لسه':'Nothing to export yet'}</h3>
+          <p>${currentLang==='ar'?'ضيف بطاقات لمجموعة الأول.':'Add cards to a deck first.'}</p>
+        </div>
+      `;
+      return;
+    }
+
+    let html = `<div class="panel"><div class="panel-title">${currentLang==='ar'?'ملخص':'Summary'}</div><div class="export-summary">`;
+    decksWithCards.forEach(d => {
+      const countLabel = currentLang === 'ar'
+        ? `${d.cards.length} ${d.cards.length===1 ? 'بطاقة' : 'بطاقات'}`
+        : `${d.cards.length} card${d.cards.length===1?'':'s'}`;
+      html += `
+        <div class="export-deck-row" style="--subj-color:${escapeHtml(d.color)}">
+          <span class="export-deck-dot"></span>
+          <span class="export-deck-name">${escapeHtml(d.name)}</span>
+          <span class="export-deck-count">${countLabel}</span>
+        </div>
+      `;
+    });
+    html += `</div>`;
+
+    html += `
+      <button type="button" class="export-btn" id="downloadApkgBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M12 4l-4 4M12 4l4 4"/><path d="M4 16v3a2 2 0 002 2h12a2 2 0 002-2v-3"/></svg>
+        <span>${currentLang==='ar'?'تحميل ملف .apkg':'Download .apkg file'}</span>
+      </button>
+      <button type="button" class="export-btn" id="testDeckBtn" style="margin-top:10px; background:linear-gradient(135deg, #0ea5e9, #06b6d4); color:#000;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        <span>${currentLang==='ar'?'تجربة المجموعة في محطة البطاقات FSRS-5':'Test in Clinical FSRS-5 Workstation'}</span>
+      </button>
+    `;
+
+    html += `
+      <div class="upload-toggle-row">
+        <div>
+          <div class="upload-toggle-label">${currentLang==='ar'?'رفع مباشر كمحاضرة':'Upload directly as a lecture item'}</div>
+          <div class="upload-toggle-hint">${currentLang==='ar'?'يضيفها تحت تاريخ ومادة معينة':'Adds it under a date and subject'}</div>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="uploadToggle" />
+          <span class="switch-track"></span>
+        </label>
+      </div>
+    `;
+
+    html += `<div class="export-upload-fields" id="uploadFields">`;
+    html += `
+        <div class="mfield" style="margin-top:14px;">
+          <label>${currentLang==='ar'?'اسم البطاقات (العنوان)':'Flashcard title'}</label>
+          <input type="text" id="uploadTitleInput" placeholder="${currentLang==='ar'?'مثال: بطاقات محاضرة ٤':'e.g. Lecture 4 flashcards'}" />
+        </div>
+        <div class="mfield">
+          <label>${currentLang==='ar'?'اسم المادة / المحاضرة':'Subject / lecture name'}</label>
+          <input type="text" id="uploadLectureInput" placeholder="${currentLang==='ar'?'مثال: قلبية — اضطرابات نظم':'e.g. Cardiology — Arrhythmias'}" />
+        </div>
+        <div class="mfield">
+          <label>${currentLang==='ar'?'التاريخ':'Date'}</label>
+          <input type="text" id="uploadDateInput" placeholder="YYYY-MM-DD" />
+          <div class="mfield-hint">${currentLang==='ar'?'الصيغة: سنة-شهر-يوم':'Format: YYYY-MM-DD'}</div>
+        </div>
+        <div class="mfield">
+          <label>${currentLang==='ar'?'السنة الدراسية':'Academic year'}</label>
+          <select id="uploadYearSelect">
+            <option value="first year">${currentLang==='ar'?'الأولى':'Year 1'}</option>
+            <option value="second year">${currentLang==='ar'?'الثانية':'Year 2'}</option>
+            <option value="third year">${currentLang==='ar'?'الثالثة':'Year 3'}</option>
+            <option value="fourth year">${currentLang==='ar'?'الرابعة':'Year 4'}</option>
+            <option value="fifth year">${currentLang==='ar'?'الخامسة':'Year 5'}</option>
+          </select>
+        </div>
+        <button type="button" class="export-btn" id="uploadApkgBtn" style="margin-top:6px;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10L12 5 2 10l10 5 10-5z"/><path d="M6 12v5c0 1.5 3 3 6 3s6-1.5 6-3v-5"/></svg>
+          <span>${currentLang==='ar'?'تصدير ورفع':'Export and upload'}</span>
+        </button>
+    `;
+    html += `</div>`;
+
+    html += `<div class="export-status" id="exportStatus"></div>`;
+    html += `</div>`; // panel
+
+    html += `
+      <div class="footer-nav">
+        <button type="button" class="footer-nav-btn back" id="footerBackBtn2">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+          <span>${currentLang==='ar'?'البطاقات':'Cards'}</span>
+        </button>
+      </div>
+    `;
+
+    container.innerHTML = html;
+
+    // pre-fill date with today
+    const dateInput = document.getElementById('uploadDateInput');
+    if (dateInput){
+      const t = new Date();
+      dateInput.value = t.getFullYear() + '-' + String(t.getMonth()+1).padStart(2,'0') + '-' + String(t.getDate()).padStart(2,'0');
+    }
+
+    document.getElementById('uploadToggle').addEventListener('change', (e) => {
+      document.getElementById('uploadFields').classList.toggle('open', e.target.checked);
+    });
+
+    document.getElementById('downloadApkgBtn').addEventListener('click', () => handleDownload(decksWithCards));
+    const testBtn = document.getElementById('testDeckBtn');
+    if (testBtn){
+      testBtn.addEventListener('click', () => {
+        setExportStatus(currentLang==='ar' ? 'بيتم حفظ المجموعة للاختبار…' : 'Preparing test session…');
+        try {
+          const previewId = 'test-' + Date.now();
+          const primaryDeck = decksWithCards[0];
+          const flatCards = [];
+          decksWithCards.forEach(d => {
+            d.cards.forEach((c, idx) => {
+              const noteId = 'nid-' + idx + '-' + Date.now();
+              const origId0 = 'card-' + idx + '-0';
+              flatCards.push({
+                id: `${previewId}:::${origId0}`,
+                originalId: origId0,
+                noteId: noteId,
+                ord: 0,
+                deckId: previewId,
+                front: c.front,
+                back: c.back + (c.imageDataUrl ? `<br><img src="${c.imageDataUrl}">` : ''),
+                stability: 0,
+                difficulty: 0,
+                reps: 0,
+                due: 0
+              });
+              if (c.isDual){
+                const origId1 = 'card-' + idx + '-1';
+                flatCards.push({
+                  id: `${previewId}:::${origId1}`,
+                  originalId: origId1,
+                  noteId: noteId,
+                  ord: 1,
+                  deckId: previewId,
+                  front: c.back,
+                  back: c.front + (c.imageDataUrl ? `<br><img src="${c.imageDataUrl}">` : ''),
+                  stability: 0,
+                  difficulty: 0,
+                  reps: 0,
+                  due: 0
+                });
+              }
+            });
+          });
+
+          const req = indexedDB.open('mb_synaptic_vault', 3);
+          req.onupgradeneeded = (e) => {
+            const db = e.target.result;
+            if (!db.objectStoreNames.contains('decks')) db.createObjectStore('decks', { keyPath: 'id' });
+            if (!db.objectStoreNames.contains('cards')) db.createObjectStore('cards', { keyPath: 'id' });
+            if (!db.objectStoreNames.contains('media')) db.createObjectStore('media', { keyPath: 'name' });
+          };
+          req.onsuccess = (e) => {
+            const db = e.target.result;
+            const tx = db.transaction(['decks', 'cards'], 'readwrite');
+            tx.objectStore('decks').put({ id: previewId, title: primaryDeck.name, timestamp: Date.now() });
+            const cardStore = tx.objectStore('cards');
+            flatCards.forEach(c => cardStore.put(c));
+            tx.oncomplete = () => {
+              window.location.href = `/flash.html?id=${previewId}`;
+            };
+            tx.onerror = () => { window.location.href = '/flash.html?deck=demo'; };
+          };
+          req.onerror = () => { window.location.href = '/flash.html?deck=demo'; };
+        } catch(err){
+          console.error(err);
+          window.location.href = '/flash.html?deck=demo';
+        }
+      });
+    }
+    document.getElementById('uploadApkgBtn').addEventListener('click', () => handleUpload(decksWithCards));
+    document.getElementById('footerBackBtn2').addEventListener('click', () => goStep('cards'));
+  }
+
+  function setExportStatus(msg, cls){
+    const el = document.getElementById('exportStatus');
+    if (!el) return;
+    el.textContent = msg;
+    el.className = 'export-status' + (cls ? ' ' + cls : '');
+  }
+
+  async function handleDownload(decksWithCards){
+    const btn = document.getElementById('downloadApkgBtn');
+    btn.disabled = true;
+    setExportStatus(currentLang==='ar' ? 'بيتبني الملف…' : 'Building the file…');
+    try {
+      const blob = await buildApkgBlob(decksWithCards);
+      const fname = (decksWithCards.length === 1 ? decksWithCards[0].name : 'medicinebank-decks').replace(/[^\w\-]+/g, '_') + '.apkg';
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fname;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 4000);
+      setExportStatus(currentLang==='ar' ? 'اتحمّل الملف' : 'File downloaded', 'ok');
+    } catch (e){
+      console.error(e);
+      setExportStatus(currentLang==='ar' ? 'حصل خطأ في بناء الملف' : 'Something went wrong building the file', 'err');
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  async function handleUpload(decksWithCards){
+    const title = document.getElementById('uploadTitleInput')?.value?.trim();
+    const lectureName = document.getElementById('uploadLectureInput')?.value?.trim();
+    const dateVal = document.getElementById('uploadDateInput')?.value?.trim();
+    const yearVal = document.getElementById('uploadYearSelect')?.value;
+
+    if (!title || !lectureName || !/^\d{4}-\d{2}-\d{2}$/.test(dateVal)){
+      setExportStatus(currentLang==='ar' ? 'كمّل الحقول فوق الأول (والتاريخ بصيغة سنة-شهر-يوم).' : 'Fill in the fields above first (date as YYYY-MM-DD).', 'err');
+      return;
+    }
+
+    const btn = document.getElementById('uploadApkgBtn');
+    if (btn) btn.disabled = true;
+    setExportStatus(currentLang==='ar' ? 'بيتبني الملف…' : 'Building the file…');
+
+    try {
+      const blob = await buildApkgBlob(decksWithCards);
+      const maxMb = Math.round(MAX_FLASH_UPLOAD_BYTES / (1024 * 1024));
+
+      // File size gate before upload
+      if (blob.size > MAX_FLASH_UPLOAD_BYTES){
+        const fileMb = (blob.size / (1024 * 1024)).toFixed(1);
+        const limitMsg = currentLang === 'ar'
+          ? `حجم الملف (${fileMb} ميجابايت) يتجاوز الحد الأقصى المسموح به (${maxMb} ميجابايت)`
+          : `File size (${fileMb} MB) exceeds maximum allowed limit (${maxMb} MB)`;
+        setExportStatus(limitMsg, 'err');
+        showToast(limitMsg);
+        if (btn) btn.disabled = false;
+        return;
+      }
+
+      const fname = title.replace(/[^\w\-]+/g, '_') + '.apkg';
+
+      setExportStatus(currentLang==='ar' ? 'بيترفع…' : 'Uploading…');
+
+      let lectureId = null;
+      const { data: existingLectures, error: findErr } = await supabase
+        .from('lectures')
+        .select('id')
+        .eq('date', dateVal)
+        .eq('year_of_view', yearVal)
+        .eq('name', lectureName)
+        .limit(1);
+
+      if (findErr) {
+        console.error('Error finding existing lecture:', findErr);
+        throw findErr;
+      }
+
+      if (existingLectures && existingLectures.length > 0){
+        lectureId = existingLectures[0].id;
+      } else {
+        const colors = ['#e05a4f','#e0a23a','#3ba55c','#3a8ee0','#7a5ce0','#c94fa0'];
+        const { data: newLecture, error: lecErr } = await supabase
+          .from('lectures')
+          .insert({
+            date: dateVal,
+            name: lectureName,
+            color: colors[Math.floor(Math.random()*colors.length)],
+            year_of_view: yearVal
+          })
+          .select('id')
+          .single();
+        if (lecErr) {
+          console.error('Error creating lecture container:', lecErr);
+          throw lecErr;
+        }
+        lectureId = newLecture.id;
+      }
+
+      const path = `${lectureId}/${uid()}-${Date.now()}.apkg`;
+      const { error: upErr } = await supabase.storage.from(MATERIALS_BUCKET).upload(path, blob, { cacheControl: '3600', upsert: false });
+      if (upErr) {
+        console.error('Storage upload error:', upErr);
+        const isTooLarge = upErr.statusCode === 413 || upErr.status === 413 || (upErr.message && /payload too large|exceeds|entity too large/i.test(upErr.message));
+        const upMsg = isTooLarge
+          ? (currentLang === 'ar' ? `حجم الملف يتجاوز الحد المسموح به للسيرفر (${maxMb} ميجابايت)` : `File exceeds the server upload limit (${maxMb} MB)`)
+          : (currentLang === 'ar' ? `فشل رفع الملف: [${upErr.code || 'ERR'}] ${upErr.message || ''}` : `Failed to upload file: [${upErr.code || 'ERR'}] ${upErr.message || ''}`);
+        setExportStatus(upMsg, 'err');
+        showToast(upMsg);
+        if (btn) btn.disabled = false;
+        return;
+      }
+
+      const { data: pub } = supabase.storage.from(MATERIALS_BUCKET).getPublicUrl(path);
+
+      // Total cards in deck
+      const totalCardCount = decksWithCards.reduce((acc, d) => acc + (d.cards ? d.cards.length : 0), 0);
+      let parsedMod = 'GENERAL';
+      let parsedSubj = lectureName || 'General';
+      if (lectureName.includes(':')) {
+        const parts = lectureName.split(':');
+        parsedMod = parts[0].trim().toUpperCase();
+        parsedSubj = parts.slice(1).join(':').trim() || parsedSubj;
+      } else if (lectureName.includes('—')) {
+        const parts = lectureName.split('—');
+        parsedMod = parts[0].trim().toUpperCase();
+        parsedSubj = parts.slice(1).join('—').trim() || parsedSubj;
+      } else if (lectureName.includes('-')) {
+        const parts = lectureName.split('-');
+        parsedMod = parts[0].trim().toUpperCase();
+        parsedSubj = parts.slice(1).join('-').trim() || parsedSubj;
+      }
+
+      const captionMeta = {
+        module: parsedMod,
+        subject: parsedSubj,
+        semester: 1,
+        lecture: title,
+        cardCount: totalCardCount
+      };
+
+      const basePayload = {
+        lecture_id: lectureId,
+        type: 'flashcards',
+        kind: 'upload',
+        title,
+        url: pub.publicUrl,
+        file_name: fname,
+        caption: JSON.stringify(captionMeta)
+      };
+
+      const normalizedPayload = {
+        module_code: parsedMod,
+        subject_name: parsedSubj,
+        semester: 1,
+        card_count: totalCardCount
+      };
+
+      const saveHelper = (typeof MBI_SUPABASE !== 'undefined' && typeof MBI_SUPABASE.saveMaterialRow === 'function')
+        ? MBI_SUPABASE.saveMaterialRow
+        : (typeof saveMaterialRow === 'function' ? saveMaterialRow : null);
+
+      let matErr = null;
+      if (saveHelper) {
+        const res = await saveHelper({
+          base: basePayload,
+          normalized: normalizedPayload,
+          client: supabase
+        });
+        matErr = res.error;
+      } else {
+        const res = await supabase.from('materials').insert({ ...basePayload, ...normalizedPayload });
+        matErr = res.error;
+      }
+      if (matErr) {
+        console.error('Material insert error:', matErr);
+        throw matErr;
+      }
+
+      setExportStatus(currentLang==='ar' ? 'تم الرفع بنجاح' : 'Uploaded successfully', 'ok');
+      showToast(currentLang==='ar' ? 'اتضاف للمحاضرة' : 'Added to the lecture');
+    } catch (e){
+      console.error('handleUpload failed:', e);
+      const errMsg = e.code ? `[${e.code}] ${e.message || ''}` : (e.message || '');
+      setExportStatus(currentLang==='ar' ? `حصل خطأ في الرفع: ${errMsg}` : `Upload failed: ${errMsg}`, 'err');
+      showToast(currentLang==='ar' ? `فشل الرفع: ${errMsg}` : `Upload failed: ${errMsg}`);
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  }
+
+  /* ================================================================
+     .APKG BUILDER (SQLite via sql.js + JSZip)
+     Produces an Anki 2.1-compatible deck: collection.anki2 database,
+     a "media" JSON manifest, and numbered media files (images).
+     ================================================================ */
+  async function buildApkgBlob(decksWithCards){
+    const SQL = await initSqlJs({
+      locateFile: file => `https://cdn.jsdelivr.net/npm/sql.js@1.10.3/dist/${file}`
+    });
+    const db = new SQL.Database();
+
+    const now = Date.now();
+    const nowSec = Math.floor(now / 1000);
+
+    db.run(`
+      CREATE TABLE col (
+        id integer primary key,
+        crt integer not null,
+        mod integer not null,
+        scm integer not null,
+        ver integer not null,
+        dty integer not null,
+        usn integer not null,
+        ls integer not null,
+        conf text not null,
+        models text not null,
+        decks text not null,
+        dconf text not null,
+        tags text not null
+      );
+      CREATE TABLE notes (
+        id integer primary key,
+        guid text not null,
+        mid integer not null,
+        mod integer not null,
+        usn integer not null,
+        tags text not null,
+        flds text not null,
+        sfld text not null,
+        csum integer not null,
+        flags integer not null,
+        data text not null
+      );
+      CREATE TABLE cards (
+        id integer primary key,
+        nid integer not null,
+        did integer not null,
+        ord integer not null,
+        mod integer not null,
+        usn integer not null,
+        type integer not null,
+        queue integer not null,
+        due integer not null,
+        ivl integer not null,
+        factor integer not null,
+        reps integer not null,
+        lapses integer not null,
+        left integer not null,
+        odue integer not null,
+        odid integer not null,
+        flags integer not null,
+        data text not null
+      );
+      CREATE TABLE revlog (
+        id integer primary key,
+        cid integer not null,
+        usn integer not null,
+        ease integer not null,
+        ivl integer not null,
+        lastIvl integer not null,
+        factor integer not null,
+        time integer not null,
+        type integer not null
+      );
+      CREATE TABLE graves (
+        usn integer not null,
+        oid integer not null,
+        type integer not null
+      );
+      CREATE INDEX ix_notes_usn ON notes (usn);
+      CREATE INDEX ix_cards_usn ON cards (usn);
+      CREATE INDEX ix_revlog_usn ON revlog (usn);
+      CREATE INDEX ix_cards_nid ON cards (nid);
+      CREATE INDEX ix_cards_sched ON cards (did, queue, due);
+      CREATE INDEX ix_revlog_cid ON revlog (cid);
+      CREATE INDEX ix_notes_csum ON notes (csum);
+    `);
+
+    const MODEL_ID = now;
+    const modelName = 'Basic (MedicineBank)';
+    const model = {
+      [MODEL_ID]: {
+        id: MODEL_ID,
+        name: modelName,
+        type: 0,
+        mod: nowSec,
+        usn: 0,
+        sortf: 0,
+        did: null,
+        tmpls: [
+          {
+            name: 'Card 1',
+            ord: 0,
+            qfmt: '{{Front}}',
+            afmt: '{{FrontSide}}<hr id="answer">{{Back}}',
+            bqfmt: '',
+            bafmt: '',
+            did: null,
+            bfont: '',
+            bsize: 0
+          },
+          {
+            name: 'Card 2',
+            ord: 1,
+            qfmt: '{{Back}}',
+            afmt: '{{FrontSide}}<hr id="answer">{{Front}}',
+            bqfmt: '',
+            bafmt: '',
+            did: null,
+            bfont: '',
+            bsize: 0
+          }
+        ],
+        flds: [
+          { name: 'Front', ord: 0, sticky: false, rtl: false, font: 'Arial', size: 20, media: [] },
+          { name: 'Back', ord: 1, sticky: false, rtl: false, font: 'Arial', size: 20, media: [] }
+        ],
+        css: '.card { font-family: Arial; font-size: 20px; text-align: center; color: black; background-color: white; }',
+        latexPre: '',
+        latexPost: '',
+        latexsvg: false,
+        req: [[0, 'all', [0]], [1, 'all', [1]]]
+      }
+    };
+
+    let deckIdCounter = now + 1;
+    const decksJson = {
+      '1': {
+        id: 1, name: 'Default', mod: nowSec, usn: 0, lrnToday: [0,0], revToday: [0,0], newToday: [0,0],
+        timeToday: [0,0], collapsed: true, browserCollapsed: true, desc: '', dyn: 0, conf: 1, extendNew: 0, extendRev: 0
+      }
+    };
+    const dconf = {
+      '1': {
+        id: 1, name: 'Default', mod: 0, usn: 0, maxTaken: 60, autoplay: true, timer: 0, replayq: true,
+        new: { bury: false, delays: [1,10], initialFactor: 2500, ints: [1,4,0], order: 1, perDay: 20 },
+        rev: { bury: false, ease4: 1.3, ivlFct: 1, maxIvl: 36500, perDay: 200, hardFactor: 1.2 },
+        lapse: { delays: [10], leechAction: 1, leechFails: 8, minInt: 1, mult: 0 },
+        dyn: false
+      }
+    };
+
+    const mediaMap = {}; // numeric-string -> real filename
+    let mediaCounter = 0;
+    const mediaBlobs = []; // { idx, blob }
+
+    function registerMedia(blob, filename){
+      const idx = String(mediaCounter);
+      mediaMap[idx] = filename;
+      mediaBlobs.push({ idx, blob });
+      mediaCounter++;
+      return filename;
+    }
+
+    async function dataUrlToBlob(dataUrl){
+      const resp = await fetch(dataUrl);
+      return await resp.blob();
+    }
+
+    function guessExt(name, mimeType){
+      const m = /\.([a-zA-Z0-9]+)$/.exec(name || '');
+      if (m) return m[1].toLowerCase();
+      if (mimeType && mimeType.indexOf('/') !== -1) return mimeType.split('/')[1];
+      return 'jpg';
+    }
+
+    let noteIdCounter = now + 1000;
+    let cardIdCounter = now + 2000000;
+    let usnBase = -1;
+
+    for (const deck of decksWithCards){
+      const deckId = deckIdCounter++;
+      decksJson[String(deckId)] = {
+        id: deckId, name: deck.name, mod: nowSec, usn: 0,
+        lrnToday: [0,0], revToday: [0,0], newToday: [0,0], timeToday: [0,0],
+        collapsed: true, browserCollapsed: true, desc: '', dyn: 0, conf: 1, extendNew: 0, extendRev: 0
+      };
+
+      let due = 1;
+      for (const card of deck.cards){
+        let frontHtml = escapeHtmlForField(card.front);
+        let backHtml = escapeHtmlForField(card.back);
+
+        if (card.imageDataUrl){
+          const blob = await dataUrlToBlob(card.imageDataUrl);
+          const ext = guessExt(card.imageName, blob.type);
+          const filename = `img_${noteIdCounter}.${ext}`;
+          registerMedia(blob, filename);
+          backHtml += `<br><img src="${filename}">`;
+        }
+
+        const guid = uid() + uid();
+        const flds = frontHtml + '\x1f' + backHtml;
+        const sfld = frontHtml.replace(/<[^>]+>/g, '').slice(0, 200);
+        const csum = fieldChecksum(sfld);
+
+        const noteId = noteIdCounter++;
+        db.run(
+          `INSERT INTO notes (id, guid, mid, mod, usn, tags, flds, sfld, csum, flags, data) VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
+          [noteId, guid, MODEL_ID, nowSec, usnBase, '', flds, sfld, csum, 0, '']
+        );
+
+        const cardId = cardIdCounter++;
+        db.run(
+          `INSERT INTO cards (id, nid, did, ord, mod, usn, type, queue, due, ivl, factor, reps, lapses, left, odue, odid, flags, data) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+          [cardId, noteId, deckId, 0, nowSec, usnBase, 0, 0, due, 0, 0, 0, 0, 0, 0, 0, 0, '']
+        );
+        due++;
+
+        if (card.isDual){
+          const cardId2 = cardIdCounter++;
+          db.run(
+            `INSERT INTO cards (id, nid, did, ord, mod, usn, type, queue, due, ivl, factor, reps, lapses, left, odue, odid, flags, data) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+            [cardId2, noteId, deckId, 1, nowSec, usnBase, 0, 0, due, 0, 0, 0, 0, 0, 0, 0, 0, '']
+          );
+          due++;
+        }
+      }
+    }
+
+    const conf = {
+      nextPos: 1, estTimes: true, activeDecks: [1], sortType: 'noteFld',
+      timeLim: 0, sortBackwards: false, addToCur: true, curDeck: 1,
+      newBury: true, newSpread: 0, dueCounts: true, curModel: String(MODEL_ID),
+      collapseTime: 1200
+    };
+
+    db.run(
+      `INSERT INTO col (id, crt, mod, scm, ver, dty, usn, ls, conf, models, decks, dconf, tags) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+      [1, nowSec, now, now, 11, 0, 0, 0, JSON.stringify(conf), JSON.stringify(model), JSON.stringify(decksJson), JSON.stringify(dconf), JSON.stringify({})]
+    );
+
+    const dbBytes = db.export();
+    db.close();
+
+    const zip = new JSZip();
+    zip.file('collection.anki2', dbBytes);
+    zip.file('media', JSON.stringify(mediaMap));
+    mediaBlobs.forEach(m => zip.file(m.idx, m.blob));
+
+    return await zip.generateAsync({ type: 'blob' });
+  }
+
+  function escapeHtmlForField(str){
+    const div = document.createElement('div');
+    div.textContent = str == null ? '' : str;
+    // Preserve line breaks as <br> since Anki fields are HTML
+    return div.innerHTML.replace(/\n/g, '<br>');
+  }
+
+  // Simple checksum matching Anki's approach closely enough for local
+  // uniqueness (first 8 hex digits of a basic hash). Anki only uses this
+  // for duplicate-detection hinting, not integrity, so an approximate
+  // hash is sufficient here.
+  function fieldChecksum(str){
+    let hash = 0;
+    for (let i = 0; i < str.length; i++){
+      hash = ((hash << 5) - hash) + str.charCodeAt(i);
+      hash |= 0;
+    }
+    return Math.abs(hash);
+  }
+
+  /* ================================================================
+     ROUTER
+     ================================================================ */
+  function renderStep(){
+    if (currentStep === 'decks') renderDecksStep();
+    else if (currentStep === 'cards') renderCardsStep();
+    else if (currentStep === 'export') renderExportStep();
+    updateTabsState();
+  }
+
+  /* ---------------- init ---------------- */
+  (function init(){
+    const storedLang = getStoredLang();
+    if (storedLang) setLang(storedLang, true);
+    else applyStaticText(currentLang);
+    renderStep();
+  })();
+})();
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(err => {
+      console.warn('SW registration warning:', err);
+    });
   });
+}
 </script>
 </body>
 </html>
